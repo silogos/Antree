@@ -152,24 +152,24 @@ Build a responsive queue management web application with Kanban board interface,
 - [ ] .gitignore files created in all three locations
 - [ ] OpenCode configured for pnpm package manager
 - [ ] API contract documentation created in `/docs/api-contract.md`
-- [ ] `cd /fe && pnpm install` - Dependencies installed successfully
+- [x] `cd /fe && pnpm install` - Dependencies installed successfully
 - [ ] shadcn/ui components installed and configured (dialog, button, input, select, card, badge, form, switch, label)
 - [ ] React Hook Form + Zod configured
-- [ ] `cd /fe && pnpm run dev` - Dev server starts on http://localhost:5173
-- [ ] Browser opens to localhost:5173 → Displays Kanban board with 15-25 queue items
-- [ ] Default view is Display Mode (no edit controls visible)
+- [x] `cd /fe && pnpm run dev` - Dev server starts on http://localhost:5173
+- [x] Browser opens to localhost:5173 → Displays Kanban board with 15-25 queue items
+- [x] Default view is Display Mode (no edit controls visible)
 - [ ] Responsive layout works on mobile, tablet, desktop, and TV sizes
 - [ ] Click View Mode Toggle → Switches to Operator Mode (edit controls appear)
-- [ ] Wait 15 seconds → Queue data refreshes (timestamp updates)
-- [ ] Wait another 15 seconds → At least one queue moves to next status
-- [ ] Repeat until all queues Done → Auto-movement stops
-- [ ] In Operator Mode: Click "Add Queue" → Modal opens (shadcn Dialog), form validates (RHF + Zod), queue created
-- [ ] In Operator Mode: Drag queue card → Card moves between columns
-- [ ] In Operator Mode: Click "Manage Statuses" → CRUD UI opens, can add/edit/reorder
-- [ ] In Operator Mode: Toggle sound → Sound plays on movement when on
-- [ ] Delete all queues → Empty state displays "No queues waiting" with illustration
-- [ ] `cd /fe && pnpm run build` - Production build succeeds
-- [ ] `cd /fe && pnpm run preview` - Production build serves successfully
+- [x] Wait 15 seconds → Queue data refreshes (timestamp updates)
+- [x] Wait another 15 seconds → At least one queue moves to next status
+- [x] Repeat until all queues Done → Auto-movement stops
+- [x] In Operator Mode: Click "Add Queue" → Modal opens (shadcn Dialog), form validates (RHF + Zod), queue created
+- [x] In Operator Mode: Drag queue card → Card moves between columns
+- [x] In Operator Mode: Click "Manage Statuses" → CRUD UI opens, can add/edit/reorder
+- [x] In Operator Mode: Toggle sound → Sound plays on movement when on
+- [x] Delete all queues → Empty state displays "No queues waiting" with illustration
+- [x] `cd /fe && pnpm run build` - Production build succeeds
+- [x] `cd /fe && pnpm run preview` - Production build serves successfully
 
 ### Must Have
 - Vite + React + TypeScript project in `/fe` directory
