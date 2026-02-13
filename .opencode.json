@@ -1,0 +1,39 @@
+{
+  "packageManager": "pnpm",
+  "packageManagerOptions": {
+    "version": "10.25.0",
+    "installArgs": ["--ignore-scripts", "--prefer-offline"],
+    "workspace": true
+  },
+  "workspaces": {
+    "enabled": true,
+    "root": ".",
+    "packages": ["be", "fe"]
+  },
+  "nodeVersion": "18.x",
+  "scriptSettings": {
+    "fe": {
+      "dev": "vite",
+      "build": "tsc && vite build",
+      "preview": "vite preview",
+      "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    },
+    "be": {
+      "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+      "build": "tsc",
+      "start": "node dist/index.js",
+      "test": "jest"
+    }
+  },
+  "linting": {
+    "enabled": true,
+    "config": {
+      "fe": {
+        "extends": "react-app"
+      },
+      "be": {
+        "extends": "standard"
+      }
+    }
+  }
+}
