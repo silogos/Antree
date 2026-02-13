@@ -148,18 +148,18 @@ Build a responsive queue management web application with Kanban board interface,
 - `/fe/components.json` - shadcn/ui configuration
 
 ### Definition of Done
-- [ ] Git repositories initialized in root, `/be`, and `/fe`
-- [ ] .gitignore files created in all three locations
-- [ ] OpenCode configured for pnpm package manager
-- [ ] API contract documentation created in `/docs/api-contract.md`
+- [x] Git repositories initialized in root, `/be`, and `/fe`
+- [x] .gitignore files created in all three locations
+- [x] OpenCode configured for pnpm package manager
+- [x] API contract documentation created in `/docs/api-contract.md`
 - [x] `cd /fe && pnpm install` - Dependencies installed successfully
-- [ ] shadcn/ui components installed and configured (dialog, button, input, select, card, badge, form, switch, label)
-- [ ] React Hook Form + Zod configured
+- [x] shadcn/ui components installed and configured (dialog, button, input, select, card, badge, form, switch, label)
+- [x] React Hook Form + Zod configured
 - [x] `cd /fe && pnpm run dev` - Dev server starts on http://localhost:5173
 - [x] Browser opens to localhost:5173 → Displays Kanban board with 15-25 queue items
 - [x] Default view is Display Mode (no edit controls visible)
-- [ ] Responsive layout works on mobile, tablet, desktop, and TV sizes
-- [ ] Click View Mode Toggle → Switches to Operator Mode (edit controls appear)
+- [x] Responsive layout works on mobile, tablet, desktop, and TV sizes
+- [x] Click View Mode Toggle → Switches to Operator Mode (edit controls appear)
 - [x] Wait 15 seconds → Queue data refreshes (timestamp updates)
 - [x] Wait another 15 seconds → At least one queue moves to next status
 - [x] Repeat until all queues Done → Auto-movement stops
@@ -1795,7 +1795,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 14. Build Operator Mode components (AddQueueModal, StatusManagerModal)
+- [x] 14. Build Operator Mode components (AddQueueModal, StatusManagerModal)
 
   **What to do**:
   - Create `/fe/src/components/AddQueueModal.tsx`
@@ -2535,21 +2535,21 @@ cd /fe && pnpm run preview
 ### Final Checklist
 
 **Project Setup**:
-- [ ] Vite + React + TypeScript initialized in `/fe`
-- [ ] Tailwind CSS configured with responsive breakpoints
-- [ ] shadcn/ui configured and components installed (dialog, button, input, select, card, badge, form, switch, label)
-- [ ] React Hook Form (RHF) + Zod configured
-- [ ] dnd-kit, lucide-react, clsx, tailwind-merge installed
-- [ ] pnpm package manager used
+- [x] Vite + React + TypeScript initialized in `/fe`
+- [x] Tailwind CSS configured with responsive breakpoints
+- [x] shadcn/ui configured and components installed (dialog, button, input, select, card, badge, form, switch, label)
+- [x] React Hook Form (RHF) + Zod configured
+- [x] dnd-kit, lucide-react, clsx, tailwind-merge installed
+- [x] pnpm package manager used
 
 **Core Features**:
-- [ ] Kanban board with dynamic status columns
-- [ ] Queue cards with number, name, service, duration, status badge, customPayload
-- [ ] 15-25 dummy queue items with Indonesian names and customPayload
-- [ ] Default statuses: Pending, In Progress, Done
+- [x] Kanban board with dynamic status columns
+- [x] Queue cards with number, name, service, duration, status badge, customPayload
+- [x] 15-25 dummy queue items with Indonesian names and customPayload
+- [x] Default statuses: Pending, In Progress, Done
 
 **View Modes**:
-- [ ] Display Mode: Fullscreen, auto-refresh (15s), auto-movement (15s), no edit controls
+- [x] Display Mode: Fullscreen, auto-refresh (15s), auto-movement (15s), no edit controls
 - [ ] Operator Mode: Add queue, update status, drag & drop, status management UI, sound toggle
 - [ ] View mode toggle works correctly
 - [ ] Default view: Display Mode on app load
