@@ -1473,7 +1473,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 11. Create custom hooks (useQueues, useStatuses, useAutoMovement, useAutoRefresh, useViewMode, useSound)
+- [x] 11. Create custom hooks (useQueues, useStatuses, useAutoMovement, useAutoRefresh, useViewMode, useSound)
 
   **What to do**:
   - Create `/fe/src/hooks/useQueues.ts` - Hook for fetching and managing queues
