@@ -42,3 +42,23 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
 2. Create config files (vite.config.ts, tsconfig.json)
 3. Create HTML entry point
 4. Create src directory with main.tsx, App.tsx, index.css, vite-env.d.ts
+
+### Dependencies Installed (Task 2)
+- **Tailwind CSS 4.1.18**: Updated CSS framework (v4 is newer version)
+- **PostCSS 8.5.6**: Required for Tailwind CSS
+- **Autoprefixer 10.4.24**: PostCSS plugin for automatic vendor prefixing
+- **@dnd-kit/core 6.3.1**: Drag and drop core library
+- **@dnd-kit/sortable 10.0.0**: Drag and drop sortable items
+- **lucide-react 0.563.0**: Icon library (modern replacement for Lucide)
+- **react-hook-form 7.71.1**: Form validation and state management
+- **zod 4.3.6**: Schema validation library (works with RHF)
+- **clsx 2.1.1**: Utility for className merging
+- **tailwind-merge 3.4.0**: Utility to merge Tailwind classes safely
+- **node_modules**: Created with 176 packages from first install
+- **pnpm-lock.yaml**: Updated with all dependencies
+- **Verification**: All dependencies confirmed in package.json "dependencies" section
+
+### pnpm Version Info
+- Used pnpm v10.25.0 as specified in project config
+- Some packages have newer versions available (e.g., React 19.2.4, Vite 7.3.1)
+- Some build scripts were ignored (esbuild@0.21.5) - no action needed

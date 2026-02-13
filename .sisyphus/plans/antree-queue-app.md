@@ -523,7 +523,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 0.3. Configure OpenCode for local pnpm usage
+- [x] 0.3. Configure OpenCode for local pnpm usage
 
   **What to do**:
   - Create OpenCode configuration file in root directory
@@ -759,7 +759,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 2. Install additional dependencies (Tailwind, dnd-kit, icons, RHF, Zod, clsx, tailwind-merge)
+- [x] 2. Install additional dependencies (Tailwind, dnd-kit, icons, RHF, Zod, clsx, tailwind-merge)
 
   **What to do**:
   - Install Tailwind CSS: `pnpm add -D tailwindcss postcss autoprefixer`
