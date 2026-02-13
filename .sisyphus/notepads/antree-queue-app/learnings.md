@@ -233,3 +233,34 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
   - `queueDurationValidation` - Regex validation for duration format (HH:MM:SS or MM:SS)
 - **Next Step**: Task 7 will create type definitions for QueueItem and QueueStatus (complementing the schemas from this task)
 
+
+### TypeScript Type Definitions (Task 7)
+- **Files Created**:
+  - `/fe/src/types/queue.ts` - TypeScript interfaces for queue and status entities
+  - `/fe/src/types/index.ts` - Central export point for all type definitions
+- **TypeScript Interfaces Created**:
+  - `QueueItem` - Queue item with all required fields plus optional customPayload
+  - `QueueStatus` - Status entity with name, color, description, order
+  - `CreateQueueInput` - Input for creating new queue items
+  - `UpdateQueueInput` - Input for updating existing queue items
+  - `CreateStatusInput` - Input for creating new statuses
+  - `UpdateStatusInput` - Input for updating existing statuses
+- **Key Design Decisions**:
+  - Used TypeScript interfaces (not Zod types) for runtime use
+  - Included `customPayload?: Record<string, any>` for storing custom data
+  - All interfaces match the API contract defined in /docs/api-contract.md
+  - Types complement Zod schemas from Task 6 for validation and runtime use
+- **Build Verification**:
+  - Command: `pnpm run build`
+  - Result: ✓ built in 506ms
+  - Output:
+    - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+    - `dist/assets/index-CXsNyPvM.css` 32.60 kB │ gzip: 6.45 kB
+    - `dist/assets/index-BxtUnBOC.js` 142.76 kB │ gzip: 45.84 kB
+  - TypeScript check passed with no errors
+- **Type Export Structure**:
+  - All types exported from /fe/src/types/index.ts for easy importing
+  - Example: `import { QueueItem, QueueStatus } from '@/types';`
+  - Complements Zod schemas for validation: `const schema = queueItemSchema;` + `type QueueItem = z.infer<typeof schema>;`
+- **Next Step**: Task 8 will create utility functions for queue operations
+

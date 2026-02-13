@@ -1166,7 +1166,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 7. Create type definitions
+- [x] 7. Create type definitions
 
   **What to do**:
   - Create `/fe/src/types/queue.ts`
