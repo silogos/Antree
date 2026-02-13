@@ -1246,7 +1246,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 8. Create utility functions (cn for className merging)
+- [x] 8. Create utility functions (cn for className merging)
 
   **What to do**:
   - Verify `/fe/src/lib/utils.ts` exists (created by shadcn/ui init)
