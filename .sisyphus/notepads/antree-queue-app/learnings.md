@@ -115,3 +115,26 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
   - ✓ built in 486ms
 - **Key Takeaway**: shadcn/ui works with any framework (Vite, Next.js, etc.) via manual setup
 - **Next Step**: Task 5 will install specific shadcn/ui components (Dialog, Button, Input, etc.)
+
+### shadcn/ui Component Installation (Task 5)
+- **Command**: `npx shadcn@latest add dialog button input select card badge form switch label -y`
+- **Components Installed**: 9 shadcn/ui components
+  - dialog.tsx (4289 bytes)
+  - button.tsx (2392 bytes)
+  - input.tsx (962 bytes)
+  - select.tsx (6353 bytes)
+  - card.tsx (1987 bytes)
+  - badge.tsx (1776 bytes)
+  - switch.tsx (1394 bytes)
+  - label.tsx (606 bytes)
+  - form.tsx (3743 bytes)
+- **Location**: `/fe/components/ui/` (NOT `/fe/src/components/ui/`)
+- **Verification**:
+  - All 9 files created successfully
+  - Build passes with output:
+    - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+    - `dist/assets/index-CXsNyPvM.css` 32.60 kB │ gzip: 6.45 kB
+    - `dist/assets/index-BxtUnBOC.js` 142.76 kB │ gzip: 45.84 kB
+    - ✓ built in 513ms
+- **Important Note**: shadcn/ui uses copy-paste approach - components are built-in files, not npm packages
+- **Next Step**: Task 6 will configure React Hook Form + Zod for form handling
