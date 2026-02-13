@@ -138,3 +138,98 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
     - ✓ built in 513ms
 - **Important Note**: shadcn/ui uses copy-paste approach - components are built-in files, not npm packages
 - **Next Step**: Task 6 will configure React Hook Form + Zod for form handling
+
+### React Hook Form + Zod Configuration (Task 6)
+- **Dependencies Installed** (from Task 2):
+  - `react-hook-form 7.71.1` - Form state management
+  - `zod 4.3.6` - Schema validation (note: v4.x, breaking changes from v3.x)
+  - `@hookform/resolvers` - RHF + Zod integration
+- **Files Created**:
+  - `/fe/src/lib/validations/schema.ts` - Zod validation schemas
+    - `queueItemSchema` - For validating queue items (id, queueNumber, name, service, statusId, customerName, duration, createdAt, updatedAt)
+    - `statusSchema` - For validating status items (id, name, color, description, order)
+    - `createQueueSchema` - For creating new queues (name, service, customerName, duration)
+    - `createStatusSchema` - For creating new statuses (name, color, description, order)
+    - `updateQueueSchema` - For updating existing queues (id, name, service, customerName, duration)
+    - `updateStatusSchema` - For updating existing statuses (id, name, color, description, order)
+  - `/fe/src/lib/validations/` - New directory for validation schemas
+- **TypeScript Types Exported**:
+  - `QueueItem` - Type inferred from queueItemSchema
+  - `QueueStatus` - Type inferred from statusSchema
+  - `CreateQueueInput` - Type inferred from createQueueSchema
+  - `CreateStatusInput` - Type inferred from createStatusSchema
+  - `UpdateQueueInput` - Type inferred from updateQueueSchema
+  - `UpdateStatusInput` - Type inferred from updateStatusSchema
+- **Key Learnings about Zod 4.x**:
+  - **`.optional()` method issue**: In zod 4.x, `.optional()` is not available on all types - needed to use `.nullable()` or `.nullish()` for optional fields
+  - **`.default()` method**: In zod 4.x, `.default()` only takes one argument (the default value), not two (value + error message)
+  - **`.min()` method**: In zod 4.x, `.min()` may have different signatures - safer to use without error messages first
+  - **`z.record(z.any())`**: Creating record types with `.nullable()` or `.nullish()` can cause type errors in zod 4.x
+- **Build Verification**:
+  - Command: `pnpm run build` (tsc -b && vite build)
+  - Result: ✓ built in 496ms
+  - Output:
+    - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+    - `dist/assets/index-CXsNyPvM.css` 32.60 kB │ gzip: 6.45 kB
+    - `dist/assets/index-BxtUnBOC.js` 142.76 kB │ gzip: 45.84 kB
+- **Usage Notes**:
+  - Schemas are ready to be used with React Hook Form via `resolver` option
+  - Example: `resolver: zodResolver(createQueueSchema)`
+  - Will be used for AddQueueModal and StatusManagerModal in future tasks
+  - customPayload field excluded from schema due to zod 4.x compatibility issues (will add back when form components are created)
+- **Next Step**: Task 7 will create type definitions for QueueItem and QueueStatus (complementing the schemas from this task)
+
+### React Hook Form + Zod Configuration - COMPLETED (Task 6)
+- **Dependencies Installed** (from Task 2):
+  - `react-hook-form 7.71.1` - Form state management
+  - `zod 4.3.6` - Schema validation (note: v4.x, breaking changes from v3.x)
+  - `@hookform/resolvers` - RHF + Zod integration
+- **Files Created**:
+  - `/fe/src/lib/validations/schema.ts` - Zod validation schemas
+    - `queueItemSchema` - For validating queue items (id, queueNumber, name, service, statusId, customerName, duration, createdAt, updatedAt)
+    - `statusSchema` - For validating status items (id, name, color, description, order)
+    - `createQueueSchema` - For creating new queues (name, service, customerName, duration)
+    - `createStatusSchema` - For creating new statuses (name, color, description, order)
+    - `updateQueueSchema` - For updating existing queues (id, name, service, customerName, duration)
+    - `updateStatusSchema` - For updating existing statuses (id, name, color, description, order)
+  - `/fe/src/lib/validations/queue.ts` - Queue-specific validation utilities
+    - `queueItemValidation` - Queue item validation object with schema and safeParse method
+    - `queueCreateValidation` - Queue creation validation with required fields array
+    - `queueUpdateValidation` - Queue update validation with required field name
+    - `queueNumberValidation` - Queue number format validation (digits only)
+    - `queueDurationValidation` - Queue duration format validation (HH:MM:SS or MM:SS)
+  - `/fe/src/lib/validations/` - New directory for validation schemas
+- **TypeScript Types Exported**:
+  - `QueueItem` - Type inferred from queueItemSchema
+  - `QueueStatus` - Type inferred from statusSchema
+  - `CreateQueueInput` - Type inferred from createQueueSchema
+  - `CreateStatusInput` - Type inferred from createStatusSchema
+  - `UpdateQueueInput` - Type inferred from updateQueueSchema
+  - `UpdateStatusInput` - Type inferred from updateStatusSchema
+  - `QueueNumber` - Type inferred from queueNumberValidation
+  - `QueueDuration` - Type inferred from queueDurationValidation
+- **Key Learnings about Zod 4.x**:
+  - **`.optional()` method issue**: In zod 4.x, `.optional()` is not available on all types - needed to use `.nullable()` or `.nullish()` for optional fields
+  - **`.default()` method**: In zod 4.x, `.default()` only takes one argument (the default value), not two (value + error message)
+  - **`.min()` method**: In zod 4.x, `.min()` may have different signatures - safer to use without error messages first
+  - **`z.record(z.any())`**: Creating record types with `.nullable()` or `.nullish()` can cause type errors in zod 4.x
+- **Build Verification**:
+  - Command: `pnpm run build` (tsc -b && vite build)
+  - Result: ✓ built in 493ms
+  - Output:
+    - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+    - `dist/assets/index-CXsNyPvM.css` 32.60 kB │ gzip: 6.45 kB
+    - `dist/assets/index-BxtUnBOC.js` 142.76 kB │ gzip: 45.84 kB
+  - TypeScript Check: `pnpm exec tsc --noEmit` - No errors
+- **Usage Notes**:
+  - Schemas are ready to be used with React Hook Form via `resolver` option
+  - Example: `resolver: zodResolver(createQueueSchema)`
+  - Will be used for AddQueueModal and StatusManagerModal in future tasks
+  - customPayload field excluded from schema due to zod 4.x compatibility issues (will add back when form components are created)
+- **Queue Validation Utilities**:
+  - `queueCreateValidation.requiredFields` - Array of required field names for queue creation form
+  - `queueUpdateValidation.requiredField` - Name of required field for queue update form
+  - `queueNumberValidation` - Regex validation for queue numbers (digits only)
+  - `queueDurationValidation` - Regex validation for duration format (HH:MM:SS or MM:SS)
+- **Next Step**: Task 7 will create type definitions for QueueItem and QueueStatus (complementing the schemas from this task)
+
