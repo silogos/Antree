@@ -1576,7 +1576,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 12. Build core components (QueueCard, StatusColumn, KanbanBoard)
+- [x] 12. Build core components (QueueCard, StatusColumn, KanbanBoard)
 
   **What to do**:
   - Create `/fe/src/components/QueueCard.tsx`
