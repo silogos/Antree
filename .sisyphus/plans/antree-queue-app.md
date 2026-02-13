@@ -1699,7 +1699,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 13. Build layout components (Topbar, Footer, EmptyState)
+- [x] 13. Build layout components (Topbar, Footer, EmptyState)
 
   **What to do**:
   - Create `/fe/src/components/Topbar.tsx`
