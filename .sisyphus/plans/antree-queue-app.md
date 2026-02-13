@@ -1898,7 +1898,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 15. Build control components (ViewModeToggle, SoundToggle)
+- [x] 15. Build control components (ViewModeToggle, SoundToggle)
 
   **What to do**:
   - Create `/fe/src/components/ViewModeToggle.tsx`
@@ -1997,7 +1997,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 16. Integrate App component with view modes and responsive design
+- [x] 16. Integrate App component with view modes and responsive design
 
   **What to do**:
   - Update `/fe/src/App.tsx`
@@ -2122,7 +2122,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 17. Implement auto-refresh and auto-movement features
+- [x] 17. Implement auto-refresh and auto-movement features
 
   **What to do**:
   - Integrate useAutoRefresh hook into App component
@@ -2243,7 +2243,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 18. Implement sound effects feature
+- [x] 18. Implement sound effects feature
 
   **What to do**:
   - Verify useSound hook is complete from Task 11
@@ -2327,7 +2327,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 19. Final integration and verification
+- [x] 19. Final integration and verification
 
   **What to do**:
   - Run full build: `cd /fe && pnpm run build`
