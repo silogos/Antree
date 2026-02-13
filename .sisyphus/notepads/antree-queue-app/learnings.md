@@ -62,3 +62,20 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
 - Used pnpm v10.25.0 as specified in project config
 - Some packages have newer versions available (e.g., React 19.2.4, Vite 7.3.1)
 - Some build scripts were ignored (esbuild@0.21.5) - no action needed
+
+### Tailwind CSS v4 PostCSS Plugin (Task 3)
+- **Issue**: Tailwind CSS v4.x requires `@tailwindcss/postcss` plugin instead of using `tailwindcss` directly in PostCSS config
+- **Error Message**: "[postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package"
+- **Solution**: Install `@tailwindcss/postcss` package and update postcss.config.js
+- **Files Created**:
+  - `tailwind.config.js` - Content paths: "./index.html", "./src/**/*.{js,ts,jsx,tsx}"
+  - `postcss.config.js` - Uses `@tailwindcss/postcss` plugin (NOT `tailwindcss`)
+- **Files Modified**:
+  - `src/index.css` - Added Tailwind directives: `@tailwind base`, `@tailwind components`, `@tailwind utilities`
+- **Dependencies Added**: `@tailwindcss/postcss@4.1.18` (23 packages)
+- **Verification**: Build succeeds with output:
+  - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+  - `dist/assets/index-CuYnhdVm.css` 0.75 kB │ gzip: 0.45 kB
+  - `dist/assets/index-CputWi2-.js` 142.76 kB │ gzip: 45.84 kB
+  - ✓ built in 1.11s
+- **Important Note**: Tailwind v4 is a breaking change from v3 - PostCSS plugin is separate package
