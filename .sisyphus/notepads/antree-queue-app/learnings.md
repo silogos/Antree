@@ -79,3 +79,39 @@ When `pnpm create vite` or similar commands are cancelled due to existing files 
   - `dist/assets/index-CputWi2-.js` 142.76 kB │ gzip: 45.84 kB
   - ✓ built in 1.11s
 - **Important Note**: Tailwind v4 is a breaking change from v3 - PostCSS plugin is separate package
+
+### shadcn/ui Manual Installation for Vite (Task 4)
+- **Challenge**: `npx shadcn@latest init` failed because Vite framework wasn't automatically detected
+- **Error**: "We could not detect a supported framework at /Users/aminyusuf/Documents/Projects/Amin/Side Projects/antree-app"
+- **Solution**: Manual installation following [shadcn/ui manual installation guide](https://ui.shadcn.com/docs/installation/manual)
+- **Files Created**:
+  - `components.json` - shadcn/ui configuration file
+  - `src/lib/utils.ts` - cn utility function (className merging using clsx + tailwind-merge)
+- **Files Modified**:
+  - `tsconfig.json` - Added path aliases: `"baseUrl": "."`, `"paths": { "@/*": ["./*"] }`
+  - `src/index.css` - Replaced with shadcn/ui theme variables and Tailwind v4 directives
+- **Dependencies Added**:
+  - `class-variance-authority 0.7.1` - For component variant management
+  - `clsx 2.1.1` - Already installed (for className utilities)
+  - `tailwind-merge 3.4.0` - Already installed (for class merging)
+  - `tw-animate-css 1.4.0` - Animation utilities
+  - **Note**: `lucide-react` already installed from Task 2
+- **Theme Variables Added** (css variables in :root and .dark):
+  - background, foreground, card, card-foreground, popover, popover-foreground
+  - primary, primary-foreground, secondary, secondary-foreground
+  - muted, muted-foreground, accent, accent-foreground
+  - destructive, destructive-foreground, border, input, ring
+  - chart-1 to chart-5, radius (0.625rem)
+  - sidebar theme variables for future sidebar components
+- **Tailwind v4 Directives**:
+  - `@import "tailwindcss"` (v4 uses import, not @tailwind directives)
+  - `@import "tw-animate-css"`
+  - `@custom-variant dark (&:is(.dark *))`
+  - `@theme inline` - Inline theme configuration (alternative to Tailwind v3 config file)
+- **Verification**: Build succeeds with output:
+  - `dist/index.html` 0.46 kB │ gzip: 0.30 kB
+  - `dist/assets/index-BULQSJ6Z.css` 8.24 kB │ gzip: 2.22 kB
+  - `dist/assets/index-FO33wzRd.js` 142.76 kB │ gzip: 45.84 kB
+  - ✓ built in 486ms
+- **Key Takeaway**: shadcn/ui works with any framework (Vite, Next.js, etc.) via manual setup
+- **Next Step**: Task 5 will install specific shadcn/ui components (Dialog, Button, Input, etc.)

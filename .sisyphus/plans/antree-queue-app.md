@@ -926,7 +926,7 @@ Parallel Speedup: ~30% faster than sequential (some tasks in Waves 2-9 can run i
 
   **Commit**: NO (wait for wave completion)
 
-- [ ] 4. Initialize shadcn/ui
+- [x] 4. Initialize shadcn/ui
 
   **What to do**:
   - Run shadcn-ui init command: `npx shadcn-ui@latest init` in `/fe` directory
