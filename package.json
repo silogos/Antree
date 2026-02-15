@@ -2,14 +2,14 @@
   "name": "antree-app",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"pnpm --filter be dev\" \"pnpm --filter antree-frontend dev\" --names \"BE,FE\"",
-    "dev:be": "pnpm --filter be dev",
-    "dev:fe": "pnpm --filter antree-frontend dev",
-    "build": "pnpm --filter be build && pnpm --filter antree-frontend build",
-    "build:be": "pnpm --filter be build",
-    "build:fe": "pnpm --filter antree-frontend build",
-    "lint": "pnpm --filter antree-frontend lint",
-    "start": "pnpm --filter be start"
+    "dev": "concurrently \"pnpm --filter @antree/backend dev\" \"pnpm --filter @antree/frontend dev\" --names \"BE,FE\"",
+    "dev:be": "pnpm --filter @antree/backend dev",
+    "dev:fe": "pnpm --filter @antree/frontend dev",
+    "build": "pnpm --filter @antree/backend build && pnpm --filter @antree/frontend build",
+    "build:be": "pnpm --filter @antree/backend build",
+    "build:fe": "pnpm --filter @antree/frontend build",
+    "lint": "pnpm --filter @antree/frontend lint",
+    "start": "pnpm --filter @antree/backend start"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
