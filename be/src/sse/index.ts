@@ -4,14 +4,14 @@ import { sseBroadcaster, generateClientId } from './broadcaster.js';
 export const sseRoutes = new Hono();
 
 /**
- * GET /boards/:boardId/events
- * SSE endpoint for real-time board updates
+ * GET /batches/:batchId/events
+ * SSE endpoint for real-time batch updates
  */
-sseRoutes.get('/boards/:boardId/events', async (c) => {
-  const boardId = c.req.param('boardId');
+sseRoutes.get('/batches/:batchId/events', async (c) => {
+  const batchId = c.req.param('batchId');
 
-  if (!boardId) {
-    return c.json({ success: false, error: 'boardId is required' }, 400);
+  if (!batchId) {
+    return c.json({ success: false, error: 'batchId is required' }, 400);
   }
 
   const clientId = generateClientId();
@@ -23,12 +23,12 @@ sseRoutes.get('/boards/:boardId/events', async (c) => {
       controller.enqueue(`data: ${JSON.stringify({
         type: 'connected',
         clientId,
-        boardId,
+        batchId,
         timestamp: new Date().toISOString()
       })}\n\n`);
 
       // Add connection to broadcaster
-      sseBroadcaster.addConnection(boardId, controller, clientId);
+      sseBroadcaster.addConnection(batchId, controller, clientId);
 
       // Send heartbeat every 30 seconds to keep connection alive
       const heartbeatInterval = setInterval(() => {
@@ -43,12 +43,12 @@ sseRoutes.get('/boards/:boardId/events', async (c) => {
       // Cleanup on stream close
       return () => {
         clearInterval(heartbeatInterval);
-        sseBroadcaster.removeConnection(boardId, clientId);
+        sseBroadcaster.removeConnection(batchId, clientId);
         console.log(`[SSE] Stream closed for client ${clientId}`);
       };
     },
     cancel() {
-      sseBroadcaster.removeConnection(boardId, clientId);
+      sseBroadcaster.removeConnection(batchId, clientId);
     }
   });
 

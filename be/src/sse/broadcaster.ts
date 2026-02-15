@@ -10,23 +10,31 @@ interface SSEConnection {
 }
 
 interface SSEEvent {
-  type: 'queue_created' | 'queue_updated' | 'queue_deleted' | 'status_created' | 'status_updated' | 'status_deleted' | 'board_updated' | 'board_deleted';
+  type:
+    | 'queue_created' | 'queue_updated' | 'queue_deleted' // Queue (new) events
+    | 'batch_created' | 'batch_updated' | 'batch_deleted' // Batch events
+    | 'queue_item_created' | 'queue_item_updated' | 'queue_item_deleted' // Queue item events (renamed from queue_*)
+    | 'status_created' | 'status_updated' | 'status_deleted'
+    | 'board_updated' | 'board_deleted'
+    | 'template_created' | 'template_updated' | 'template_deleted';
   data: unknown;
-  boardId: string;
+  boardId?: string;  // Legacy support
+  batchId?: string;   // Batch ID
+  queueId?: string;   // Queue ID
 }
 
 class SSEBroadcaster {
-  private connections: Map<string, SSEConnection[]> = new Map(); // boardId -> connections
+  private connections: Map<string, SSEConnection[]> = new Map(); // boardId/batchId -> connections
 
   /**
-   * Add a new SSE connection for a board
+   * Add a new SSE connection for a board or batch
    */
   addConnection(boardId: string, controller: ReadableStreamDefaultController, clientId: string): void {
     if (!this.connections.has(boardId)) {
       this.connections.set(boardId, []);
     }
     this.connections.get(boardId)!.push({ boardId, controller, clientId });
-    console.log(`[SSE] Client ${clientId} connected to board ${boardId}`);
+    console.log(`[SSE] Client ${clientId} connected to board/batch ${boardId}`);
   }
 
   /**
@@ -38,7 +46,7 @@ class SSEBroadcaster {
       const index = boardConnections.findIndex(conn => conn.clientId === clientId);
       if (index !== -1) {
         boardConnections.splice(index, 1);
-        console.log(`[SSE] Client ${clientId} disconnected from board ${boardId}`);
+        console.log(`[SSE] Client ${clientId} disconnected from board/batch ${boardId}`);
       }
 
       // Clean up empty board arrays
@@ -49,11 +57,18 @@ class SSEBroadcaster {
   }
 
   /**
-   * Broadcast an event to all clients connected to a board
+   * Broadcast an event to all clients connected to a board, batch, or queue
    */
   broadcast(event: SSEEvent): void {
-    const boardConnections = this.connections.get(event.boardId);
-    if (!boardConnections || boardConnections.length === 0) {
+    // Support queueId (new), batchId (new flow), and boardId (legacy)
+    const targetId = event.queueId || event.batchId || event.boardId;
+    if (!targetId) {
+      console.warn('[SSE] Broadcast called without queueId, batchId, or boardId');
+      return;
+    }
+
+    const connections = this.connections.get(targetId);
+    if (!connections || connections.length === 0) {
       return;
     }
 
@@ -65,8 +80,8 @@ class SSEBroadcaster {
 
     const message = `data: ${JSON.stringify(eventData)}\n\n`;
 
-    // Send to all connections for this board
-    boardConnections.forEach(conn => {
+    // Send to all connections for this queue/batch/board
+    connections.forEach(conn => {
       try {
         conn.controller.enqueue(message);
       } catch (error) {

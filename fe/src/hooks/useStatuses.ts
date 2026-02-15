@@ -3,7 +3,7 @@ import { statusService } from '../services/apiStatusService';
 import type { QueueStatus } from '../types';
 
 interface UseStatusesOptions {
-  boardId?: string;
+  queueId?: string;
 }
 
 /**
@@ -16,24 +16,24 @@ export function useStatuses(options: UseStatusesOptions = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatuses = useCallback(async () => {
-    if (!options.boardId) {
-      setError('boardId is required to fetch statuses');
+    if (!options.queueId) {
+      setError('queueId is required to fetch statuses');
       return;
     }
 
     setLoading(true);
     setError(null);
     try {
-      const { data } = await statusService.getStatuses(options.boardId);
+      const { data } = await statusService.getStatuses(options.queueId);
       setStatuses(data || []);
     } catch (err: any) {
       setError(err instanceof Error ? err.message : 'Failed to fetch statuses');
     } finally {
       setLoading(false);
     }
-  }, [options.boardId]);
+  }, [options.queueId]);
 
-  const createStatus = useCallback(async (statusData: Omit<QueueStatus, 'id' | 'boardId'> & { boardId: string }) => {
+  const createStatus = useCallback(async (statusData: Omit<QueueStatus, 'id' | 'queueId'> & { queueId: string }) => {
     setLoading(true);
     setError(null);
     try {
@@ -59,6 +59,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
         label: statusData.label,
         color: statusData.color,
         order: statusData.order,
+        templateStatusId: statusData.templateStatusId,
       });
       if (data) {
         setStatuses(prev => prev.map(s => s.id === id ? data : s));

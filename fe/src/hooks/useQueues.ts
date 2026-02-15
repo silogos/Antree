@@ -3,7 +3,7 @@ import { queueService } from '../services/apiQueueService';
 import type { QueueItem } from '../types';
 
 interface UseQueuesOptions {
-  boardId?: string;
+  queueId?: string;
   statusId?: string;
 }
 
@@ -20,8 +20,8 @@ export function useQueues(options: UseQueuesOptions = {}) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await queueService.getQueues({
-        boardId: options.boardId,
+      const { data } = await queueService.getQueueItems({
+        queueId: options.queueId,
         statusId: options.statusId,
       });
       setQueues(data || []);
@@ -30,14 +30,14 @@ export function useQueues(options: UseQueuesOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [options.boardId, options.statusId]);
+  }, [options.queueId, options.statusId]);
 
   const createQueue = useCallback(async (queueData: Omit<QueueItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     setLoading(true);
     setError(null);
     try {
       const { data } = await queueService.createQueue({
-        boardId: queueData.boardId,
+        queueId: queueData.queueId,
         queueNumber: queueData.queueNumber,
         name: queueData.name,
         statusId: queueData.statusId,

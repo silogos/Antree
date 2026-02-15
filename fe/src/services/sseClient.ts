@@ -35,32 +35,32 @@ interface SSEClientOptions {
 }
 
 /**
- * SSE Client for real-time board updates
+ * SSE Client for real-time batch updates
  */
 export class SSEClient {
   private eventSource: EventSource | null = null;
-  private boardId: string | null = null;
+  private batchId: string | null = null;
   private options: SSEClientOptions = {};
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000; // 3 seconds
 
   /**
-   * Connect to SSE endpoint for a board
+   * Connect to SSE endpoint for a batch
    */
-  connect(boardId: string, options: SSEClientOptions = {}): void {
+  connect(batchId: string, options: SSEClientOptions = {}): void {
     this.disconnect();
-    this.boardId = boardId;
+    this.batchId = batchId;
     this.options = options;
     this.reconnectAttempts = 0;
 
-    const url = `${API_BASE_URL.replace('/api', '')}/sse/boards/${boardId}/events`;
+    const url = `${API_BASE_URL.replace('/api', '')}/sse/batches/${batchId}/events`;
     console.log(`[SSE Client] Connecting to ${url}`);
 
     this.eventSource = new EventSource(url);
 
     this.eventSource.onopen = () => {
-      console.log(`[SSE Client] Connected to board ${boardId}`);
+      console.log(`[SSE Client] Connected to batch ${batchId}`);
       this.reconnectAttempts = 0;
       options.onOpen?.();
     };
@@ -86,8 +86,8 @@ export class SSEClient {
         console.log(`[SSE Client] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
         setTimeout(() => {
-          if (this.boardId) {
-            this.connect(this.boardId, this.options);
+          if (this.batchId) {
+            this.connect(this.batchId, this.options);
           }
         }, delay);
       } else {
@@ -103,10 +103,10 @@ export class SSEClient {
    */
   disconnect(): void {
     if (this.eventSource) {
-      console.log(`[SSE Client] Disconnecting from board ${this.boardId}`);
+      console.log(`[SSE Client] Disconnecting from batch ${this.batchId}`);
       this.eventSource.close();
       this.eventSource = null;
-      this.boardId = null;
+      this.batchId = null;
     }
   }
 
@@ -118,10 +118,10 @@ export class SSEClient {
   }
 
   /**
-   * Get current board ID
+   * Get current batch ID
    */
-  getBoardId(): string | null {
-    return this.boardId;
+  getBatchId(): string | null {
+    return this.batchId;
   }
 }
 

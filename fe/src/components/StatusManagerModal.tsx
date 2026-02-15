@@ -21,7 +21,7 @@ interface StatusManagerModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  boardId: string;
+  queueId: string;
 }
 
 const statusSchema = z.object({
@@ -36,9 +36,9 @@ export function StatusManagerModal({
   open,
   onClose,
   onSuccess,
-  boardId
+  queueId
 }: StatusManagerModalProps) {
-  const { statuses, createStatus, updateStatus, deleteStatus } = useStatuses({ boardId });
+  const { statuses, createStatus, updateStatus, deleteStatus } = useStatuses({ queueId });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingStatus, setEditingStatus] = useState<QueueStatus | null>(null);
 
@@ -56,16 +56,20 @@ export function StatusManagerModal({
   const handleSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
-      if (editingStatus) {
-        await updateStatus(editingStatus.id, {
-          ...values,
-        });
-      } else {
-        await createStatus({
-          boardId,
-          ...values,
-        });
-      }
+        if (editingStatus) {
+          await updateStatus(editingStatus.id, {
+            label: data.label,
+            color: data.color,
+            order: data.order,
+          });
+        } else {
+          await createStatus({
+            queueId,
+            label: data.label,
+            color: data.color,
+            order: data.order,
+          });
+        }
 
       form.reset();
       setEditingStatus(null);

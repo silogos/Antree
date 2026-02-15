@@ -1,19 +1,13 @@
 /**
  * Services exports
  * Central export point for all services
- *
- * Usage:
- * - Mock services: For development without backend
- * - Real API services: For production with backend
  */
 
-// Mock Services (for development)
-export { mockQueueService } from './mockQueueService';
-export { mockStatusService } from './mockStatusService';
-
-// Real API Services (for production)
+// API Services
 export { boardService } from './apiBoardService';
-export { queueService } from './apiQueueService';
+export { queueService as queueListService } from './apiQueueListService';
+export { batchService } from './apiBatchService';
+export { queueService, queueItemService } from './apiQueueService';
 export { statusService } from './apiStatusService';
 
 // SSE Client (for real-time updates)

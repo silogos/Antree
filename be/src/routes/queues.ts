@@ -13,14 +13,14 @@ export const queueRoutes = new Hono();
  */
 queueRoutes.get('/', async (c) => {
   try {
-    const boardId = c.req.query('boardId');
+    const queueId = c.req.query('queueId');
     const statusId = c.req.query('statusId');
 
     const db = getDb();
 
     let conditions = [];
-    if (boardId) {
-      conditions.push(eq(queueItems.boardId, boardId));
+    if (queueId) {
+      conditions.push(eq(queueItems.queueId, queueId));
     }
     if (statusId) {
       conditions.push(eq(queueItems.statusId, statusId));
@@ -93,18 +93,25 @@ queueRoutes.post('/', async (c) => {
     const body = await c.req.json();
 
     // Validation
-    if (!body.boardId || !body.queueNumber || !body.name || !body.statusId) {
+    if (!body.queueId) {
       return c.json({
         success: false,
         error: 'Validation Error',
-        message: 'boardId, queueNumber, name, and statusId are required'
+        message: 'queueId is required'
+      }, 400);
+    }
+    if (!body.queueNumber || !body.name || !body.statusId) {
+      return c.json({
+        success: false,
+        error: 'Validation Error',
+        message: 'queueNumber, name, and statusId are required'
       }, 400);
     }
 
     const db = getDb();
     const newQueue = {
       id: uuidv4(),
-      boardId: body.boardId,
+      queueId: body.queueId,
       queueNumber: body.queueNumber,
       name: body.name,
       statusId: body.statusId,
@@ -115,9 +122,9 @@ queueRoutes.post('/', async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_created',
+      type: 'queue_item_created',
       data: result[0],
-      boardId: body.boardId
+      queueId: result[0].queueId,
     });
 
     return c.json({
@@ -169,9 +176,9 @@ queueRoutes.put('/:id', async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_updated',
+      type: 'queue_item_updated',
       data: result[0],
-      boardId: existing[0].boardId
+      queueId: existing[0].queueId,
     });
 
     return c.json({
@@ -212,9 +219,9 @@ queueRoutes.delete('/:id', async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_deleted',
+      type: 'queue_item_deleted',
       data: { id },
-      boardId: existing[0].boardId
+      queueId: existing[0].queueId,
     });
 
     return c.json({

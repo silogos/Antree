@@ -1,15 +1,15 @@
 import { apiRequest, ApiResponse } from './apiBoardService';
-import type { QueueStatus } from '../types';
+import type { QueueStatus, CreateStatusInput, UpdateStatusInput } from '../types';
 
 /**
  * API Service - Statuses
  */
 export const statusService = {
   /**
-   * Get all statuses for a board
+   * Get all statuses for a batch
    */
-  async getStatuses(boardId: string): Promise<ApiResponse<QueueStatus[]>> {
-    return apiRequest<QueueStatus[]>(`/statuses?boardId=${boardId}`);
+  async getStatuses(queueId: string): Promise<ApiResponse<QueueStatus[]>> {
+    return apiRequest<QueueStatus[]>(`/statuses?queueId=${queueId}`);
   },
 
   /**
@@ -22,7 +22,7 @@ export const statusService = {
   /**
    * Create a new status
    */
-  async createStatus(data: { boardId: string; label: string; color: string; order: number }): Promise<ApiResponse<QueueStatus>> {
+  async createStatus(data: CreateStatusInput): Promise<ApiResponse<QueueStatus>> {
     return apiRequest<QueueStatus>('/statuses', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -32,7 +32,7 @@ export const statusService = {
   /**
    * Update an existing status
    */
-  async updateStatus(id: string, data: Partial<{ label: string; color: string; order: number }>): Promise<ApiResponse<QueueStatus>> {
+  async updateStatus(id: string, data: Omit<UpdateStatusInput, 'id'>): Promise<ApiResponse<QueueStatus>> {
     return apiRequest<QueueStatus>(`/statuses/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

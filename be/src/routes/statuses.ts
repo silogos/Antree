@@ -9,17 +9,17 @@ export const statusRoutes = new Hono();
 
 /**
  * GET /statuses
- * Get all status items for a board, ordered by their display order
+ * Get all status items for a batch, ordered by their display order
  */
 statusRoutes.get('/', async (c) => {
   try {
-    const boardId = c.req.query('boardId');
+    const queueId = c.req.query('queueId');
 
-    if (!boardId) {
+    if (!queueId) {
       return c.json({
         success: false,
         error: 'Validation Error',
-        message: 'boardId query parameter is required'
+        message: 'queueId query parameter is required'
       }, 400);
     }
 
@@ -27,7 +27,7 @@ statusRoutes.get('/', async (c) => {
     const statuses = await db
       .select()
       .from(queueStatuses)
-      .where(eq(queueStatuses.boardId, boardId))
+      .where(eq(queueStatuses.queueId, queueId as string))
       .orderBy(queueStatuses.order);
 
     return c.json({
@@ -86,18 +86,26 @@ statusRoutes.post('/', async (c) => {
     const body = await c.req.json();
 
     // Validation
-    if (!body.boardId || !body.label || !body.color || body.order === undefined) {
+    if (!body.queueId) {
       return c.json({
         success: false,
         error: 'Validation Error',
-        message: 'boardId, label, color, and order are required'
+        message: 'queueId is required'
+      }, 400);
+    }
+    if (!body.label || !body.color || body.order === undefined) {
+      return c.json({
+        success: false,
+        error: 'Validation Error',
+        message: 'label, color, and order are required'
       }, 400);
     }
 
     const db = getDb();
     const newStatus = {
       id: uuidv4(),
-      boardId: body.boardId,
+      queueId: body.queueId,
+      templateStatusId: body.templateStatusId || null,
       label: body.label,
       color: body.color,
       order: body.order,
@@ -109,7 +117,7 @@ statusRoutes.post('/', async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_created',
       data: result[0],
-      boardId: body.boardId
+      queueId: result[0].queueId,
     });
 
     return c.json({
@@ -152,6 +160,7 @@ statusRoutes.put('/:id', async (c) => {
     if (body.label !== undefined) updateData.label = body.label;
     if (body.color !== undefined) updateData.color = body.color;
     if (body.order !== undefined) updateData.order = body.order;
+    if (body.templateStatusId !== undefined) updateData.templateStatusId = body.templateStatusId;
 
     const result = await db
       .update(queueStatuses)
@@ -163,7 +172,7 @@ statusRoutes.put('/:id', async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_updated',
       data: result[0],
-      boardId: existing[0].boardId
+      queueId: existing[0].queueId,
     });
 
     return c.json({
@@ -207,7 +216,7 @@ statusRoutes.delete('/:id', async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_deleted',
       data: { id },
-      boardId: existing[0].boardId
+      queueId: existing[0].queueId,
     });
 
     return c.json({

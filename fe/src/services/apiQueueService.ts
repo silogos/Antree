@@ -2,54 +2,57 @@ import { apiRequest, ApiResponse } from './apiBoardService';
 import type { QueueItem, CreateQueueInput, UpdateQueueInput } from '../types';
 
 /**
- * API Service - Queues
+ * API Service - Queue Items (queue-items endpoint)
  */
-export const queueService = {
+export const queueItemService = {
   /**
-   * Get all queues (optionally filtered by board or status)
+   * Get all queue items (optionally filtered by queue or status)
    */
-  async getQueues(params?: { boardId?: string; statusId?: string }): Promise<ApiResponse<QueueItem[]>> {
+  async getQueueItems(params?: { queueId?: string; statusId?: string }): Promise<ApiResponse<QueueItem[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.boardId) queryParams.append('boardId', params.boardId);
+    if (params?.queueId) queryParams.append('queueId', params.queueId);
     if (params?.statusId) queryParams.append('statusId', params.statusId);
 
-    const endpoint = queryParams.toString() ? `/queues?${queryParams.toString()}` : '/queues';
+    const endpoint = queryParams.toString() ? `/queue-items?${queryParams.toString()}` : '/queue-items';
     return apiRequest<QueueItem[]>(endpoint);
   },
 
   /**
-   * Get a single queue by ID
+   * Get a single queue item by ID
    */
-  async getQueueById(id: string): Promise<ApiResponse<QueueItem>> {
-    return apiRequest<QueueItem>(`/queues/${id}`);
+  async getQueueItemById(id: string): Promise<ApiResponse<QueueItem>> {
+    return apiRequest<QueueItem>(`/queue-items/${id}`);
   },
 
   /**
-   * Create a new queue
+   * Create a new queue item
    */
-  async createQueue(data: CreateQueueInput): Promise<ApiResponse<QueueItem>> {
-    return apiRequest<QueueItem>('/queues', {
+  async createQueueItem(data: CreateQueueInput): Promise<ApiResponse<QueueItem>> {
+    return apiRequest<QueueItem>('/queue-items', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
   /**
-   * Update an existing queue
+   * Update an existing queue item
    */
-  async updateQueue(id: string, data: Partial<UpdateQueueInput>): Promise<ApiResponse<QueueItem>> {
-    return apiRequest<QueueItem>(`/queues/${id}`, {
+  async updateQueueItem(id: string, data: Partial<UpdateQueueInput>): Promise<ApiResponse<QueueItem>> {
+    return apiRequest<QueueItem>(`/queue-items/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
 
   /**
-   * Delete a queue
+   * Delete a queue item
    */
-  async deleteQueue(id: string): Promise<ApiResponse<{ id: string }>> {
-    return apiRequest<{ id: string }>(`/queues/${id}`, {
+  async deleteQueueItem(id: string): Promise<ApiResponse<{ id: string }>> {
+    return apiRequest<{ id: string }>(`/queue-items/${id}`, {
       method: 'DELETE',
     });
   },
 };
+
+// Export as queueService for backward compatibility
+export const queueService = queueItemService;

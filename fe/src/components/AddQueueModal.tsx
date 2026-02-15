@@ -21,7 +21,7 @@ interface AddQueueModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   statuses?: QueueStatus[];
-  boardId: string;
+  queueId: string;
 }
 
 const createQueueSchema = z.object({
@@ -39,10 +39,10 @@ export function AddQueueModal({
   onClose,
   onSuccess,
   statuses = [],
-  boardId
+  queueId
 }: AddQueueModalProps) {
   const [loading, setLoading] = useState(false);
-  const { createQueue } = useQueues({ boardId });
+  const { createQueue } = useQueues({ queueId });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(createQueueSchema),
@@ -60,7 +60,7 @@ export function AddQueueModal({
       setLoading(true);
 
       await createQueue({
-        boardId,
+        queueId,
         queueNumber: values.queueNumber,
         name: values.name,
         statusId: values.statusId,
