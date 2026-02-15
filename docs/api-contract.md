@@ -4,28 +4,45 @@
 
 ## Overview
 
-The Antree Queue Management System API provides REST endpoints for managing queue items and statuses. All responses use JSON format.
+The Antree Queue Management System API provides REST endpoints for managing queue boards, statuses, and items. All responses use JSON format.
 
 **Base URL**: `http://localhost:3000/api` (future backend)
+
+**Multi-Tenancy**: The system supports multiple queue boards, with statuses and items scoped to specific boards.
 
 ---
 
 ## Data Models
 
+### QueueBoard
+
+Represents a queue board (Kanban board) that contains statuses and queue items.
+
+```typescript
+interface QueueBoard {
+  id: string;              // Unique identifier (UUID)
+  name: string;            // Board name
+  description?: string;    // Board description (optional)
+  isActive: boolean;       // Active status (default: true)
+  createdAt: string;       // ISO 8601 timestamp
+  updatedAt: string;       // ISO 8601 timestamp
+}
+```
+
 ### QueueItem
 
-Represents a customer queue item with customizable payload for extensibility.
+Represents a customer queue item with customizable metadata for extensibility.
 
 ```typescript
 interface QueueItem {
   id: string;                    // Unique identifier (UUID)
+  boardId: string;               // Reference to Queue Board ID
   queueNumber: string;           // Display queue number (e.g., "A001", "B025")
   name: string;                  // Customer name
-  service?: string;              // Service type (optional, e.g., "General", "VIP")
-  statusId: string;              // Reference to Status ID
+  statusId: string;              // Reference to Queue Status ID
   createdAt: string;             // ISO 8601 timestamp
   updatedAt: string;             // ISO 8601 timestamp
-  customPayload?: Record<string, any>;  // Flexible payload for custom fields
+  metadata?: Record<string, any>;  // Flexible JSON metadata for custom fields (e.g., phone, email, priority, notes)
 }
 ```
 
@@ -36,9 +53,27 @@ Represents a status column in the Kanban board.
 ```typescript
 interface QueueStatus {
   id: string;        // Unique identifier (UUID)
+  boardId: string;   // Reference to Queue Board ID
   label: string;     // Display label (e.g., "Waiting", "In Progress", "Done")
   color: string;     // Color code (hex, e.g., "#3B82F6")
   order: number;     // Display order (ascending)
+}
+```
+
+### User
+
+Represents a system user (for authentication).
+
+```typescript
+interface User {
+  id: number;            // Auto-increment ID
+  username: string;      // Unique username
+  email: string;         // Unique email
+  password: string;      // Hashed password
+  fullName?: string;     // Full name (optional)
+  isActive: boolean;     // Active status (default: true)
+  createdAt: string;     // ISO 8601 timestamp
+  updatedAt: string;     // ISO 8601 timestamp
 }
 ```
 
@@ -48,7 +83,11 @@ interface QueueStatus {
 
 ### GET /queues
 
-Get all queue items.
+Get all queue items. Optionally filter by board or status.
+
+**Query Parameters** (optional):
+- `boardId` - Filter by board ID
+- `statusId` - Filter by status ID
 
 **Request**: None
 
@@ -60,19 +99,20 @@ Get all queue items.
   "data": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
+      "boardId": "board-1",
       "queueNumber": "A001",
       "name": "Ahmad Santoso",
-      "service": "General",
       "statusId": "status-1",
       "createdAt": "2026-02-13T10:00:00.000Z",
       "updatedAt": "2026-02-13T10:00:00.000Z",
-      "customPayload": {
+      "metadata": {
         "priority": "high",
         "notes": "VIP customer"
       }
     },
     {
       "id": "660e8400-e29b-41d4-a716-446655440001",
+      "boardId": "board-1",
       "queueNumber": "A002",
       "name": "Siti Rahayu",
       "statusId": "status-1",
@@ -86,6 +126,43 @@ Get all queue items.
 
 ---
 
+### GET /queues/:id
+
+Get a single queue item by ID.
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "boardId": "board-1",
+    "queueNumber": "A001",
+    "name": "Ahmad Santoso",
+    "statusId": "status-1",
+    "createdAt": "2026-02-13T10:00:00.000Z",
+    "updatedAt": "2026-02-13T10:00:00.000Z",
+    "metadata": {
+      "priority": "high",
+      "notes": "VIP customer"
+    }
+  }
+}
+```
+
+**Error Response**: `404 Not Found`
+
+```json
+{
+  "success": false,
+  "error": "Not Found",
+  "message": "Queue with id 550e8400-e29b-41d4-a716-446655440000 not found"
+}
+```
+
+---
+
 ### POST /queues
 
 Create a new queue item.
@@ -94,18 +171,18 @@ Create a new queue item.
 
 ```json
 {
+  "boardId": "board-1",
   "queueNumber": "A003",
   "name": "Budi Hartono",
-  "service": "VIP",
   "statusId": "status-1",
-  "customPayload": {
+  "metadata": {
     "phone": "+62-812-3456-7890",
     "email": "budi@example.com"
   }
 }
 ```
 
-**Required Fields**: `queueNumber`, `name`, `statusId`
+**Required Fields**: `boardId`, `queueNumber`, `name`, `statusId`
 
 **Response**: `201 Created`
 
@@ -114,13 +191,13 @@ Create a new queue item.
   "success": true,
   "data": {
     "id": "770e8400-e29b-41d4-a716-446655440002",
+    "boardId": "board-1",
     "queueNumber": "A003",
     "name": "Budi Hartono",
-    "service": "VIP",
     "statusId": "status-1",
     "createdAt": "2026-02-13T10:30:00.000Z",
     "updatedAt": "2026-02-13T10:30:00.000Z",
-    "customPayload": {
+    "metadata": {
       "phone": "+62-812-3456-7890",
       "email": "budi@example.com"
     }
@@ -135,7 +212,7 @@ Create a new queue item.
 {
   "success": false,
   "error": "Validation Error",
-  "message": "queueNumber, name, and statusId are required",
+  "message": "boardId, queueNumber, name, and statusId are required",
   "details": [
     {
       "field": "statusId",
@@ -157,7 +234,7 @@ Update an existing queue item.
 {
   "name": "Budi Hartono (Updated)",
   "statusId": "status-2",
-  "customPayload": {
+  "metadata": {
     "phone": "+62-812-3456-7890",
     "email": "budi@example.com",
     "notes": "VIP customer - updated"
@@ -174,13 +251,13 @@ Update an existing queue item.
   "success": true,
   "data": {
     "id": "770e8400-e29b-41d4-a716-446655440002",
+    "boardId": "board-1",
     "queueNumber": "A003",
     "name": "Budi Hartono (Updated)",
-    "service": "VIP",
     "statusId": "status-2",
     "createdAt": "2026-02-13T10:30:00.000Z",
     "updatedAt": "2026-02-13T11:00:00.000Z",
-    "customPayload": {
+    "metadata": {
       "phone": "+62-812-3456-7890",
       "email": "budi@example.com",
       "notes": "VIP customer - updated"
@@ -236,7 +313,10 @@ Delete a queue item.
 
 ### GET /statuses
 
-Get all status items, ordered by their display order.
+Get all status items for a board, ordered by their display order.
+
+**Query Parameters**:
+- `boardId` (required) - Filter by board ID
 
 **Request**: None
 
@@ -248,18 +328,21 @@ Get all status items, ordered by their display order.
   "data": [
     {
       "id": "status-1",
+      "boardId": "board-1",
       "label": "Waiting",
       "color": "#F59E0B",
       "order": 1
     },
     {
       "id": "status-2",
+      "boardId": "board-1",
       "label": "In Progress",
       "color": "#3B82F6",
       "order": 2
     },
     {
       "id": "status-3",
+      "boardId": "board-1",
       "label": "Done",
       "color": "#10B981",
       "order": 3
@@ -279,13 +362,14 @@ Create a new status.
 
 ```json
 {
+  "boardId": "board-1",
   "label": "Cancelled",
   "color": "#EF4444",
   "order": 4
 }
 ```
 
-**Required Fields**: `label`, `color`, `order`
+**Required Fields**: `boardId`, `label`, `color`, `order`
 
 **Response**: `201 Created`
 
@@ -294,6 +378,7 @@ Create a new status.
   "success": true,
   "data": {
     "id": "status-4",
+    "boardId": "board-1",
     "label": "Cancelled",
     "color": "#EF4444",
     "order": 4
@@ -308,7 +393,7 @@ Create a new status.
 {
   "success": false,
   "error": "Validation Error",
-  "message": "label, color, and order are required",
+  "message": "boardId, label, color, and order are required",
   "details": [
     {
       "field": "order",
@@ -343,6 +428,7 @@ Update an existing status.
   "success": true,
   "data": {
     "id": "status-4",
+    "boardId": "board-1",
     "label": "Cancelled (Updated)",
     "color": "#DC2626",
     "order": 5
@@ -393,6 +479,193 @@ Delete a status.
 
 ---
 
+## BoardService API
+
+### GET /boards
+
+Get all queue boards.
+
+**Request**: None
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "board-1",
+      "name": "Main Reception",
+      "description": "Primary customer service queue",
+      "isActive": true,
+      "createdAt": "2026-02-13T09:00:00.000Z",
+      "updatedAt": "2026-02-13T09:00:00.000Z"
+    },
+    {
+      "id": "board-2",
+      "name": "VIP Service",
+      "description": "VIP customer queue",
+      "isActive": true,
+      "createdAt": "2026-02-13T09:30:00.000Z",
+      "updatedAt": "2026-02-13T09:30:00.000Z"
+    }
+  ],
+  "total": 2
+}
+```
+
+---
+
+### GET /boards/:id
+
+Get a single board by ID.
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "board-1",
+    "name": "Main Reception",
+    "description": "Primary customer service queue",
+    "isActive": true,
+    "createdAt": "2026-02-13T09:00:00.000Z",
+    "updatedAt": "2026-02-13T09:00:00.000Z"
+  }
+}
+```
+
+**Error Response**: `404 Not Found`
+
+```json
+{
+  "success": false,
+  "error": "Not Found",
+  "message": "Board with id board-1 not found"
+}
+```
+
+---
+
+### POST /boards
+
+Create a new queue board.
+
+**Request Body**:
+
+```json
+{
+  "name": "Customer Service",
+  "description": "Primary customer service queue",
+  "isActive": true
+}
+```
+
+**Required Fields**: `name`
+
+**Response**: `201 Created`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "board-3",
+    "name": "Customer Service",
+    "description": "Primary customer service queue",
+    "isActive": true,
+    "createdAt": "2026-02-13T12:00:00.000Z",
+    "updatedAt": "2026-02-13T12:00:00.000Z"
+  },
+  "message": "Board created successfully"
+}
+```
+
+---
+
+### PUT /boards/:id
+
+Update an existing board.
+
+**Request Body**:
+
+```json
+{
+  "name": "Customer Service (Updated)",
+  "description": "Updated description",
+  "isActive": false
+}
+```
+
+**Optional Fields**: All fields are optional except `id` (in URL)
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "board-3",
+    "name": "Customer Service (Updated)",
+    "description": "Updated description",
+    "isActive": false,
+    "createdAt": "2026-02-13T12:00:00.000Z",
+    "updatedAt": "2026-02-13T13:00:00.000Z"
+  },
+  "message": "Board updated successfully"
+}
+```
+
+---
+
+### DELETE /boards/:id
+
+Delete a board (cascade deletes all statuses and queue items in the board).
+
+**Request**: None
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "board-3"
+  },
+  "message": "Board deleted successfully"
+}
+```
+
+**Error Response**: `404 Not Found`
+
+```json
+{
+  "success": false,
+  "error": "Not Found",
+  "message": "Board with id board-3 not found"
+}
+```
+
+---
+
+## Notes
+
+1. **metadata**: This field allows flexible customization per queue item. It's stored as JSONB in PostgreSQL, supporting any JSON-serializable data (e.g., phone, email, priority, notes).
+
+2. **Status References**: When deleting a status, ensure no queues reference it. The database has `onDelete: 'restrict'` on the foreign key, so deletion will fail if queues reference it.
+
+3. **Board Deletion**: Deleting a board will cascade delete all associated statuses and queue items.
+
+4. **Order Management**: Status order determines column sequence in Kanban board. Ensure order values are unique and sequential within a board.
+
+5. **Timestamps**: All timestamps are in ISO 8601 format (UTC).
+
+6. **ID Format**:
+   - Users: Auto-increment integer
+   - Boards, Statuses, Queue Items: UUID v4 format for uniqueness
+
+---
+
 ## Response Codes
 
 | Code | Description |
@@ -426,31 +699,20 @@ interface ErrorResponse {
 
 ## Current Implementation Status
 
+### Database
+- ✅ **Implemented**: PostgreSQL with Drizzle ORM
+- ✅ **Implemented**: Schema matches contract exactly
+- 📍 **Location**: `/be/src/db/schema.ts`
+
+### Backend API (Express.js)
+- ✅ **Implemented**: BoardService endpoints
+- ✅ **Implemented**: StatusService endpoints
+- ✅ **Implemented**: QueueService endpoints
+- 📍 **Location**: `/be/src/routes/`
+
 ### Frontend (Mock Services)
 - ✅ **Implemented**: Mock services simulate these API endpoints
-- ✅ **Implemented**: Data structure matches contract exactly
-- ✅ **Implemented**: All CRUD operations supported
 - 📍 **Location**: `/fe/src/services/mockQueueService.ts`, `/fe/src/services/mockStatusService.ts`
-
-### Backend (Future)
-- ❌ **Not Implemented**: Backend API does not exist yet
-- 📍 **Location**: `/be` directory (to be implemented in future tasks)
-
----
-
-## Notes
-
-1. **customPayload**: This field allows flexible customization per queue item. Frontend can add any custom fields needed (e.g., phone, email, priority, notes).
-
-2. **Status References**: When deleting a status, ensure no queues reference it. Either:
-   - Delete all queues with that status first, or
-   - Implement status reassignment logic
-
-3. **Order Management**: Status order determines column sequence in Kanban board. Ensure order values are unique and sequential.
-
-4. **Timestamps**: All timestamps are in ISO 8601 format (UTC).
-
-5. **ID Format**: All IDs use UUID v4 format for uniqueness.
 
 ---
 
@@ -458,4 +720,5 @@ interface ErrorResponse {
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-02-14 | Updated contract to match existing database schema - added boards, metadata, user model |
 | 1.0.0 | 2026-02-13 | Initial API contract definition |

@@ -1,9 +1,13 @@
 # Dependencies
 node_modules/
 
-# Build artifacts
-be/dist/
-fe/dist/
+# Build outputs
+dist/
+build/
+
+# Vite
+.vite
+vite-env.d.ts
 
 # Environment variables
 .env
@@ -18,4 +22,3 @@ fe/dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-ss/

@@ -2550,60 +2550,60 @@ cd /fe && pnpm run preview
 
 **View Modes**:
 - [x] Display Mode: Fullscreen, auto-refresh (15s), auto-movement (15s), no edit controls
-- [ ] Operator Mode: Add queue, update status, drag & drop, status management UI, sound toggle
-- [ ] View mode toggle works correctly
-- [ ] Default view: Display Mode on app load
+- [x] Operator Mode: Add queue, update status, drag & drop, status management UI, sound toggle
+- [x] View mode toggle works correctly
+- [x] Default view: Display Mode on app load
 
 **Responsive Design**:
-- [ ] Mobile (< 640px): Stacked columns, readable UI, small typography
-- [ ] Tablet (640-1024px): Horizontal scrollable columns, medium typography
-- [ ] Desktop (1024-1920px): Full-width Kanban board, large typography
-- [ ] TV (> 1920px): Extra large typography, high contrast, full-width layout
+- [x] Mobile (< 640px): Stacked columns, readable UI, small typography
+- [x] Tablet (640-1024px): Horizontal scrollable columns, medium typography
+- [x] Desktop (1024-1920px): Full-width Kanban board, large typography
+- [x] TV (> 1920px): Extra large typography, high contrast, full-width layout
 
 **Auto-Features**:
-- [ ] Auto-refresh triggers every 15s in Display Mode only
-- [ ] Auto-refresh is disabled in Operator Mode
-- [ ] Auto-movement moves queues sequentially every 15s in Display Mode only
-- [ ] Auto-movement stops when all queues reach Done
-- [ ] Auto-movement is disabled in Operator Mode
-- [ ] Sound plays on queue movement when enabled (off by default)
-- [ ] Sound does not play when disabled
+- [x] Auto-refresh triggers every 15s in Display Mode only
+- [x] Auto-refresh is disabled in Operator Mode
+- [x] Auto-movement moves queues sequentially every 15s in Display Mode only
+- [x] Auto-movement stops when all queues reach Done
+- [x] Auto-movement is disabled in Operator Mode
+- [x] Sound plays on queue movement when enabled (off by default)
+- [x] Sound does not play when disabled
 
 **CRUD Operations**:
-- [ ] Add queue works (auto-number assigned, defaults to Pending, RHF validation)
-- [ ] Update status works (drag & drop or status change)
-- [ ] Status management works (create, edit, delete, reorder, RHF validation)
-- [ ] Validation prevents deleting status with queues
+- [x] Add queue works (auto-number assigned, defaults to Pending, RHF validation)
+- [x] Update status works (drag & drop or status change)
+- [x] Status management works (create, edit, delete, reorder, RHF validation)
+- [x] Validation prevents deleting status with queues
 
 **UI/UX**:
-- [ ] TV/monitor optimized (large typography, high contrast, 1920px+ layout)
-- [ ] Responsive layouts at all breakpoints (< 640px, 640-1024px, 1024-1920px, > 1920px)
-- [ ] Topbar with app title "Antree" and real-time clock
-- [ ] Empty state displays "No queues waiting" with illustration
-- [ ] Fullscreen dashboard layout
-- [ ] No horizontal scroll at 1920px width
+- [x] TV/monitor optimized (large typography, high contrast, 1920px+ layout)
+- [x] Responsive layouts at all breakpoints (< 640px, 640-1024px, 1024-1920px, > 1920px)
+- [x] Topbar with app title "Antree" and real-time clock
+- [x] Empty state displays "No queues waiting" with illustration
+- [x] Fullscreen dashboard layout
+- [x] No horizontal scroll at 1920px width
 
 **Technical**:
-- [ ] TypeScript compiles without errors
-- [ ] Build succeeds with no errors
-- [ ] Production build serves correctly
-- [ ] No console errors in browser
-- [ ] Tailwind CSS styles applied correctly
-- [ ] shadcn/ui components render correctly
-- [ ] dnd-kit drag & drop works in Operator mode
-- [ ] RHF + Zod validation works correctly
-- [ ] useSound hook plays simple beep
+- [x] TypeScript compiles without errors
+- [x] Build succeeds with no errors
+- [x] Production build serves correctly
+- [x] No console errors in browser
+- [x] Tailwind CSS styles applied correctly
+- [x] shadcn/ui components render correctly
+- [x] dnd-kit drag & drop works in Operator mode
+- [x] RHF + Zod validation works correctly
+- [x] useSound hook plays simple beep
 
 **Guardrails (Must NOT Have)**:
-- [ ] No authentication or security features
-- [ ] No localStorage or persistence
-- [ ] No real backend or external API calls
-- [ ] No complex animations
-- [ ] No multi-language support (English UI only)
-- [ ] No advanced Kanban features (swimlanes, labels, subtasks)
-- [ ] No analytics or statistics
-- [ ] No theming system (single high-contrast theme)
-- [ ] No admin dashboard beyond Operator Mode
+- [x] No authentication or security features
+- [x] No localStorage or persistence
+- [x] No real backend or external API calls
+- [x] No complex animations
+- [x] No multi-language support (English UI only)
+- [x] No advanced Kanban features (swimlanes, labels, subtasks)
+- [x] No analytics or statistics
+- [x] No theming system (single high-contrast theme)
+- [x] No admin dashboard beyond Operator Mode
 
 ---
 
