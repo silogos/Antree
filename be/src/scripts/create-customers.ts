@@ -1,5 +1,5 @@
-import { getDb } from './db/index.js';
-import { queueBatches, queueItems } from './db/schema.js';
+import { getDb } from '../db/index.js';
+import { queueBatches, queueItems } from '../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 
 async function createCustomers() {
