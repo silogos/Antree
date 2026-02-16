@@ -1,4 +1,4 @@
-import { QueueItem } from '../types';
+import type { QueueItem } from "../types";
 
 interface QueueCardProps {
   queue: QueueItem;

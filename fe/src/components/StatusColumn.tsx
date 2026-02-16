@@ -1,5 +1,5 @@
-import { QueueItem, QueueStatus } from '../types';
-import { QueueCard } from './QueueCard';
+import type { QueueItem, QueueStatus } from "../types";
+import { QueueCard } from "./QueueCard";
 
 interface StatusSectionProps {
   status: QueueStatus;
@@ -21,9 +21,7 @@ export function StatusSection({ status, queues }: StatusSectionProps) {
             style={{ backgroundColor: status.color }}
             aria-hidden="true"
           />
-          <h3 className="text-lg font-medium text-gray-200">
-            {status.label}
-          </h3>
+          <h3 className="text-lg font-medium text-gray-200">{status.label}</h3>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-semibold text-gray-100">
@@ -61,12 +59,7 @@ export function StatusSection({ status, queues }: StatusSectionProps) {
             </p>
           </div>
         ) : (
-          queues.map((queue) => (
-            <QueueCard
-              key={queue.id}
-              queue={queue}
-            />
-          ))
+          queues.map((queue) => <QueueCard key={queue.id} queue={queue} />)
         )}
       </div>
     </div>

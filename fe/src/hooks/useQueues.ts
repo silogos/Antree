@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { queueService } from '../services/apiQueueService';
-import type { QueueItem } from '../types';
+import { useCallback, useState } from "react";
+import { queueService } from "../services/queue.service";
+import type { CreateQueueInput, QueueItem, UpdateQueueInput } from "../types";
 
 interface UseQueuesOptions {
   queueId?: string;
@@ -26,29 +26,24 @@ export function useQueues(options: UseQueuesOptions = {}) {
       });
       setQueues(data || []);
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch queues');
+      setError(err instanceof Error ? err.message : "Failed to fetch queues");
     } finally {
       setLoading(false);
     }
   }, [options.queueId, options.statusId]);
 
-  const createQueue = useCallback(async (queueData: Omit<QueueItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createQueue = useCallback(async (queueData: CreateQueueInput) => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await queueService.createQueue({
-        queueId: queueData.queueId,
-        queueNumber: queueData.queueNumber,
-        name: queueData.name,
-        statusId: queueData.statusId,
-        metadata: queueData.metadata,
-      });
+      const { data } = await queueService.createQueueItem(queueData);
       if (data) {
-        setQueues(prev => [...prev, data]);
+        setQueues((prev) => [...prev, data]);
       }
       return data;
     } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create queue';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create queue";
       setError(errorMessage);
       throw err;
     } finally {
@@ -56,36 +51,37 @@ export function useQueues(options: UseQueuesOptions = {}) {
     }
   }, []);
 
-  const updateQueue = useCallback(async (id: string, queueData: Partial<QueueItem>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await queueService.updateQueue(id, {
-        name: queueData.name,
-        statusId: queueData.statusId,
-        metadata: queueData.metadata,
-      });
-      if (data) {
-        setQueues(prev => prev.map(q => q.id === id ? data : q));
+  const updateQueue = useCallback(
+    async (id: string, queueData: Partial<UpdateQueueInput>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await queueService.updateQueueItem(id, queueData);
+        if (data) {
+          setQueues((prev) => prev.map((q) => (q.id === id ? data : q)));
+        }
+        return data;
+      } catch (err: any) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update queue";
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
       }
-      return data;
-    } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update queue';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const deleteQueue = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     try {
-      await queueService.deleteQueue(id);
-      setQueues(prev => prev.filter(q => q.id !== id));
+      await queueService.deleteQueueItem(id);
+      setQueues((prev) => prev.filter((q) => q.id !== id));
     } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete queue';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete queue";
       setError(errorMessage);
       throw err;
     } finally {
@@ -95,17 +91,17 @@ export function useQueues(options: UseQueuesOptions = {}) {
 
   // Manually update queue (used by SSE)
   const updateQueueLocal = useCallback((id: string, queue: QueueItem) => {
-    setQueues(prev => prev.map(q => q.id === id ? queue : q));
+    setQueues((prev) => prev.map((q) => (q.id === id ? queue : q)));
   }, []);
 
   // Manually add queue (used by SSE)
   const addQueueLocal = useCallback((queue: QueueItem) => {
-    setQueues(prev => [...prev, queue]);
+    setQueues((prev) => [...prev, queue]);
   }, []);
 
   // Manually remove queue (used by SSE)
   const removeQueueLocal = useCallback((id: string) => {
-    setQueues(prev => prev.filter(q => q.id !== id));
+    setQueues((prev) => prev.filter((q) => q.id !== id));
   }, []);
 
   return {

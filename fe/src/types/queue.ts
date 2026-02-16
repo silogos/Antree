@@ -23,7 +23,21 @@ export interface QueueBatch {
   id: string;
   queueId: string;
   name: string;
-  status: 'active' | 'closed';
+  status: "active" | "closed";
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Queue Board - Represents a queue management board
+ */
+export interface QueueBoard {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdBy?: string;
+  updatedBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,7 +123,7 @@ export interface UpdateTemplateInput {
 export interface CreateBatchInput {
   queueId: string;
   name?: string;
-  status?: 'active' | 'closed';
+  status?: "active" | "closed";
 }
 
 /**
@@ -118,13 +132,13 @@ export interface CreateBatchInput {
 export interface UpdateBatchInput {
   id: string;
   name?: string;
-  status?: 'active' | 'closed';
+  status?: "active" | "closed";
 }
 
 /**
- * Create Queue Input - Input for creating a new queue item
+ * Create Queue Item Input - Input for creating a new queue item
  */
-export interface CreateQueueInput {
+export interface CreateQueueItemInput {
   queueId: string;
   queueNumber: string;
   name: string;
@@ -133,9 +147,9 @@ export interface CreateQueueInput {
 }
 
 /**
- * Update Queue Input - Input for updating an existing queue item
+ * Update Queue Item Input - Input for updating an existing queue item
  */
-export interface UpdateQueueInput {
+export interface UpdateQueueItemInput {
   id: string;
   name?: string;
   statusId?: string;
@@ -162,147 +176,6 @@ export interface UpdateStatusInput {
   color?: string;
   order?: number;
   templateStatusId?: string;
-}
-
-/**
- * SSE Event Types
- */
-export type SSEEventType =
-  | 'connected'
-  | 'queue_created' | 'queue_updated' | 'queue_deleted' // Queue events (for queue management, not queue items)
-  | 'batch_created' | 'batch_updated' | 'batch_deleted' // Batch events
-  | 'queue_item_created' | 'queue_item_updated' | 'queue_item_deleted' // Queue item events
-  | 'status_created' | 'status_updated' | 'status_deleted'
-  | 'board_updated' | 'board_deleted';
-
-export type SSEEvent = {
-  type: SSEEventType;
-  data: unknown;
-  timestamp: string;
-}
-
-/**
- * Create Batch Input - Input for creating a new batch
- */
-export interface CreateBatchInput {
-  queueId: string;
-  name?: string;
-  status?: 'active' | 'closed';
-}
-
-/**
- * Update Batch Input - Input for updating an existing batch
- */
-export interface UpdateBatchInput {
-  id: string;
-  name?: string;
-  status?: 'active' | 'closed';
-}
-
-/**
- * Create Queue Input - Input for creating a new queue item
- */
-export interface CreateQueueInput {
-  queueId: string;
-  queueNumber: string;
-  name: string;
-  statusId: string;
-  metadata?: Record<string, any>;
-}
-
-/**
- * Update Queue Input - Input for updating an existing queue item
- */
-export interface UpdateQueueInput {
-  id: string;
-  name?: string;
-  statusId?: string;
-  metadata?: Record<string, any>;
-}
-
-/**
- * Create Status Input - Input for creating a new queue status
- */
-export interface CreateStatusInput {
-  queueId: string;
-  label: string;
-  color: string;
-  order: number;
-  templateStatusId?: string;
-}
-
-/**
- * Update Status Input - Input for updating an existing queue status
- */
-export interface UpdateStatusInput {
-  id: string;
-  label?: string;
-  color?: string;
-  order?: number;
-  templateStatusId?: string;
-}
-
-/**
- * SSE Event Types
- */
-export type SSEEventType =
-  | 'connected'
-  | 'queue_created' | 'queue_updated' | 'queue_deleted' // Queue events (for queue management, not queue items)
-  | 'batch_created' | 'batch_updated' | 'batch_deleted' // Batch events
-  | 'queue_item_created' | 'queue_item_updated' | 'queue_item_deleted' // Queue item events
-  | 'status_created' | 'status_updated' | 'status_deleted'
-  | 'board_updated' | 'board_deleted';
-
-export type SSEEvent = {
-  type: SSEEventType;
-  data: unknown;
-  timestamp: string;
-}
-
-/**
- * Queue Item - Represents a single customer in the queue
- */
-export interface QueueItem {
-  id: string;
-  boardId: string;
-  queueNumber: string;
-  name: string;
-  statusId: string;
-  createdAt: string;
-  updatedAt: string;
-  /** Optional custom data (JSONB) stored with the queue item */
-  metadata?: Record<string, any>;
-}
-
-/**
- * Queue Status - Represents a status for queue items in a batch
- */
-export interface QueueStatus {
-  id: string;
-  queueId: string;
-  templateStatusId?: string;
-  label: string;
-  color: string;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * SSE Event Types
- */
-export type SSEEventType =
-  | 'connected'
-  | 'queue_created' | 'queue_updated' | 'queue_deleted' // Queue events (for queue management, not queue items)
-  | 'batch_created' | 'batch_updated' | 'batch_deleted' // Batch events
-  | 'queue_item_created' | 'queue_item_updated' | 'queue_item_deleted' // Queue item events
-  | 'status_created' | 'status_updated' | 'status_deleted'
-  | 'board_updated' | 'board_deleted';
-
-export type SSEEvent = {
-  type: SSEEventType;
-  data: unknown;
-  timestamp: string;
 }
 
 /**
@@ -325,10 +198,10 @@ export interface UpdateBoardInput {
 }
 
 /**
- * Create Queue Input - Input for creating a new queue item
+ * Create Queue Input (deprecated - use CreateQueueItemInput)
  */
 export interface CreateQueueInput {
-  boardId: string;
+  queueId: string;
   queueNumber: string;
   name: string;
   statusId: string;
@@ -336,7 +209,7 @@ export interface CreateQueueInput {
 }
 
 /**
- * Update Queue Input - Input for updating an existing queue item
+ * Update Queue Input (deprecated - use UpdateQueueItemInput)
  */
 export interface UpdateQueueInput {
   id: string;
@@ -346,38 +219,24 @@ export interface UpdateQueueInput {
 }
 
 /**
- * Create Status Input - Input for creating a new queue status
- */
-export interface CreateStatusInput {
-  boardId: string;
-  label: string;
-  color: string;
-  order: number;
-}
-
-/**
- * Update Status Input - Input for updating an existing queue status
- */
-export interface UpdateStatusInput {
-  id: string;
-  label?: string;
-  color?: string;
-  order?: number;
-}
-
-/**
  * SSE Event Types
  */
 export type SSEEventType =
-  | 'connected'
-  | 'queue_created'
-  | 'queue_updated'
-  | 'queue_deleted'
-  | 'status_created'
-  | 'status_updated'
-  | 'status_deleted'
-  | 'board_updated'
-  | 'board_deleted';
+  | "connected"
+  | "queue_created"
+  | "queue_updated"
+  | "queue_deleted" // Queue events (for queue management, not queue items)
+  | "batch_created"
+  | "batch_updated"
+  | "batch_deleted" // Batch events
+  | "queue_item_created"
+  | "queue_item_updated"
+  | "queue_item_deleted" // Queue item events
+  | "status_created"
+  | "status_updated"
+  | "status_deleted"
+  | "board_updated"
+  | "board_deleted";
 
 /**
  * SSE Event - Server-Sent Event payload

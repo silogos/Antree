@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useQueues } from "../hooks/useQueues";
+import type { QueueStatus } from "../types";
+import { Button } from "./ui/Button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from './ui/Dialog';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Label } from './ui/Label';
-import { QueueStatus } from '../types';
-import { useQueues } from '../hooks/useQueues';
+  DialogTitle,
+} from "./ui/Dialog";
+import { Input } from "./ui/Input";
+import { Label } from "./ui/Label";
 
 interface AddQueueModalProps {
   open: boolean;
@@ -25,11 +25,11 @@ interface AddQueueModalProps {
 }
 
 const createQueueSchema = z.object({
-  queueNumber: z.string().min(1, 'Queue number is required'),
-  name: z.string().min(1, 'Name is required'),
-  customerName: z.string().min(1, 'Customer name is required'),
-  duration: z.string().min(1, 'Duration is required'),
-  statusId: z.string().min(1, 'Status is required'),
+  queueNumber: z.string().min(1, "Queue number is required"),
+  name: z.string().min(1, "Name is required"),
+  customerName: z.string().min(1, "Customer name is required"),
+  duration: z.string().min(1, "Duration is required"),
+  statusId: z.string().min(1, "Status is required"),
 });
 
 type FormValues = z.infer<typeof createQueueSchema>;
@@ -39,7 +39,7 @@ export function AddQueueModal({
   onClose,
   onSuccess,
   statuses = [],
-  queueId
+  queueId,
 }: AddQueueModalProps) {
   const [loading, setLoading] = useState(false);
   const { createQueue } = useQueues({ queueId });
@@ -47,12 +47,12 @@ export function AddQueueModal({
   const form = useForm<FormValues>({
     resolver: zodResolver(createQueueSchema),
     defaultValues: {
-      queueNumber: '',
-      name: '',
-      customerName: '',
-      duration: '',
-      statusId: statuses.length > 0 ? statuses[0].id : ''
-    }
+      queueNumber: "",
+      name: "",
+      customerName: "",
+      duration: "",
+      statusId: statuses.length > 0 ? statuses[0].id : "",
+    },
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -67,15 +67,15 @@ export function AddQueueModal({
         metadata: {
           customerName: values.customerName,
           duration: values.duration,
-        }
+        },
       });
 
       form.reset();
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('Failed to create queue:', error);
-      alert('Failed to create queue. Please try again.');
+      console.error("Failed to create queue:", error);
+      alert("Failed to create queue. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export function AddQueueModal({
               <Input
                 id="queueNumber"
                 placeholder="e.g., A001"
-                {...form.register('queueNumber')}
+                {...form.register("queueNumber")}
                 disabled={loading}
               />
               {form.formState.errors.queueNumber && (
@@ -113,7 +113,7 @@ export function AddQueueModal({
               <Input
                 id="name"
                 placeholder="e.g., John Doe"
-                {...form.register('name')}
+                {...form.register("name")}
                 disabled={loading}
               />
               {form.formState.errors.name && (
@@ -128,7 +128,7 @@ export function AddQueueModal({
               <Input
                 id="customerName"
                 placeholder="e.g., John Doe"
-                {...form.register('customerName')}
+                {...form.register("customerName")}
                 disabled={loading}
               />
               {form.formState.errors.customerName && (
@@ -143,7 +143,7 @@ export function AddQueueModal({
               <Input
                 id="duration"
                 placeholder="e.g., 00:15:00"
-                {...form.register('duration')}
+                {...form.register("duration")}
                 disabled={loading}
               />
               {form.formState.errors.duration && (
@@ -157,7 +157,7 @@ export function AddQueueModal({
               <Label htmlFor="statusId">Status *</Label>
               <select
                 id="statusId"
-                {...form.register('statusId')}
+                {...form.register("statusId")}
                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={loading || statuses.length === 0}
               >
@@ -176,11 +176,16 @@ export function AddQueueModal({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Queue Item'}
+              {loading ? "Adding..." : "Add Queue Item"}
             </Button>
           </DialogFooter>
         </form>
@@ -188,4 +193,3 @@ export function AddQueueModal({
     </Dialog>
   );
 }
-

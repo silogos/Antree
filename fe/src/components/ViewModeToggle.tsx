@@ -1,7 +1,7 @@
-import { Switch } from './ui/Switch';
-import { cn } from '../lib/utils';
+import { cn } from "../lib/utils";
+import { Switch } from "./ui/Switch";
 
-type ViewMode = 'display' | 'operator';
+type ViewMode = "display" | "operator";
 
 interface ViewModeToggleProps {
   currentMode: ViewMode;
@@ -12,31 +12,27 @@ interface ViewModeToggleProps {
 export function ViewModeToggle({
   currentMode,
   onChange,
-  disabled = false
+  disabled = false,
 }: ViewModeToggleProps) {
   return (
     <div className="flex items-center gap-4">
       <span
         className={cn(
-          'text-sm font-medium transition-colors',
-          currentMode === 'display'
-            ? 'text-blue-600'
-            : 'text-gray-500'
+          "text-sm font-medium transition-colors",
+          currentMode === "display" ? "text-blue-600" : "text-gray-500",
         )}
       >
         Display Mode
       </span>
       <Switch
-        checked={currentMode === 'operator'}
-        onChange={(checked) => onChange(checked ? 'operator' : 'display')}
+        checked={currentMode === "operator"}
+        onChange={(checked) => onChange(checked ? "operator" : "display")}
         disabled={disabled}
       />
       <span
         className={cn(
-          'text-sm font-medium transition-colors',
-          currentMode === 'operator'
-            ? 'text-blue-600'
-            : 'text-gray-500'
+          "text-sm font-medium transition-colors",
+          currentMode === "operator" ? "text-blue-600" : "text-gray-500",
         )}
       >
         Operator Mode

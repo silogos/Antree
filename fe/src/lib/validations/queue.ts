@@ -1,5 +1,9 @@
-import { z } from "zod"
-import { queueItemSchema, createQueueSchema, updateQueueSchema } from "./schema"
+import { z } from "zod";
+import {
+  createQueueSchema,
+  queueItemSchema,
+  updateQueueSchema,
+} from "./schema";
 
 // ============================================================================
 // Queue Item Validation
@@ -12,7 +16,7 @@ import { queueItemSchema, createQueueSchema, updateQueueSchema } from "./schema"
 export const queueItemValidation = {
   schema: queueItemSchema,
   validate: (data: unknown) => queueItemSchema.safeParse(data),
-}
+};
 
 // ============================================================================
 // Queue Creation Validation
@@ -27,7 +31,7 @@ export const queueCreateValidation = {
   schema: createQueueSchema,
   validate: (data: unknown) => createQueueSchema.safeParse(data),
   requiredFields: ["name"],
-}
+};
 
 // ============================================================================
 // Queue Update Validation
@@ -42,7 +46,7 @@ export const queueUpdateValidation = {
   schema: updateQueueSchema,
   validate: (data: unknown) => updateQueueSchema.safeParse(data),
   requiredField: "id",
-}
+};
 
 // ============================================================================
 // Queue Number Validation
@@ -55,9 +59,9 @@ export const queueUpdateValidation = {
 export const queueNumberValidation = z
   .string()
   .min(1, "Number is required")
-  .regex(/^[0-9]+$/, "Number must contain only digits")
+  .regex(/^[0-9]+$/, "Number must contain only digits");
 
-export type QueueNumber = z.infer<typeof queueNumberValidation>
+export type QueueNumber = z.infer<typeof queueNumberValidation>;
 
 // ============================================================================
 // Queue Duration Validation
@@ -72,13 +76,13 @@ export const queueDurationValidation = z
   .optional()
   .refine(
     (value) => {
-      if (!value) return true
+      if (!value) return true;
       // Match HH:MM:SS or MM:SS format
-      return /^([0-9]{1,2}:){1,2}[0-9]{2}$/.test(value)
+      return /^([0-9]{1,2}:){1,2}[0-9]{2}$/.test(value);
     },
     {
       message: "Duration must be in HH:MM:SS or MM:SS format",
-    }
-  )
+    },
+  );
 
-export type QueueDuration = z.infer<typeof queueDurationValidation>
+export type QueueDuration = z.infer<typeof queueDurationValidation>;

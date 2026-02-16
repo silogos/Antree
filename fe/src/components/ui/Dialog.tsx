@@ -1,7 +1,15 @@
-import * as React from 'react';
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
+import type * as React from "react";
 
-export function Dialog({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+export function Dialog({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   if (!open) return null;
 
   return (
@@ -20,35 +28,19 @@ export function Dialog({ open, onClose, children }: { open: boolean; onClose: ()
 }
 
 export function DialogHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-b border-gray-200 px-6 py-4">
-      {children}
-    </div>
-  );
+  return <div className="border-b border-gray-200 px-6 py-4">{children}</div>;
 }
 
 export function DialogTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xl font-semibold text-gray-900">
-      {children}
-    </h2>
-  );
+  return <h2 className="text-xl font-semibold text-gray-900">{children}</h2>;
 }
 
 export function DialogDescription({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-sm text-gray-600 mt-1">
-      {children}
-    </p>
-  );
+  return <p className="text-sm text-gray-600 mt-1">{children}</p>;
 }
 
 export function DialogContent({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-6 py-4">
-      {children}
-    </div>
-  );
+  return <div className="px-6 py-4">{children}</div>;
 }
 
 export function DialogFooter({ children }: { children: React.ReactNode }) {

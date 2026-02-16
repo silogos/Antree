@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { QueueItem, QueueStatus } from '../types';
+import { useEffect, useRef, useState } from "react";
+import type { QueueItem, QueueStatus } from "../types";
 
 interface UseAutoMovementProps {
   queues: QueueItem[];
@@ -12,7 +12,12 @@ interface UseAutoMovementProps {
  * Custom hook for auto-moving queues between statuses
  * Moves one queue every 15 seconds until all queues reach 'done' status
  */
-export function useAutoMovement({ queues, statuses, onQueuesUpdate, playAnnouncement }: UseAutoMovementProps) {
+export function useAutoMovement({
+  queues,
+  statuses,
+  onQueuesUpdate,
+  playAnnouncement,
+}: UseAutoMovementProps) {
   const [autoMovementEnabled, setAutoMovementEnabled] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queuesRef = useRef(queues);
@@ -45,12 +50,17 @@ export function useAutoMovement({ queues, statuses, onQueuesUpdate, playAnnounce
       const currentPlayAnnouncement = playAnnouncementRef.current;
 
       // Find the "Done" status (usually the highest order)
-      const sortedStatuses = [...currentStatuses].sort((a, b) => a.order - b.order);
-      const doneStatusId = sortedStatuses.length > 0 ? sortedStatuses[sortedStatuses.length - 1].id : null;
+      const sortedStatuses = [...currentStatuses].sort(
+        (a, b) => a.order - b.order,
+      );
+      const doneStatusId =
+        sortedStatuses.length > 0
+          ? sortedStatuses[sortedStatuses.length - 1].id
+          : null;
 
       // Filter queues that are NOT in the "Done" status
       const activeQueues = doneStatusId
-        ? currentQueues.filter(q => q.statusId !== doneStatusId)
+        ? currentQueues.filter((q) => q.statusId !== doneStatusId)
         : currentQueues;
 
       if (activeQueues.length === 0) {
@@ -58,19 +68,23 @@ export function useAutoMovement({ queues, statuses, onQueuesUpdate, playAnnounce
         return;
       }
 
-      const randomQueue = activeQueues[Math.floor(Math.random() * activeQueues.length)];
-      const currentStatusIndex = sortedStatuses.findIndex(s => s.id === randomQueue.statusId);
+      const randomQueue =
+        activeQueues[Math.floor(Math.random() * activeQueues.length)];
+      const currentStatusIndex = sortedStatuses.findIndex(
+        (s) => s.id === randomQueue.statusId,
+      );
 
       if (currentStatusIndex < sortedStatuses.length - 1) {
         const nextStatusId = sortedStatuses[currentStatusIndex + 1].id;
-        const updatedQueues = currentQueues.map(q =>
-          q.id === randomQueue.id ? { ...q, statusId: nextStatusId } : q
+        const updatedQueues = currentQueues.map((q) =>
+          q.id === randomQueue.id ? { ...q, statusId: nextStatusId } : q,
         );
         currentOnQueuesUpdate(updatedQueues);
 
         // Play announcement
         if (currentPlayAnnouncement) {
-          const customerName = randomQueue.metadata?.customerName || randomQueue.name;
+          const customerName =
+            randomQueue.metadata?.customerName || randomQueue.name;
           currentPlayAnnouncement(randomQueue.queueNumber, customerName);
         }
       }
@@ -87,6 +101,6 @@ export function useAutoMovement({ queues, statuses, onQueuesUpdate, playAnnounce
   return {
     autoMovementEnabled,
     isMoving: autoMovementEnabled,
-    toggleAutoMovement: () => setAutoMovementEnabled(prev => !prev),
+    toggleAutoMovement: () => setAutoMovementEnabled((prev) => !prev),
   };
 }

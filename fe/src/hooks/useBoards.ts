@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { boardService } from '../services/apiBoardService';
-import type { QueueBoard } from '../types';
+import { useCallback, useState } from "react";
+import { boardService } from "../services/board.service";
+import type { CreateBoardInput, QueueBoard } from "../types";
 
 /**
  * Custom hook for managing boards with real API integration
@@ -19,7 +19,7 @@ export function useBoards() {
       const { data } = await boardService.getBoards();
       setBoards(data || []);
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch boards');
+      setError(err instanceof Error ? err.message : "Failed to fetch boards");
     } finally {
       setLoading(false);
     }
@@ -35,24 +35,25 @@ export function useBoards() {
       }
       return data;
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch board');
+      setError(err instanceof Error ? err.message : "Failed to fetch board");
       throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const createBoard = useCallback(async (boardData: Omit<QueueBoard, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createBoard = useCallback(async (boardData: CreateBoardInput) => {
     setLoading(true);
     setError(null);
     try {
       const { data } = await boardService.createBoard(boardData);
       if (data) {
-        setBoards(prev => [...prev, data]);
+        setBoards((prev) => [...prev, data]);
       }
       return data;
     } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create board';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create board";
       setError(errorMessage);
       throw err;
     } finally {
@@ -60,65 +61,79 @@ export function useBoards() {
     }
   }, []);
 
-  const updateBoard = useCallback(async (id: string, boardData: Partial<QueueBoard>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await boardService.updateBoard(id, boardData);
-      if (data) {
-        setBoards(prev => prev.map(b => b.id === id ? data : b));
-        if (currentBoard?.id === id) {
-          setCurrentBoard(data);
+  const updateBoard = useCallback(
+    async (id: string, boardData: Partial<QueueBoard>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await boardService.updateBoard(id, boardData);
+        if (data) {
+          setBoards((prev) => prev.map((b) => (b.id === id ? data : b)));
+          if (currentBoard?.id === id) {
+            setCurrentBoard(data);
+          }
         }
+        return data;
+      } catch (err: any) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update board";
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
       }
-      return data;
-    } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update board';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [currentBoard]);
+    },
+    [currentBoard],
+  );
 
-  const deleteBoard = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await boardService.deleteBoard(id);
-      setBoards(prev => prev.filter(b => b.id !== id));
-      if (currentBoard?.id === id) {
-        setCurrentBoard(null);
+  const deleteBoard = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await boardService.deleteBoard(id);
+        setBoards((prev) => prev.filter((b) => b.id !== id));
+        if (currentBoard?.id === id) {
+          setCurrentBoard(null);
+        }
+      } catch (err: any) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to delete board";
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete board';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [currentBoard]);
+    },
+    [currentBoard],
+  );
 
   // Manually update board (used by SSE)
-  const updateBoardLocal = useCallback((id: string, board: QueueBoard) => {
-    setBoards(prev => prev.map(b => b.id === id ? board : b));
-    if (currentBoard?.id === id) {
-      setCurrentBoard(board);
-    }
-  }, [currentBoard]);
+  const updateBoardLocal = useCallback(
+    (id: string, board: QueueBoard) => {
+      setBoards((prev) => prev.map((b) => (b.id === id ? board : b)));
+      if (currentBoard?.id === id) {
+        setCurrentBoard(board);
+      }
+    },
+    [currentBoard],
+  );
 
   // Manually add board (used by SSE)
   const addBoardLocal = useCallback((board: QueueBoard) => {
-    setBoards(prev => [...prev, board]);
+    setBoards((prev) => [...prev, board]);
   }, []);
 
   // Manually remove board (used by SSE)
-  const removeBoardLocal = useCallback((id: string) => {
-    setBoards(prev => prev.filter(b => b.id !== id));
-    if (currentBoard?.id === id) {
-      setCurrentBoard(null);
-    }
-  }, [currentBoard]);
+  const removeBoardLocal = useCallback(
+    (id: string) => {
+      setBoards((prev) => prev.filter((b) => b.id !== id));
+      if (currentBoard?.id === id) {
+        setCurrentBoard(null);
+      }
+    },
+    [currentBoard],
+  );
 
   return {
     boards,

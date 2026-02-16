@@ -1,5 +1,5 @@
-import { API_BASE_URL } from './apiBoardService';
-import type { SSEEventType } from '../types';
+import type { SSEEventType } from "../types";
+import { API_BASE_URL } from "./board.service";
 
 /**
  * SSE Client Options
@@ -54,7 +54,7 @@ export class SSEClient {
     this.options = options;
     this.reconnectAttempts = 0;
 
-    const url = `${API_BASE_URL.replace('/api', '')}/sse/batches/${batchId}/events`;
+    const url = `${API_BASE_URL.replace("/api", "")}/sse/batches/${batchId}/events`;
     console.log(`[SSE Client] Connecting to ${url}`);
 
     this.eventSource = new EventSource(url);
@@ -71,19 +71,21 @@ export class SSEClient {
         console.log(`[SSE Client] Received event:`, data.type);
         options.onMessage?.(data);
       } catch (error) {
-        console.error('[SSE Client] Failed to parse event:', error);
+        console.error("[SSE Client] Failed to parse event:", error);
       }
     };
 
     this.eventSource.onerror = (error) => {
-      console.error('[SSE Client] Error:', error);
+      console.error("[SSE Client] Error:", error);
       options.onError?.(error);
 
       // Attempt to reconnect
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
         const delay = this.reconnectDelay * this.reconnectAttempts;
-        console.log(`[SSE Client] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        console.log(
+          `[SSE Client] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+        );
 
         setTimeout(() => {
           if (this.batchId) {
@@ -91,7 +93,7 @@ export class SSEClient {
           }
         }, delay);
       } else {
-        console.error('[SSE Client] Max reconnect attempts reached');
+        console.error("[SSE Client] Max reconnect attempts reached");
         this.disconnect();
         options.onClose?.();
       }
@@ -114,7 +116,10 @@ export class SSEClient {
    * Check if connected
    */
   isConnected(): boolean {
-    return this.eventSource !== null && this.eventSource.readyState === EventSource.OPEN;
+    return (
+      this.eventSource !== null &&
+      this.eventSource.readyState === EventSource.OPEN
+    );
   }
 
   /**
@@ -140,8 +145,8 @@ export function getSSEClient(): SSEClient {
   return sseClientInstance;
 
   // Cleanup on page unload
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => {
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => {
       sseClientInstance?.disconnect();
     });
   }

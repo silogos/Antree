@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export function Footer() {
   const [isTV, setIsTV] = useState(false);
@@ -9,14 +9,14 @@ export function Footer() {
       setIsTV(width >= 1024);
     };
     checkTV();
-    window.addEventListener('resize', checkTV);
-    return () => window.removeEventListener('resize', checkTV);
+    window.addEventListener("resize", checkTV);
+    return () => window.removeEventListener("resize", checkTV);
   }, []);
 
   return (
     <footer
       className={`fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 py-4 transition-all duration-300 ${
-        isTV ? 'hidden' : 'block'
+        isTV ? "hidden" : "block"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

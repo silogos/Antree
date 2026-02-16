@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 interface TopbarProps {
   title: string;
@@ -29,21 +29,21 @@ export function Topbar({
   }, []);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
     });
   };
 
   const formatDate = (date: Date | null) => {
     if (!date) return null;
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -53,16 +53,12 @@ export function Topbar({
         <div className="flex items-center justify-between h-16">
           {/* Left side - Title and Time */}
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-gray-100">
-              {title}
-            </h1>
+            <h1 className="text-xl font-semibold text-gray-100">{title}</h1>
             <div className="hidden sm:block text-sm text-gray-400 font-mono">
               {formatTime(currentTime)}
             </div>
             {boardSelector && (
-              <div className="hidden sm:block">
-                {boardSelector}
-              </div>
+              <div className="hidden sm:block">{boardSelector}</div>
             )}
           </div>
 
@@ -72,10 +68,10 @@ export function Topbar({
             {sseConnected !== undefined && (
               <div className="flex items-center gap-2 text-sm">
                 <div
-                  className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}
+                  className={`w-2 h-2 rounded-full ${sseConnected ? "bg-green-400 animate-pulse" : "bg-red-400"}`}
                 />
                 <span className="text-xs text-gray-400 hidden sm:inline">
-                  {sseConnected ? 'Live' : 'Offline'}
+                  {sseConnected ? "Live" : "Offline"}
                 </span>
               </div>
             )}
@@ -111,7 +107,7 @@ export function Topbar({
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 ${soundEnabled ? 'text-green-400' : 'text-red-400'}`}
+                  className={`w-4 h-4 ${soundEnabled ? "text-green-400" : "text-red-400"}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -143,7 +139,7 @@ export function Topbar({
                   )}
                 </svg>
                 <span className="text-xs">
-                  {soundEnabled ? 'Sound On' : 'Sound Off'}
+                  {soundEnabled ? "Sound On" : "Sound Off"}
                 </span>
               </button>
             )}
@@ -156,10 +152,14 @@ export function Topbar({
               >
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    autoMovementEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
+                    autoMovementEnabled
+                      ? "bg-green-400 animate-pulse"
+                      : "bg-gray-600"
                   }`}
                 />
-                <span className={`text-xs ${autoMovementEnabled ? 'text-green-400' : 'text-gray-500'}`}>
+                <span
+                  className={`text-xs ${autoMovementEnabled ? "text-green-400" : "text-gray-500"}`}
+                >
                   Auto Move
                 </span>
               </button>
@@ -170,4 +170,3 @@ export function Topbar({
     </header>
   );
 }
-

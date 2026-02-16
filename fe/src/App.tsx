@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { BoardList } from './components/BoardList';
-import { QueueBoard } from './components/QueueBoard';
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BoardList } from "./components/BoardList";
+import { QueueBoard } from "./components/QueueBoard";
 
 /**
  * Main App Component

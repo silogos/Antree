@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 // ============================================================================
 // Queue Item Schema
@@ -14,9 +14,9 @@ export const queueItemSchema = z.object({
   duration: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
-})
+});
 
-export type QueueItem = z.infer<typeof queueItemSchema>
+export type QueueItem = z.infer<typeof queueItemSchema>;
 
 // ============================================================================
 // Status Schema
@@ -28,9 +28,9 @@ export const statusSchema = z.object({
   color: z.string(),
   description: z.string().optional(),
   order: z.number().int().positive().default(0),
-})
+});
 
-export type QueueStatus = z.infer<typeof statusSchema>
+export type QueueStatus = z.infer<typeof statusSchema>;
 
 // ============================================================================
 // Queue Creation Schema (for new queues)
@@ -43,9 +43,9 @@ export const createQueueSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),
   duration: z.string().min(1, "Duration is required"),
   statusId: z.string().min(1, "Status is required"),
-})
+});
 
-export type CreateQueueInput = z.infer<typeof createQueueSchema>
+export type CreateQueueInput = z.infer<typeof createQueueSchema>;
 
 // ============================================================================
 // Status Creation Schema (for new statuses)
@@ -56,9 +56,9 @@ export const createStatusSchema = z.object({
   color: z.string(),
   description: z.string().optional(),
   order: z.number().int().positive().default(0),
-})
+});
 
-export type CreateStatusInput = z.infer<typeof createStatusSchema>
+export type CreateStatusInput = z.infer<typeof createStatusSchema>;
 
 // ============================================================================
 // Queue Update Schema (for updating existing queues)
@@ -70,9 +70,9 @@ export const updateQueueSchema = z.object({
   service: z.string().optional(),
   customerName: z.string().optional(),
   duration: z.string().optional(),
-})
+});
 
-export type UpdateQueueInput = z.infer<typeof updateQueueSchema>
+export type UpdateQueueInput = z.infer<typeof updateQueueSchema>;
 
 // ============================================================================
 // Status Update Schema (for updating existing statuses)
@@ -84,6 +84,6 @@ export const updateStatusSchema = z.object({
   color: z.string().optional(),
   description: z.string().optional(),
   order: z.number().int().positive().optional(),
-})
+});
 
-export type UpdateStatusInput = z.infer<typeof updateStatusSchema>
+export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;

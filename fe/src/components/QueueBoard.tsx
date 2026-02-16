@@ -1,20 +1,19 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQueues } from '../hooks/useQueues';
-import { useStatuses } from '../hooks/useStatuses';
-import { useBatchSSE } from '../hooks/useBatchSSE';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
-import { useSound } from '../hooks/useSound';
-import { useAutoMovement } from '../hooks/useAutoMovement';
-import { useBatches } from '../hooks/useBatches';
-import { QueueItem, QueueStatus } from '../types';
-
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useAutoMovement } from "../hooks/useAutoMovement";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
+import { useBatches } from "../hooks/useBatches";
+import { useBatchSSE } from "../hooks/useBatchSSE";
+import { useQueues } from "../hooks/useQueues";
+import { useSound } from "../hooks/useSound";
+import { useStatuses } from "../hooks/useStatuses";
+import type { QueueItem, QueueStatus } from "../types";
+import { AddQueueModal } from "./AddQueueModal";
+import { Footer } from "./Footer";
 // Components
-import { DashboardBoard } from './KanbanBoard';
-import { Topbar } from './Topbar';
-import { Footer } from './Footer';
-import { AddQueueModal } from './AddQueueModal';
-import { StatusManagerModal } from './StatusManagerModal';
+import { DashboardBoard } from "./KanbanBoard";
+import { StatusManagerModal } from "./StatusManagerModal";
+import { Topbar } from "./Topbar";
 
 /**
  * QueueBoard Component
@@ -26,7 +25,7 @@ export function QueueBoard() {
 
   // Get batch information for the current board
   const { batches, loading: batchesLoading, fetchBatches } = useBatches();
-  const currentBatch = batches.find(b => b.id === queueId) || null;
+  const currentBatch = batches.find((b) => b.id === queueId) || null;
 
   // Queue management
   const [queues, setQueues] = useState<QueueItem[]>([]);
@@ -87,7 +86,7 @@ export function QueueBoard() {
     },
     onQueueItemUpdated: (queue) => {
       // Find previous status to detect if queue was called
-      const oldQueue = queues.find(q => q.id === queue.id);
+      const oldQueue = queues.find((q) => q.id === queue.id);
       const oldStatusId = oldQueue?.statusId;
 
       updateQueueLocal(queue.id, queue);
@@ -115,7 +114,7 @@ export function QueueBoard() {
     onBatchDeleted: ({ id }) => {
       if (queueId === id) {
         // Navigate back to board list if current batch is deleted
-        window.location.href = '/';
+        window.location.href = "/";
       }
     },
   });
@@ -204,8 +203,12 @@ export function QueueBoard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center p-8 bg-gray-700 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4 text-white">Board Not Found</h2>
-          <p className="text-gray-300 mb-4">The requested board could not be found.</p>
+          <h2 className="text-2xl font-bold mb-4 text-white">
+            Board Not Found
+          </h2>
+          <p className="text-gray-300 mb-4">
+            The requested board could not be found.
+          </p>
           <Link
             to="/"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -221,7 +224,7 @@ export function QueueBoard() {
     <div className="App">
       {/* Topbar */}
       <Topbar
-        title={currentBatch?.name || 'Queue Board'}
+        title={currentBatch?.name || "Queue Board"}
         lastRefresh={lastRefresh}
         soundEnabled={soundEnabled}
         onToggleSound={handleSoundChange}
@@ -248,8 +251,12 @@ export function QueueBoard() {
             <div className="text-center p-8 bg-gray-700 rounded-lg">
               <h2 className="text-2xl font-bold mb-4 text-white">Error</h2>
               <p className="text-gray-300 mb-4">Error loading data.</p>
-              {queuesError && <p className="text-sm text-gray-400 mb-4">{queuesError}</p>}
-              {statusesError && <p className="text-sm text-gray-400 mb-4">{statusesError}</p>}
+              {queuesError && (
+                <p className="text-sm text-gray-400 mb-4">{queuesError}</p>
+              )}
+              {statusesError && (
+                <p className="text-sm text-gray-400 mb-4">{statusesError}</p>
+              )}
               <button
                 onClick={() => {
                   fetchQueuesData();
@@ -265,17 +272,12 @@ export function QueueBoard() {
 
         {/* Dashboard board - main content */}
         {!isLoading && !hasError && (
-          <DashboardBoard
-            queues={queues}
-            statuses={statuses}
-          />
+          <DashboardBoard queues={queues} statuses={statuses} />
         )}
       </div>
 
       {/* Footer */}
-      {!isLoading && !hasError && (
-        <Footer />
-      )}
+      {!isLoading && !hasError && <Footer />}
 
       {/* Modals */}
       <>
@@ -284,13 +286,13 @@ export function QueueBoard() {
           onClose={() => {}}
           onSuccess={handleAddQueueSuccess}
           statuses={statuses}
-          queueId={queueId || ''}
+          queueId={queueId || ""}
         />
         <StatusManagerModal
           open={false}
           onClose={() => {}}
           onSuccess={handleStatusManagerSuccess}
-          queueId={queueId || ''}
+          queueId={queueId || ""}
         />
       </>
     </div>
