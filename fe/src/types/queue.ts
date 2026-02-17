@@ -96,6 +96,8 @@ export interface Queue {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  activeBatchId?: string | null;
+  activeBatch?: QueueBatch | null;
 }
 
 /**

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAutoMovement } from "../hooks/useAutoMovement";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
-import { useBatches } from "../hooks/useBatches";
+import { useQueueList } from "../hooks/useQueueList";
 import { useBatchSSE } from "../hooks/useBatchSSE";
 import { useQueues } from "../hooks/useQueues";
 import { useSound } from "../hooks/useSound";
@@ -17,17 +17,16 @@ import { Topbar } from "./Topbar";
 
 /**
  * QueueBoard Component
- * Displays a single queue board with all its queues and statuses
- * This is the main queue management UI for a specific board
+ * Displays a single queue with its active batch and queue items
+ * This is the main queue management UI for a specific queue
  */
 export function QueueBoard() {
   const { id: queueId } = useParams<{ id: string }>();
 
-  // Get batch information for the current board
-  const { batches, loading: batchesLoading, fetchBatches } = useBatches();
-  const currentBatch = batches.find((b) => b.id === queueId) || null;
+  // Get queue information with active batch
+  const { currentQueue, loading: queueLoading, fetchQueueById } = useQueueList();
 
-  // Queue management
+  // Queue management (items)
   const [queues, setQueues] = useState<QueueItem[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -39,7 +38,7 @@ export function QueueBoard() {
     addQueueLocal,
     updateQueueLocal,
     removeQueueLocal,
-  } = useQueues({ queueId });
+  } = useQueues({ queueId: currentQueue?.activeBatchId || undefined });
 
   // Status management
   const [statuses, setStatuses] = useState<QueueStatus[]>([]);
@@ -52,7 +51,9 @@ export function QueueBoard() {
     addStatusLocal,
     updateStatusLocal,
     removeStatusLocal,
-  } = useStatuses({ queueId });
+  } = useStatuses({
+    queueId: currentQueue?.activeBatchId || undefined,
+  });
 
   // Sound hooks (initialize before SSE)
   const { soundEnabled, toggleSound, playAnnouncement } = useSound();
@@ -79,45 +80,48 @@ export function QueueBoard() {
   };
 
   // SSE integration for real-time updates
-  const { isConnected: sseConnected } = useBatchSSE(queueId || null, {
-    onQueueItemCreated: (queue) => {
-      addQueueLocal(queue);
-      setLastRefresh(new Date());
-    },
-    onQueueItemUpdated: (queue) => {
-      // Find previous status to detect if queue was called
-      const oldQueue = queues.find((q) => q.id === queue.id);
-      const oldStatusId = oldQueue?.statusId;
+  const { isConnected: sseConnected } = useBatchSSE(
+    currentQueue?.activeBatchId || null,
+    {
+      onQueueItemCreated: (queue) => {
+        addQueueLocal(queue);
+        setLastRefresh(new Date());
+      },
+      onQueueItemUpdated: (queue) => {
+        // Find previous status to detect if queue was called
+        const oldQueue = queues.find((q) => q.id === queue.id);
+        const oldStatusId = oldQueue?.statusId;
 
-      updateQueueLocal(queue.id, queue);
-      setLastRefresh(new Date());
+        updateQueueLocal(queue.id, queue);
+        setLastRefresh(new Date());
 
-      // Check if we should play announcement
-      if (shouldAnnounce(queue, oldStatusId)) {
-        const customerName = queue.metadata?.customerName || queue.name;
-        playAnnouncement(queue.queueNumber, customerName);
-      }
+        // Check if we should play announcement
+        if (shouldAnnounce(queue, oldStatusId)) {
+          const customerName = queue.metadata?.customerName || queue.name;
+          playAnnouncement(queue.queueNumber, customerName);
+        }
+      },
+      onQueueItemDeleted: ({ id }) => {
+        removeQueueLocal(id);
+        setLastRefresh(new Date());
+      },
+      onStatusCreated: (status) => {
+        addStatusLocal(status);
+      },
+      onStatusUpdated: (status) => {
+        updateStatusLocal(status.id, status);
+      },
+      onStatusDeleted: ({ id }) => {
+        removeStatusLocal(id);
+      },
+      onBatchDeleted: ({ id }) => {
+        if (currentQueue?.activeBatchId === id) {
+          // Navigate back to board list if current batch is deleted
+          window.location.href = "/";
+        }
+      },
     },
-    onQueueItemDeleted: ({ id }) => {
-      removeQueueLocal(id);
-      setLastRefresh(new Date());
-    },
-    onStatusCreated: (status) => {
-      addStatusLocal(status);
-    },
-    onStatusUpdated: (status) => {
-      updateStatusLocal(status.id, status);
-    },
-    onStatusDeleted: ({ id }) => {
-      removeStatusLocal(id);
-    },
-    onBatchDeleted: ({ id }) => {
-      if (queueId === id) {
-        // Navigate back to board list if current batch is deleted
-        window.location.href = "/";
-      }
-    },
-  });
+  );
 
   // Other hooks
   const { lastRefresh: _refreshTime } = useAutoRefresh();
@@ -130,18 +134,20 @@ export function QueueBoard() {
     playAnnouncement,
   });
 
-  // Initialize batches
-  useEffect(() => {
-    fetchBatches();
-  }, [fetchBatches]);
-
-  // Initialize data when queueId changes
+  // Initialize: fetch queue with active batch
   useEffect(() => {
     if (queueId) {
+      fetchQueueById(queueId);
+    }
+  }, [queueId, fetchQueueById]);
+
+  // Initialize data when activeBatchId is available
+  useEffect(() => {
+    if (currentQueue?.activeBatchId) {
       fetchQueuesData();
       fetchStatusesData();
     }
-  }, [queueId, fetchQueuesData, fetchStatusesData]);
+  }, [currentQueue?.activeBatchId, fetchQueuesData, fetchStatusesData]);
 
   // Update local state when hook data changes
   useEffect(() => {
@@ -175,10 +181,10 @@ export function QueueBoard() {
   };
 
   // Loading state
-  const isLoading = batchesLoading || queuesLoading || statusesLoading;
+  const isLoading = queueLoading || queuesLoading || statusesLoading;
 
   // Error state
-  const hasError = batchesLoading ? false : queuesError || statusesError;
+  const hasError = !queueLoading && (queuesError || statusesError);
 
   // Invalid queueId
   if (!queueId) {
@@ -198,16 +204,19 @@ export function QueueBoard() {
     );
   }
 
-  // Batch not found
-  if (!batchesLoading && batches.length > 0 && !currentBatch) {
+  // No active batch found
+  if (!queueLoading && currentQueue && !currentQueue.activeBatchId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center p-8 bg-gray-700 rounded-lg">
           <h2 className="text-2xl font-bold mb-4 text-white">
-            Board Not Found
+            No Active Batch
           </h2>
           <p className="text-gray-300 mb-4">
-            The requested board could not be found.
+            This queue doesn't have an active batch.
+          </p>
+          <p className="text-sm text-gray-400 mb-4">
+            Create or reset a batch to start managing queues.
           </p>
           <Link
             to="/"
@@ -224,7 +233,11 @@ export function QueueBoard() {
     <div className="App">
       {/* Topbar */}
       <Topbar
-        title={currentBatch?.name || "Queue Board"}
+        title={
+          currentQueue?.activeBatch?.name ||
+          currentQueue?.name ||
+          "Queue Board"
+        }
         lastRefresh={lastRefresh}
         soundEnabled={soundEnabled}
         onToggleSound={handleSoundChange}
@@ -258,6 +271,7 @@ export function QueueBoard() {
                 <p className="text-sm text-gray-400 mb-4">{statusesError}</p>
               )}
               <button
+                type="button"
                 onClick={() => {
                   fetchQueuesData();
                   fetchStatusesData();
@@ -286,13 +300,13 @@ export function QueueBoard() {
           onClose={() => {}}
           onSuccess={handleAddQueueSuccess}
           statuses={statuses}
-          queueId={queueId || ""}
+          queueId={currentQueue?.activeBatchId || ""}
         />
         <StatusManagerModal
           open={false}
           onClose={() => {}}
           onSuccess={handleStatusManagerSuccess}
-          queueId={queueId || ""}
+          queueId={currentQueue?.activeBatchId || ""}
         />
       </>
     </div>
