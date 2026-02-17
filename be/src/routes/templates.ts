@@ -1,9 +1,23 @@
+/**
+ * Template Routes
+ * API endpoints for template management
+ */
+
 import { Hono } from 'hono';
-import { getDb } from '../db/index.js';
-import { queueTemplates, queueTemplateStatuses } from '../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { templateService } from '../services/template.service.js';
 import { sseBroadcaster } from '../sse/broadcaster.js';
+import {
+  successResponse,
+  notFoundResponse,
+  validationErrorResponse,
+  internalErrorResponse,
+} from '../middleware/response.js';
+import { validateBody } from '../middleware/validation.js';
+import {
+  createTemplateSchema,
+  updateTemplateSchema,
+  createTemplateStatusSchema,
+} from '../validators/template.validator.js';
 
 export const templateRoutes = new Hono();
 
@@ -13,24 +27,11 @@ export const templateRoutes = new Hono();
  */
 templateRoutes.get('/', async (c) => {
   try {
-    const db = getDb();
-    const templates = await db
-      .select()
-      .from(queueTemplates)
-      .orderBy(desc(queueTemplates.createdAt));
-
-    return c.json({
-      success: true,
-      data: templates,
-      total: templates.length
-    });
+    const templates = await templateService.getAllTemplates();
+    return c.json(successResponse(templates, undefined, templates.length));
   } catch (error) {
     console.error('[TemplateRoutes] GET /templates error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -41,28 +42,16 @@ templateRoutes.get('/', async (c) => {
 templateRoutes.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
+    const template = await templateService.getTemplateById(id);
 
-    if (!template || template.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Template with id ${id} not found`
-      }, 404);
+    if (!template) {
+      return c.json(notFoundResponse('Template', id), 404);
     }
 
-    return c.json({
-      success: true,
-      data: template[0]
-    });
+    return c.json(successResponse(template));
   } catch (error) {
     console.error('[TemplateRoutes] GET /templates/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -70,48 +59,22 @@ templateRoutes.get('/:id', async (c) => {
  * POST /templates
  * Create a new template
  */
-templateRoutes.post('/', async (c) => {
+templateRoutes.post('/', validateBody(createTemplateSchema), async (c) => {
   try {
-    const body = await c.req.json();
-
-    // Validation
-    if (!body.name || body.name.length < 3 || body.name.length > 100) {
-      return c.json({
-        success: false,
-        error: 'Validation Error',
-        message: 'name is required and must be between 3-100 characters'
-      }, 400);
-    }
-
-    const db = getDb();
-    const newTemplate = {
-      id: uuidv4(),
-      name: body.name,
-      description: body.description || null,
-      isActive: body.isActive !== undefined ? body.isActive : true,
-    };
-
-    const result = await db.insert(queueTemplates).values(newTemplate).returning();
+    const input = c.get('validatedBody') as Parameters<typeof templateService.createTemplate>[0];
+    const template = await templateService.createTemplate(input);
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
       type: 'template_created',
-      data: result[0],
-      boardId: result[0].id, // Use template ID for SSE compatibility
+      data: template,
+      boardId: template.id, // Use template ID for SSE compatibility
     });
 
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Template created successfully'
-    }, 201);
+    return c.json(successResponse(template, 'Template created successfully'), 201);
   } catch (error) {
     console.error('[TemplateRoutes] POST /templates error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -119,53 +82,27 @@ templateRoutes.post('/', async (c) => {
  * PUT /templates/:id
  * Update a template
  */
-templateRoutes.put('/:id', async (c) => {
+templateRoutes.put('/:id', validateBody(updateTemplateSchema), async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const input = c.get('validatedBody') as Parameters<typeof templateService.updateTemplate>[1];
+    const template = await templateService.updateTemplate(id, input);
 
-    const db = getDb();
-    const existing = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Template with id ${id} not found`
-      }, 404);
+    if (!template) {
+      return c.json(notFoundResponse('Template', id), 404);
     }
-
-    // Build update object with only provided fields
-    const updateData: Record<string, unknown> = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.isActive !== undefined) updateData.isActive = body.isActive;
-
-    const result = await db
-      .update(queueTemplates)
-      .set(updateData)
-      .where(eq(queueTemplates.id, id))
-      .returning();
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
       type: 'template_updated',
-      data: result[0],
-      boardId: result[0].id,
+      data: template,
+      boardId: template.id,
     });
 
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Template updated successfully'
-    });
+    return c.json(successResponse(template, 'Template updated successfully'));
   } catch (error) {
     console.error('[TemplateRoutes] PUT /templates/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -176,19 +113,11 @@ templateRoutes.put('/:id', async (c) => {
 templateRoutes.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
+    const deleted = await templateService.deleteTemplate(id);
 
-    const existing = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Template with id ${id} not found`
-      }, 404);
+    if (!deleted) {
+      return c.json(notFoundResponse('Template', id), 404);
     }
-
-    await db.delete(queueTemplates).where(eq(queueTemplates.id, id));
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
@@ -197,18 +126,10 @@ templateRoutes.delete('/:id', async (c) => {
       boardId: id,
     });
 
-    return c.json({
-      success: true,
-      data: { id },
-      message: 'Template deleted successfully'
-    });
+    return c.json(successResponse({ id }, 'Template deleted successfully'));
   } catch (error) {
     console.error('[TemplateRoutes] DELETE /templates/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -219,36 +140,16 @@ templateRoutes.delete('/:id', async (c) => {
 templateRoutes.get('/:id/statuses', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
+    const statuses = await templateService.getTemplateStatuses(id);
 
-    // Verify template exists
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
-    if (!template || template.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Template with id ${id} not found`
-      }, 404);
+    if (!statuses) {
+      return c.json(notFoundResponse('Template', id), 404);
     }
 
-    const statuses = await db
-      .select()
-      .from(queueTemplateStatuses)
-      .where(eq(queueTemplateStatuses.templateId, id))
-      .orderBy(queueTemplateStatuses.order);
-
-    return c.json({
-      success: true,
-      data: statuses,
-      total: statuses.length
-    });
+    return c.json(successResponse(statuses, undefined, statuses.length));
   } catch (error) {
     console.error('[TemplateRoutes] GET /templates/:id/statuses error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -256,53 +157,19 @@ templateRoutes.get('/:id/statuses', async (c) => {
  * POST /templates/:id/statuses
  * Add status to a template
  */
-templateRoutes.post('/:id/statuses', async (c) => {
+templateRoutes.post('/:id/statuses', validateBody(createTemplateStatusSchema), async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const input = c.get('validatedBody') as Parameters<typeof templateService.addTemplateStatus>[1];
+    const status = await templateService.addTemplateStatus(id, input);
 
-    // Validation
-    if (!body.label || !body.color || body.order === undefined) {
-      return c.json({
-        success: false,
-        error: 'Validation Error',
-        message: 'label, color, and order are required'
-      }, 400);
+    if (!status) {
+      return c.json(notFoundResponse('Template', id), 404);
     }
 
-    const db = getDb();
-
-    // Verify template exists
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
-    if (!template || template.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Template with id ${id} not found`
-      }, 404);
-    }
-
-    const newStatus = {
-      id: uuidv4(),
-      templateId: id,
-      label: body.label,
-      color: body.color,
-      order: body.order,
-    };
-
-    const result = await db.insert(queueTemplateStatuses).values(newStatus).returning();
-
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Template status created successfully'
-    }, 201);
+    return c.json(successResponse(status, 'Template status created successfully'), 201);
   } catch (error) {
     console.error('[TemplateRoutes] POST /templates/:id/statuses error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });

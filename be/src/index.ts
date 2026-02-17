@@ -5,8 +5,8 @@ import { logger } from 'hono/logger'
 import { healthCheckRoutes } from './routes/health.js'
 import { boardRoutes } from './routes/boards.js'
 import { statusRoutes } from './routes/statuses.js'
-import { queueRoutes as queueItemRoutes } from './routes/queues.js'
-import { queueListRoutes } from './routes/queue-list.js'
+import { queueRoutes } from './routes/queues.js'
+import { queueItemRoutes } from './routes/queue-items.js'
 import { templateRoutes } from './routes/templates.js'
 import { batchRoutes } from './routes/batches.js'
 import { sseRoutes } from './sse/index.js'
@@ -26,7 +26,7 @@ app.use('*', cors({
 app.route('/', healthCheckRoutes)
 app.route('/boards', boardRoutes)
 app.route('/statuses', statusRoutes)
-app.route('/queues', queueListRoutes)
+app.route('/queues', queueRoutes)
 app.route('/queue-items', queueItemRoutes)
 app.route('/templates', templateRoutes)
 app.route('/batches', batchRoutes)

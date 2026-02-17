@@ -1,9 +1,19 @@
+/**
+ * Board Routes
+ * API endpoints for board management
+ */
+
 import { Hono } from 'hono';
-import { getDb } from '../db/index.js';
-import { queueBoards } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { boardService } from '../services/board.service.js';
 import { sseBroadcaster } from '../sse/broadcaster.js';
+import {
+  successResponse,
+  notFoundResponse,
+  validationErrorResponse,
+  internalErrorResponse,
+} from '../middleware/response.js';
+import { validateBody } from '../middleware/validation.js';
+import { createBoardSchema, updateBoardSchema } from '../validators/board.validator.js';
 
 export const boardRoutes = new Hono();
 
@@ -13,21 +23,11 @@ export const boardRoutes = new Hono();
  */
 boardRoutes.get('/', async (c) => {
   try {
-    const db = getDb();
-    const boards = await db.select().from(queueBoards).orderBy(queueBoards.createdAt);
-
-    return c.json({
-      success: true,
-      data: boards,
-      total: boards.length
-    });
+    const boards = await boardService.getAllBoards();
+    return c.json(successResponse(boards, undefined, boards.length));
   } catch (error) {
     console.error('[BoardRoutes] GET /boards error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -38,28 +38,16 @@ boardRoutes.get('/', async (c) => {
 boardRoutes.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
-    const board = await db.select().from(queueBoards).where(eq(queueBoards.id, id)).limit(1);
+    const board = await boardService.getBoardById(id);
 
-    if (!board || board.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Board with id ${id} not found`
-      }, 404);
+    if (!board) {
+      return c.json(notFoundResponse('Board', id), 404);
     }
 
-    return c.json({
-      success: true,
-      data: board[0]
-    });
+    return c.json(successResponse(board));
   } catch (error) {
     console.error('[BoardRoutes] GET /boards/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -67,41 +55,14 @@ boardRoutes.get('/:id', async (c) => {
  * POST /boards
  * Create a new queue board
  */
-boardRoutes.post('/', async (c) => {
+boardRoutes.post('/', validateBody(createBoardSchema), async (c) => {
   try {
-    const body = await c.req.json();
-
-    // Validation
-    if (!body.name) {
-      return c.json({
-        success: false,
-        error: 'Validation Error',
-        message: 'name is required'
-      }, 400);
-    }
-
-    const db = getDb();
-    const newBoard = {
-      id: uuidv4(),
-      name: body.name,
-      description: body.description || null,
-      isActive: body.isActive !== undefined ? body.isActive : true,
-    };
-
-    const result = await db.insert(queueBoards).values(newBoard).returning();
-
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Board created successfully'
-    }, 201);
+    const input = c.get('validatedBody') as Parameters<typeof boardService.createBoard>[0];
+    const board = await boardService.createBoard(input);
+    return c.json(successResponse(board, 'Board created successfully'), 201);
   } catch (error) {
     console.error('[BoardRoutes] POST /boards error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -109,53 +70,27 @@ boardRoutes.post('/', async (c) => {
  * PUT /boards/:id
  * Update an existing board
  */
-boardRoutes.put('/:id', async (c) => {
+boardRoutes.put('/:id', validateBody(updateBoardSchema), async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const input = c.get('validatedBody') as Parameters<typeof boardService.updateBoard>[1];
+    const board = await boardService.updateBoard(id, input);
 
-    const db = getDb();
-    const existing = await db.select().from(queueBoards).where(eq(queueBoards.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Board with id ${id} not found`
-      }, 404);
+    if (!board) {
+      return c.json(notFoundResponse('Board', id), 404);
     }
-
-    // Build update object with only provided fields
-    const updateData: Record<string, unknown> = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.isActive !== undefined) updateData.isActive = body.isActive;
-
-    const result = await db
-      .update(queueBoards)
-      .set(updateData)
-      .where(eq(queueBoards.id, id))
-      .returning();
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
       type: 'board_updated',
-      data: result[0],
+      data: board,
       boardId: id
     });
 
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Board updated successfully'
-    });
+    return c.json(successResponse(board, 'Board updated successfully'));
   } catch (error) {
     console.error('[BoardRoutes] PUT /boards/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -166,19 +101,11 @@ boardRoutes.put('/:id', async (c) => {
 boardRoutes.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
+    const deleted = await boardService.deleteBoard(id);
 
-    const existing = await db.select().from(queueBoards).where(eq(queueBoards.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Board with id ${id} not found`
-      }, 404);
+    if (!deleted) {
+      return c.json(notFoundResponse('Board', id), 404);
     }
-
-    await db.delete(queueBoards).where(eq(queueBoards.id, id));
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
@@ -187,17 +114,9 @@ boardRoutes.delete('/:id', async (c) => {
       boardId: id
     });
 
-    return c.json({
-      success: true,
-      data: { id },
-      message: 'Board deleted successfully'
-    });
+    return c.json(successResponse({ id }, 'Board deleted successfully'));
   } catch (error) {
     console.error('[BoardRoutes] DELETE /boards/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });

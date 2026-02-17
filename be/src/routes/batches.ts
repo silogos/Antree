@@ -1,9 +1,19 @@
+/**
+ * Batch Routes
+ * API endpoints for batch management
+ */
+
 import { Hono } from 'hono';
-import { getDb } from '../db/index.js';
-import { queueBatches, queueTemplates, queueTemplateStatuses, queueStatuses, queues } from '../db/schema.js';
-import { eq, and, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { batchService } from '../services/batch.service.js';
 import { sseBroadcaster } from '../sse/broadcaster.js';
+import {
+  successResponse,
+  notFoundResponse,
+  validationErrorResponse,
+  internalErrorResponse,
+} from '../middleware/response.js';
+import { validateBody } from '../middleware/validation.js';
+import { createBatchSchema, updateBatchSchema } from '../validators/batch.validator.js';
 
 export const batchRoutes = new Hono();
 
@@ -14,46 +24,18 @@ export const batchRoutes = new Hono();
 batchRoutes.get('/', async (c) => {
   try {
     const queueId = c.req.query('queueId');
-    const status = c.req.query('status'); // active, closed
+    const status = c.req.query('status') as 'active' | 'closed' | undefined;
 
-    const db = getDb();
-    let batches;
+    const filters = {
+      queueId,
+      status,
+    };
 
-    if (queueId) {
-      // Filter by queue
-      if (status) {
-        batches = await db
-          .select()
-          .from(queueBatches)
-          .where(and(eq(queueBatches.queueId, queueId), eq(queueBatches.status, status)))
-          .orderBy(desc(queueBatches.createdAt));
-      } else {
-        batches = await db
-          .select()
-          .from(queueBatches)
-          .where(eq(queueBatches.queueId, queueId))
-          .orderBy(desc(queueBatches.createdAt));
-      }
-    } else {
-      // Get all batches
-      batches = await db
-        .select()
-        .from(queueBatches)
-        .orderBy(desc(queueBatches.createdAt));
-    }
-
-    return c.json({
-      success: true,
-      data: batches,
-      total: batches.length
-    });
+    const batches = await batchService.getAllBatches(filters);
+    return c.json(successResponse(batches, undefined, batches.length));
   } catch (error) {
     console.error('[BatchRoutes] GET /batches error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -64,28 +46,16 @@ batchRoutes.get('/', async (c) => {
 batchRoutes.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
-    const batch = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);
+    const batch = await batchService.getBatchById(id);
 
-    if (!batch || batch.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Batch with id ${id} not found`
-      }, 404);
+    if (!batch) {
+      return c.json(notFoundResponse('Batch', id), 404);
     }
 
-    return c.json({
-      success: true,
-      data: batch[0]
-    });
+    return c.json(successResponse(batch));
   } catch (error) {
     console.error('[BatchRoutes] GET /batches/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -93,89 +63,26 @@ batchRoutes.get('/:id', async (c) => {
  * POST /batches
  * Create a new batch (copies statuses from template)
  */
-batchRoutes.post('/', async (c) => {
+batchRoutes.post('/', validateBody(createBatchSchema), async (c) => {
   try {
-    const body = await c.req.json();
+    const input = c.get('validatedBody') as Parameters<typeof batchService.createBatch>[0];
+    const batch = await batchService.createBatch(input);
 
-    // Validation
-    if (!body.queueId) {
-      return c.json({
-        success: false,
-        error: 'Validation Error',
-        message: 'queueId is required'
-      }, 400);
-    }
-
-    const db = getDb();
-
-    // Verify queue exists
-    const queue = await db.select().from(queues).where(eq(queues.id, body.queueId)).limit(1);
-    if (!queue || queue.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Queue with id ${body.queueId} not found`
-      }, 404);
-    }
-
-    // Get template for the queue
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, queue[0].templateId)).limit(1);
-
-    // Create batch
-    const newBatch = {
-      id: uuidv4(),
-      queueId: body.queueId,
-      name: body.name || `Batch - ${new Date().toISOString()}`,
-      status: body.status || 'active',
-    };
-
-    const batchResult = await db.insert(queueBatches).values(newBatch).returning();
-    const batchId = batchResult[0].id;
-
-    // Copy statuses from template
-    if (template && template.length > 0) {
-      const templateStatuses = await db
-        .select()
-        .from(queueTemplateStatuses)
-        .where(eq(queueTemplateStatuses.templateId, queue[0].templateId))
-        .orderBy(queueTemplateStatuses.order);
-
-      // Create batch statuses as copies of template statuses
-      const batchStatuses = templateStatuses.map(ts => ({
-        id: uuidv4(),
-        queueId: batchId,
-        templateStatusId: ts.id, // Track origin
-        label: ts.label,
-        color: ts.color,
-        order: ts.order,
-      }));
-
-      if (batchStatuses.length > 0) {
-        await db.insert(queueStatuses).values(batchStatuses);
-      }
-
-      console.log(`[BatchRoutes] Created batch ${batchId}`);
+    if (!batch) {
+      return c.json(successResponse(null, 'Queue not found'), 404);
     }
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
       type: 'batch_created',
-      data: batchResult[0],
-      queueId: body.queueId,
+      data: batch,
+      queueId: input.queueId,
     });
 
-    return c.json({
-      success: true,
-      data: batchResult[0],
-      message: 'Batch created successfully with copied statuses'
-    }, 201);
+    return c.json(successResponse(batch, 'Batch created successfully with copied statuses'), 201);
   } catch (error) {
     console.error('[BatchRoutes] POST /batches error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -183,52 +90,27 @@ batchRoutes.post('/', async (c) => {
  * PUT /batches/:id
  * Update a batch
  */
-batchRoutes.put('/:id', async (c) => {
+batchRoutes.put('/:id', validateBody(updateBatchSchema), async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const input = c.get('validatedBody') as Parameters<typeof batchService.updateBatch>[1];
+    const batch = await batchService.updateBatch(id, input);
 
-    const db = getDb();
-    const existing = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Batch with id ${id} not found`
-      }, 404);
+    if (!batch) {
+      return c.json(notFoundResponse('Batch', id), 404);
     }
-
-    // Build update object with only provided fields
-    const updateData: Record<string, unknown> = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.status !== undefined) updateData.status = body.status;
-
-    const result = await db
-      .update(queueBatches)
-      .set(updateData)
-      .where(eq(queueBatches.id, id))
-      .returning();
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
       type: 'batch_updated',
-      data: result[0],
+      data: batch,
       batchId: id,
     });
 
-    return c.json({
-      success: true,
-      data: result[0],
-      message: 'Batch updated successfully'
-    });
+    return c.json(successResponse(batch, 'Batch updated successfully'));
   } catch (error) {
     console.error('[BatchRoutes] PUT /batches/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });
 
@@ -239,19 +121,11 @@ batchRoutes.put('/:id', async (c) => {
 batchRoutes.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const db = getDb();
+    const deleted = await batchService.deleteBatch(id);
 
-    const existing = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);
-
-    if (!existing || existing.length === 0) {
-      return c.json({
-        success: false,
-        error: 'Not Found',
-        message: `Batch with id ${id} not found`
-      }, 404);
+    if (!deleted) {
+      return c.json(notFoundResponse('Batch', id), 404);
     }
-
-    await db.delete(queueBatches).where(eq(queueBatches.id, id));
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
@@ -260,17 +134,9 @@ batchRoutes.delete('/:id', async (c) => {
       batchId: id,
     });
 
-    return c.json({
-      success: true,
-      data: { id },
-      message: 'Batch deleted successfully'
-    });
+    return c.json(successResponse({ id }, 'Batch deleted successfully'));
   } catch (error) {
     console.error('[BatchRoutes] DELETE /batches/:id error:', error);
-    return c.json({
-      success: false,
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    return c.json(internalErrorResponse(error), 500);
   }
 });

@@ -1,0 +1,24 @@
+/**
+ * Validation Schemas for Queue Item (individual queue entries)
+ */
+
+import { z } from 'zod';
+
+export const createQueueItemSchema = z.object({
+  queueId: z.string().uuid(),
+  queueNumber: z.string().min(1),
+  name: z.string().min(1).max(255),
+  statusId: z.string().uuid(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+export const updateQueueItemSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  statusId: z.string().uuid().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).refine((data) => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided',
+});
+
+export type CreateQueueItemInput = z.infer<typeof createQueueItemSchema>;
+export type UpdateQueueItemInput = z.infer<typeof updateQueueItemSchema>;
