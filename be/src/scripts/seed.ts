@@ -1,10 +1,8 @@
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueBatches, queueTemplates, queueTemplateStatuses, queueStatuses, queueItems, queues } from '../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 
 async function seed() {
-  const db = getDb();
-
   console.log('🌱 Seeding initial data...');
 
   // Seed system templates

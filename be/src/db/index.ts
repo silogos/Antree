@@ -3,30 +3,14 @@ import postgres from 'postgres';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://antree_user:antree_password@localhost:5432/antree_db';
 
-// Singleton pattern for database connection
-let client: postgres.Sql | null = null;
-let db: ReturnType<typeof drizzle> | null = null;
+// Initialize database connection
+const client = postgres(connectionString);
+export const db = drizzle(client);
 
-export function getDb(): ReturnType<typeof drizzle> {
-  if (!client) {
-    client = postgres(connectionString);
-    db = drizzle(client);
-  }
-  return db!;
-}
-
-export function getClient(): postgres.Sql {
-  if (!client) {
-    client = postgres(connectionString);
-  }
-  return client!;
-}
+// Export client for raw queries if needed
+export { client };
 
 // Cleanup function for graceful shutdown
 export async function closeDb() {
-  if (client) {
-    await client.end();
-    client = null;
-    db = null;
-  }
+  await client.end();
 }

@@ -3,7 +3,7 @@
  * Business logic for batch operations
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueBatches, queues, queueTemplates, queueTemplateStatuses, queueStatuses } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,6 @@ export class BatchService {
    * Get all batches with optional filtering
    */
   async getAllBatches(filters?: { queueId?: string; status?: 'active' | 'closed' }): Promise<typeof queueBatches.$inferSelect[]> {
-    const db = getDb();
 
     let batches: typeof queueBatches.$inferSelect[];
 
@@ -46,7 +45,6 @@ export class BatchService {
    * Get a single batch by ID
    */
   async getBatchById(id: string): Promise<typeof queueBatches.$inferSelect | null> {
-    const db = getDb();
     const batches = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);
     return batches[0] || null;
   }
@@ -55,7 +53,6 @@ export class BatchService {
    * Create a new batch (copies statuses from template)
    */
   async createBatch(input: CreateBatchInput): Promise<typeof queueBatches.$inferSelect | null> {
-    const db = getDb();
 
     // Verify queue exists
     const queue = await db.select().from(queues).where(eq(queues.id, input.queueId)).limit(1);
@@ -107,7 +104,6 @@ export class BatchService {
    * Update a batch
    */
   async updateBatch(id: string, input: UpdateBatchInput): Promise<typeof queueBatches.$inferSelect | null> {
-    const db = getDb();
 
     // Check if batch exists
     const existing = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);
@@ -133,7 +129,6 @@ export class BatchService {
    * Delete a batch
    */
   async deleteBatch(id: string): Promise<boolean> {
-    const db = getDb();
 
     // Check if batch exists
     const existing = await db.select().from(queueBatches).where(eq(queueBatches.id, id)).limit(1);

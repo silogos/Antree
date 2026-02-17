@@ -3,7 +3,7 @@
  * Business logic for board operations
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueBoards } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,6 @@ export class BoardService {
    * Get all boards
    */
   async getAllBoards(): Promise<QueueBoard[]> {
-    const db = getDb();
     return db.select().from(queueBoards).orderBy(queueBoards.createdAt);
   }
 
@@ -23,7 +22,6 @@ export class BoardService {
    * Get a single board by ID
    */
   async getBoardById(id: string): Promise<QueueBoard | null> {
-    const db = getDb();
     const boards = await db.select().from(queueBoards).where(eq(queueBoards.id, id)).limit(1);
     return boards[0] || null;
   }
@@ -32,7 +30,6 @@ export class BoardService {
    * Create a new board
    */
   async createBoard(input: CreateBoardInput): Promise<QueueBoard> {
-    const db = getDb();
     const newBoard: NewQueueBoard = {
       id: uuidv4(),
       name: input.name,
@@ -48,8 +45,6 @@ export class BoardService {
    * Update a board
    */
   async updateBoard(id: string, input: UpdateBoardInput): Promise<QueueBoard | null> {
-    const db = getDb();
-
     // Check if board exists
     const existing = await this.getBoardById(id);
     if (!existing) {
@@ -75,8 +70,6 @@ export class BoardService {
    * Delete a board
    */
   async deleteBoard(id: string): Promise<boolean> {
-    const db = getDb();
-
     // Check if board exists
     const existing = await this.getBoardById(id);
     if (!existing) {

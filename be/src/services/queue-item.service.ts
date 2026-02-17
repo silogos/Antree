@@ -3,7 +3,7 @@
  * Business logic for queue item operations
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueItems } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,6 @@ export class QueueItemService {
    * Get all queue items with optional filtering
    */
   async getAllQueueItems(filters?: { queueId?: string; statusId?: string }): Promise<QueueItem[]> {
-    const db = getDb();
 
     const conditions: (ReturnType<typeof eq>)[] = [];
     if (filters?.queueId) {
@@ -43,7 +42,6 @@ export class QueueItemService {
    * Get a single queue item by ID
    */
   async getQueueItemById(id: string): Promise<QueueItem | null> {
-    const db = getDb();
     const items = await db.select().from(queueItems).where(eq(queueItems.id, id)).limit(1);
     return items[0] || null;
   }
@@ -52,7 +50,6 @@ export class QueueItemService {
    * Create a new queue item
    */
   async createQueueItem(input: CreateQueueItemInput): Promise<QueueItem> {
-    const db = getDb();
     const newItem: NewQueueItem = {
       id: uuidv4(),
       queueId: input.queueId,
@@ -70,7 +67,6 @@ export class QueueItemService {
    * Update a queue item
    */
   async updateQueueItem(id: string, input: UpdateQueueItemInput): Promise<QueueItem | null> {
-    const db = getDb();
 
     // Check if item exists
     const existing = await db.select().from(queueItems).where(eq(queueItems.id, id)).limit(1);
@@ -97,7 +93,6 @@ export class QueueItemService {
    * Delete a queue item
    */
   async deleteQueueItem(id: string): Promise<boolean> {
-    const db = getDb();
 
     // Check if item exists
     const existing = await db.select().from(queueItems).where(eq(queueItems.id, id)).limit(1);

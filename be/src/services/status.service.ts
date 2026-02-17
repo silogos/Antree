@@ -3,7 +3,7 @@
  * Business logic for status operations
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueStatuses } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,7 +20,6 @@ export class StatusService {
       return null;
     }
 
-    const db = getDb();
     return db
       .select()
       .from(queueStatuses)
@@ -32,7 +31,6 @@ export class StatusService {
    * Get a single status by ID
    */
   async getStatusById(id: string): Promise<typeof queueStatuses.$inferSelect | null> {
-    const db = getDb();
     const statuses = await db.select().from(queueStatuses).where(eq(queueStatuses.id, id)).limit(1);
     return statuses[0] || null;
   }
@@ -41,7 +39,6 @@ export class StatusService {
    * Create a new status
    */
   async createStatus(input: CreateStatusInput): Promise<typeof queueStatuses.$inferSelect> {
-    const db = getDb();
     const newStatus: NewQueueStatus = {
       id: uuidv4(),
       queueId: input.queueId,
@@ -59,7 +56,6 @@ export class StatusService {
    * Update a status
    */
   async updateStatus(id: string, input: UpdateStatusInput): Promise<typeof queueStatuses.$inferSelect | null> {
-    const db = getDb();
 
     // Check if status exists
     const existing = await this.getStatusById(id);
@@ -88,7 +84,6 @@ export class StatusService {
    * @throws Error if foreign key constraint violation
    */
   async deleteStatus(id: string): Promise<{ success: boolean; error?: string }> {
-    const db = getDb();
 
     // Check if status exists
     const existing = await this.getStatusById(id);

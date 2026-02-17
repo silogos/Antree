@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { getClient } from '../db/index.js'
+import { client } from '../db/index.js'
 
 export const healthCheckRoutes = new Hono()
 
@@ -13,7 +13,6 @@ healthCheckRoutes.get('/', (c) => {
 
 healthCheckRoutes.get('/health', async (c) => {
   try {
-    const client = getClient()
     // Simple database connection check
     await client`SELECT 1`
 

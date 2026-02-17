@@ -3,7 +3,7 @@
  * Business logic for queue operations (template-based queues)
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queues, queueBatches, queueTemplates, queueTemplateStatuses, queueStatuses } from '../db/schema.js';
 import { eq, desc, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,6 @@ export class QueueService {
    * Get all queues
    */
   async getAllQueues(): Promise<Queue[]> {
-    const db = getDb();
     return db.select().from(queues).orderBy(desc(queues.createdAt));
   }
 
@@ -23,7 +22,6 @@ export class QueueService {
    * Get a single queue by ID with active batch information
    */
   async getQueueById(id: string): Promise<(Queue & { activeBatchId: string | null; activeBatch: QueueBatch | null }) | null> {
-    const db = getDb();
     const queue = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
 
     if (!queue || queue.length === 0) {
@@ -48,7 +46,6 @@ export class QueueService {
    * Get active batch for a queue with its statuses
    */
   async getActiveBatch(queueId: string): Promise<{ batch: QueueBatch; statuses: typeof queueStatuses.$inferSelect[] } | null> {
-    const db = getDb();
 
     // Verify queue exists
     const queue = await db.select().from(queues).where(eq(queues.id, queueId)).limit(1);
@@ -84,7 +81,6 @@ export class QueueService {
    * Create a new queue
    */
   async createQueue(input: CreateQueueInput): Promise<Queue | null> {
-    const db = getDb();
 
     // Verify template exists
     const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, input.templateId)).limit(1);
@@ -109,7 +105,6 @@ export class QueueService {
    * Update a queue
    */
   async updateQueue(id: string, input: UpdateQueueInput): Promise<Queue | null> {
-    const db = getDb();
 
     // Check if queue exists
     const existing = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
@@ -136,7 +131,6 @@ export class QueueService {
    * Delete a queue (cascades to batches, statuses, items)
    */
   async deleteQueue(id: string): Promise<boolean> {
-    const db = getDb();
 
     // Check if queue exists
     const existing = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
@@ -152,7 +146,6 @@ export class QueueService {
    * Reset queue by closing current active batch and creating a new one
    */
   async resetQueue(id: string, input: ResetQueueInput = {}): Promise<QueueBatch | null> {
-    const db = getDb();
 
     // Verify queue exists
     const queue = await db.select().from(queues).where(eq(queues.id, id)).limit(1);

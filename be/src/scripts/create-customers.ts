@@ -1,9 +1,8 @@
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueBatches, queueItems } from '../db/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 
 async function createCustomers() {
-  const db = getDb();
   const batchId = '955ba95e-656f-4dca-a118-969d4adb7084';
   const templateId = '0616f3a2-1868-424b-a7ee-8eec32dc11fe';
 

@@ -3,7 +3,7 @@
  * Business logic for template operations
  */
 
-import { getDb } from '../db/index.js';
+import { db } from '../db/index.js';
 import { queueTemplates, queueTemplateStatuses } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,7 +15,6 @@ export class TemplateService {
    * Get all templates
    */
   async getAllTemplates(): Promise<typeof queueTemplates.$inferSelect[]> {
-    const db = getDb();
     return db.select().from(queueTemplates).orderBy(desc(queueTemplates.createdAt));
   }
 
@@ -23,7 +22,6 @@ export class TemplateService {
    * Get a single template by ID
    */
   async getTemplateById(id: string): Promise<typeof queueTemplates.$inferSelect | null> {
-    const db = getDb();
     const templates = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
     return templates[0] || null;
   }
@@ -32,7 +30,6 @@ export class TemplateService {
    * Create a new template
    */
   async createTemplate(input: CreateTemplateInput): Promise<typeof queueTemplates.$inferSelect> {
-    const db = getDb();
     const newTemplate: NewQueueTemplate = {
       id: uuidv4(),
       name: input.name,
@@ -48,7 +45,6 @@ export class TemplateService {
    * Update a template
    */
   async updateTemplate(id: string, input: UpdateTemplateInput): Promise<typeof queueTemplates.$inferSelect | null> {
-    const db = getDb();
 
     // Check if template exists
     const existing = await this.getTemplateById(id);
@@ -75,8 +71,6 @@ export class TemplateService {
    * Delete a template
    */
   async deleteTemplate(id: string): Promise<boolean> {
-    const db = getDb();
-
     // Check if template exists
     const existing = await this.getTemplateById(id);
     if (!existing) {
@@ -91,8 +85,6 @@ export class TemplateService {
    * Get statuses for a template
    */
   async getTemplateStatuses(templateId: string): Promise<typeof queueTemplateStatuses.$inferSelect[] | null> {
-    const db = getDb();
-
     // Verify template exists
     const template = await this.getTemplateById(templateId);
     if (!template) {
@@ -110,8 +102,6 @@ export class TemplateService {
    * Add status to a template
    */
   async addTemplateStatus(templateId: string, input: CreateTemplateStatusInput): Promise<typeof queueTemplateStatuses.$inferSelect | null> {
-    const db = getDb();
-
     // Verify template exists
     const template = await this.getTemplateById(templateId);
     if (!template) {
