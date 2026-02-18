@@ -34,6 +34,92 @@
 - Update backend schema to use new tables
 - Update frontend to use session-based API endpoints
 
+# Task 8: Create Session Validator (be/src/validators/session.validator.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Created
+- Created `be/src/validators/session.validator.ts` by renaming and updating batch.validator.ts
+
+### Schemas Created
+1. **createSessionSchema**:
+   - queueId: z.string().uuid()
+   - templateId: z.string().uuid() (NEW - added field)
+   - name: z.string().min(1).max(255).optional()
+   - status: z.enum(['draft', 'active', 'closed']).optional()
+
+2. **updateSessionSchema**:
+   - name: z.string().min(1).max(255).optional()
+   - status: z.enum(['draft', 'active', 'closed']).optional()
+   - refine to ensure at least one field is provided (preserved from batch validator)
+
+3. **lifecycleUpdateSchema** (NEW):
+   - status: z.enum(['draft', 'active', 'closed'])
+
+### Type Exports
+- CreateBatchInput → CreateSessionInput
+- UpdateBatchInput → UpdateSessionInput
+
+### Verification
+- Build completed with expected errors (errors in other files, not in session.validator.ts)
+- No errors in session.validator.ts - only errors in dependent files (batch.service.ts, queue-item.service.ts, queue.service.ts, status.service.ts, sse/index.ts, seed scripts)
+- This confirms the validator file compiles correctly
+
+## Patterns Observed
+
+### Zod Validator Structure
+1. **File header**: Clear comment describing purpose
+2. **Import zod**: `import { z } from 'zod'`
+3. **Schema organization**: Group related schemas (create, update, lifecycle)
+4. **Type exports**: Infer types from schemas for TypeScript inference
+
+### Field Validation
+1. **UUID fields**: Use `z.string().uuid()` for foreign key references
+2. **Optional fields**: Use `.optional()` for non-required fields
+3. **String validation**: Use `.min(1).max(255)` for name fields
+4. **Enum validation**: Use `z.enum(['value1', 'value2'])` for status fields
+5. **Refine validation**: Use `.refine()` to enforce custom rules
+
+## Conventions
+
+### Validator Naming
+- Create/update schemas use descriptive names: createSessionSchema, updateSessionSchema
+- Lifecycle schemas use suffix: lifecycleUpdateSchema
+- Type exports use PascalCase: CreateSessionInput, UpdateSessionInput
+
+### Enum Handling
+- Status enums follow the database schema: 'draft', 'active', 'closed'
+- All status changes use the same enum, no separate draft-specific enums
+
+## Learnings
+
+### Validation Best Practices
+1. **Separation of concerns**: Different schemas for create, update, and lifecycle operations
+2. **Optional fields**: Make all fields optional except required foreign keys
+3. **Refine rules**: Use refine for business logic validation (e.g., at least one field for updates)
+
+### Task Dependencies
+1. **Validator creation can precede service updates**: Validators are independent of services
+2. **Build errors are expected**: TypeScript errors in dependent files are normal during refactoring
+3. **Incremental progress**: Validators created before services allows for cleaner refactor
+
+## Successful Approaches
+
+1. **Reference-based creation**: Used batch.validator.ts as reference to maintain consistency
+2. **Minimal changes**: Only updated what was necessary (rename, add templateId, update status enum)
+3. **Preserved existing logic**: Kept the refine rule for updateSessionSchema
+4. **No complex validation**: Only added basic field validation, no business logic
+
+## Next Steps
+- Task 12: Update batch.service.ts to use session validator
+- Task 13: Update queue-item.service.ts to use session validator
+- Task 14: Update queue.service.ts to use session validator
+- Task 15: Update status.service.ts to use session validator
+- Task 16: Update SSE broadcaster to handle session events
+
 ## Task 2 Learnings
 
 ### SQL Migration Implementation
