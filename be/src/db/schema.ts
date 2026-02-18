@@ -94,7 +94,7 @@ export const queueSessionStatuses = pgTable('queue_session_statuses', {
   templateStatusId: uuid('template_status_id').references(() => queueTemplateStatuses.id), // Track origin from template
   label: text('label').notNull(),
   color: text('color').notNull(),
-  order: integer('order').notNull(),
+  order: integer('status_order').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

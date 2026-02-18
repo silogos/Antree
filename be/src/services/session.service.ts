@@ -36,18 +36,19 @@ export class SessionService {
   }): Promise<typeof queueSessions.$inferSelect[]> {
     let sessions: typeof queueSessions.$inferSelect[];
 
+    // Default: exclude soft-deleted sessions
+    const deletedCondition = isNull(queueSessions.deletedAt);
+
     if (filters?.queueId) {
       // Filter by queue
-      const conditions = [eq(queueSessions.queueId, filters.queueId)];
+      const conditions = [
+        eq(queueSessions.queueId, filters.queueId),
+        deletedCondition,
+      ];
 
       // Filter by status if provided
       if (filters.status) {
         conditions.push(eq(queueSessions.status, filters.status));
-      }
-
-      // Filter by deleted status
-      if (filters.isDeleted === false) {
-        conditions.push(isNull(queueSessions.deletedAt));
       }
 
       sessions = await db
@@ -57,28 +58,17 @@ export class SessionService {
         .orderBy(desc(queueSessions.createdAt));
     } else {
       // Get all sessions
-      const conditions = [];
+      const conditions = [deletedCondition];
 
       if (filters?.status) {
         conditions.push(eq(queueSessions.status, filters.status));
       }
 
-      if (filters?.isDeleted === false) {
-        conditions.push(isNull(queueSessions.deletedAt));
-      }
-
-      if (conditions.length > 0) {
-        sessions = await db
-          .select()
-          .from(queueSessions)
-          .where(and(...conditions))
-          .orderBy(desc(queueSessions.createdAt));
-      } else {
-        sessions = await db
-          .select()
-          .from(queueSessions)
-          .orderBy(desc(queueSessions.createdAt));
-      }
+      sessions = await db
+        .select()
+        .from(queueSessions)
+        .where(and(...conditions))
+        .orderBy(desc(queueSessions.createdAt));
     }
 
     return sessions;
