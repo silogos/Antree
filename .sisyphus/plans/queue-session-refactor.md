@@ -1100,7 +1100,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 3 group commit)
 
-- [ ] 9. **Create backend DTO types**
+- [x] 9. **Create backend DTO types**
 
   **What to do**:
   - Create `be/src/types/session.dto.ts` file

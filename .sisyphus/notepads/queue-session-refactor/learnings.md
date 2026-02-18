@@ -34,6 +34,173 @@
 - Update backend schema to use new tables
 - Update frontend to use session-based API endpoints
 
+# Task 9: Create Backend DTO Types (be/src/types/session.dto.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Created
+- Created `be/src/types/session.dto.ts` with TypeScript interfaces for API contracts
+
+### Interfaces Created
+
+1. **QueueDTO**:
+   - id: string
+   - name: string
+   - template_id: string
+   - is_active: boolean
+   - created_at: Date | string
+   - updated_at: Date | string
+
+2. **SessionDTO**:
+   - id: string
+   - queue_id: string
+   - template_id: string
+   - name: string
+   - status: 'draft' | 'active' | 'closed'
+   - session_number: number
+   - started_at: Date | string | null
+   - ended_at: Date | string | null
+   - created_at: Date | string
+
+3. **SessionStatusDTO**:
+   - id: string
+   - session_id: string
+   - label: string
+   - color: string
+   - order: number
+
+4. **QueueItemDTO**:
+   - id: string
+   - queue_id: string
+   - session_id: string
+   - status_id: string
+   - queue_number: string
+   - name: string
+   - metadata: any
+   - created_at: Date | string
+
+5. **TemplateDTO**:
+   - id: string
+   - name: string
+   - description: string
+   - is_system_template: boolean
+   - is_active: boolean
+   - created_at: Date | string
+   - updated_at: Date | string
+
+6. **TemplateStatusDTO**:
+   - id: string
+   - template_id: string
+   - label: string
+   - color: string
+   - order: number
+
+7. **SessionLifecycleDTO**:
+   - status: 'draft' | 'active' | 'closed'
+
+### Key Characteristics
+- All properties use snake_case (user preference from Task 4)
+- Date fields support both Date objects and strings (flexible serialization)
+- Nullable fields indicated with | null
+- Enum fields use literal types ('draft' | 'active' | 'closed')
+- All types exported for use in services and routes
+
+## Patterns Observed
+
+### DTO Naming Conventions
+1. **Table DTOs**: Use {TableName}DTO pattern
+   - QueueDTO, SessionDTO, TemplateDTO
+2. **Status DTOs**: Use {TableName}StatusDTO pattern
+   - SessionStatusDTO, TemplateStatusDTO
+3. **Lifecycle DTOs**: Use {Concept}DTO pattern
+   - SessionLifecycleDTO
+4. **Item DTOs**: Use {TableName}ItemDTO pattern
+   - QueueItemDTO
+
+### Property Naming
+1. **snake_case**: All property names use snake_case (not camelCase)
+2. **snake_case IDs**: Foreign key IDs use snake_case (queue_id, session_id, status_id)
+3. **snake_case timestamps**: Created/updated times use snake_case (created_at, updated_at)
+4. **snake_case flags**: Boolean flags use snake_case (is_active, is_system_template)
+
+### Type Variants
+1. **Date fields**: Support both Date objects and strings for serialization flexibility
+2. **Nullable fields**: Use | null for optional nullable fields (started_at, ended_at)
+3. **Enum fields**: Use literal types for restricted values ('draft' | 'active' | 'closed')
+4. **Flexible metadata**: Use `any` type for flexible metadata objects
+
+## Conventions
+
+### DTO Export Strategy
+1. **Single file organization**: All DTO types in one file (session.dto.ts)
+2. **Clear ordering**: Table DTOs → Status DTOs → Item DTOs → Template DTOs → Lifecycle DTOs
+3. **Grouped by relationship**: Related types grouped together (SessionDTO, SessionStatusDTO, SessionLifecycleDTO)
+
+### Field Type Selection
+1. **UUID strings**: Use `string` for all UUID IDs (not `uuid` type, allows both string input and DB UUID)
+2. **Flexible dates**: Use `Date | string` to support different serialization formats
+3. **Any for metadata**: Use `any` for flexible metadata objects (will be refined in later tasks)
+4. **Order numbers**: Use `number` for integer ordering values
+
+## Verification
+
+### Build Verification
+- **Compilation**: `pnpm --filter @antree/backend build` succeeded for session.dto.ts
+- **No errors in new file**: session.dto.ts has zero TypeScript errors
+- **Expected errors**: Errors in dependent files (services, scripts, SSE) are expected and will be fixed in Tasks 12-24
+- **Evidence**: `.sisyphus/evidence/task-9-dto-import.log` contains build output
+
+### Evidence Files
+- `.sisyphus/evidence/task-9-dto-import.log` - Build verification output showing:
+  - Zero errors in session.dto.ts
+  - 45 errors in dependent files (expected during refactoring)
+  - All errors reference old table names (queueBatches, queueStatuses) that will be updated
+
+## Learnings
+
+### DTO Design Principles
+1. **Direct mapping**: DTOs directly map database schema fields (no mapping layer needed due to snake_case preference)
+2. **Flexible types**: Support multiple serialization formats (Date objects vs strings)
+3. **Type safety**: Use TypeScript literal types for enums (not runtime enum imports)
+4. **Comprehensive coverage**: All API response types defined upfront
+
+### Import Strategy
+1. **Centralized types**: All DTO types in one file for easy discovery
+2. **Explicit imports**: Services and routes must import DTOs explicitly
+3. **No circular dependencies**: DTOs don't depend on services or schemas
+
+### Serialization Considerations
+1. **Date handling**: Flexibility with Date vs string prevents serialization issues
+2. **Metadata**: Use `any` type now, refine later based on actual metadata structure
+3. **Null handling**: Clear indication of nullable fields with | null syntax
+
+## Successful Approaches
+
+1. **User preference alignment**: Adhered strictly to snake_case requirement from Task 4
+2. **Comprehensive coverage**: Defined all 7 interfaces upfront based on API contracts from refactor doc
+3. **Flexible typing**: Used Date | string to support various serialization scenarios
+4. **Clear organization**: Grouped related types (Session, SessionStatus, SessionLifecycle)
+
+## Dependencies
+
+### Created By
+- Task 7 (database schema) - source of truth for field names and types
+
+### Enables
+- Task 12: Update session.service.ts (will use DTO types in responses)
+- Task 13: Update queue-item.service.ts (will use QueueItemDTO)
+- Task 14: Update queue.service.ts (will use QueueDTO and SessionDTO)
+- Task 19: Update statuses.ts routes for session statuses (will use SessionStatusDTO and TemplateStatusDTO)
+
+## Next Steps
+- Task 10: Update TypeScript type exports to include session.dto.ts
+- Task 12: Update batch.service.ts → session.service.ts with DTO type usage
+- Task 13: Update queue-item.service.ts to use QueueItemDTO
+- Task 14: Update queue.service.ts to use QueueDTO and SessionDTO
+
 # Task 8: Create Session Validator (be/src/validators/session.validator.ts)
 
 ## Date
