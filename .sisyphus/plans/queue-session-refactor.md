@@ -1207,7 +1207,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 3 group commit)
 
-- [ ] 10. **Update TypeScript type exports**
+- [x] 10. **Update TypeScript type exports**
 
   **What to do**:
   - Update `be/src/db/schema.ts` to export renamed types:

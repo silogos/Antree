@@ -201,6 +201,87 @@
 - Task 13: Update queue-item.service.ts to use QueueItemDTO
 - Task 14: Update queue.service.ts to use QueueDTO and SessionDTO
 
+# Task 10: Update TypeScript Type Exports in schema.ts
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### Type Exports Updated
+The schema.ts file already contained the correct type exports after Task 5 (database schema update):
+1. `QueueSession` → Renamed from `QueueBatch` (line 88)
+2. `NewQueueSession` → Renamed from `NewQueueBatch` (line 89)
+3. `QueueSessionStatus` → Renamed from `QueueStatus` (line 102)
+4. `NewQueueSessionStatus` → Renamed from `NewQueueStatus` (line 103)
+
+### Verification
+
+#### Old Type Names Removed
+- Verified that `QueueBatch`, `QueueStatus`, `queueBatches`, `queueStatuses` are no longer present in schema.ts
+- grep search returned no matches for old type names
+- Confirmed clean removal without errors in schema.ts itself
+
+#### New Type Names Present
+- Line 88: `export type QueueSession = typeof queueSessions.$inferSelect;`
+- Line 89: `export type NewQueueSession = typeof queueSessions.$inferInsert;`
+- Line 102: `export type QueueSessionStatus = typeof queueSessionStatuses.$inferSelect;`
+- Line 103: `export type NewQueueSessionStatus = typeof queueSessionStatuses.$inferInsert;`
+
+#### Build Verification
+- TypeScript compilation succeeded for schema.ts itself (zero errors)
+- 45+ errors in dependent files (expected):
+  - Services: batch.service.ts, queue-item.service.ts, queue.service.ts, status.service.ts
+  - Scripts: clean-database.ts, create-customers.ts, seed*.ts files
+  - SSE: sse/index.ts
+  - Simulation scripts: simulate-banking-queue-http.ts, simulate-queue-simple.ts
+- All errors reference old table/type names that will be fixed in Tasks 12-24
+
+### Evidence Files
+- `.sisyphus/evidence/task-10-type-exports-import.log` - Build output showing:
+  - Zero errors in schema.ts
+  - Expected errors in dependent files
+- `.sisyphus/evidence/task-10-old-types-gone.log` - Verification showing old type names removed
+
+## Patterns Observed
+
+### Type Export Strategy
+1. **Drizzle ORM inference**: Type exports use `$inferSelect` and `$inferInsert` from table definitions
+2. **Consistent naming**: Type names match table names with appropriate prefixes (QueueSession, QueueSessionStatus)
+3. **New vs Old naming**: New types use consistent `Session` prefix, old types used `Batch` prefix
+
+### Compilation Behavior
+1. **Schema file compiles independently**: schema.ts has no TypeScript errors
+2. **Dependent files fail**: All dependent files reference old exports (QueueBatch, QueueStatus, etc.)
+3. **Expected during refactoring**: These errors are normal and will be fixed in Tasks 12-24
+
+## Learnings
+
+### Type Renaming vs Table Renaming
+1. **Type exports mirror table exports**: Once tables are renamed (Task 5), type exports must be updated
+2. **Incremental approach**: Type exports can be updated independently of services/routes
+3. **Verification critical**: Always verify both new and old names are handled correctly
+
+### TypeScript Build Errors
+1. **Schema isolation**: Drizzle schema files should compile independently
+2. **Import propagation**: Errors in dependent files indicate missing imports/updates
+3. **Expected refactoring errors**: Build errors in old code are normal during refactor
+
+## Dependencies
+
+### Depends On
+- Task 5 (schema.ts updated with new tables) - source of truth for type definitions
+
+### Blocks
+- Task 12-16 (services depend on correct type exports from schema.ts)
+
+## Next Steps
+- Task 12: Update batch.service.ts → session.service.ts to import and use new type exports
+- Task 13: Update queue-item.service.ts to import and use QueueSession, QueueSessionStatus
+- Task 14: Update queue.service.ts to import and use QueueSession
+- Task 15: Update status.service.ts to import and use QueueSessionStatus
+- Task 16: Update SSE broadcaster to import and use new type exports
+
 # Task 8: Create Session Validator (be/src/validators/session.validator.ts)
 
 ## Date
