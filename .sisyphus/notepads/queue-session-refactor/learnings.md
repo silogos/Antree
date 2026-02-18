@@ -1062,3 +1062,32 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 15: Update status.service.ts to use session statuses
 - Task 16: Update SSE broadcaster to handle session events
 - Task 17: Update queues.ts routes to use session-based functions
+## Task 15: status.service.ts Updated for Session Statuses
+
+**Completed:** Task 15
+
+### Changes Made
+
+1. **status.service.ts** - Updated to use session statuses:
+   - Changed `queueStatuses` → `queueSessionStatuses`
+   - Changed all `queueId` references → `sessionId`
+   - Changed `NewQueueStatus` → `NewQueueSessionStatus`
+   - Updated error message: "referenced by one or more queues" → "referenced by one or more sessions"
+
+2. **status.validator.ts** - Updated validation schema:
+   - Changed `queueId: z.string().uuid()` → `sessionId: z.string().uuid()`
+   - This was necessary to maintain API contract integrity
+
+### Key Learnings
+
+- **Validator-Sync Requirement**: Service updates require corresponding validator updates to maintain type safety
+- **Error Message Consistency**: Foreign key constraint error messages must match new table context (queues → sessions)
+- **Type Safety**: TypeScript compilation errors in status.service.ts(44,24) before validator update confirmed the need for validator update
+- **No SSE Updates Needed**: status.service.ts had no SSE broadcasts to update (unlike queue.service.ts)
+
+### Build Verification
+
+Build output saved to `.sisyphus/evidence/task-15-service-build.log`
+- status.service.ts: ✓ Compiles without errors
+- status.validator.ts: ✓ Updated and compiles
+- Errors remain in other files (expected - Tasks 16-24 will fix them)

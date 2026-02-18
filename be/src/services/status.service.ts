@@ -4,58 +4,58 @@
  */
 
 import { db } from '../db/index.js';
-import { queueStatuses } from '../db/schema.js';
+import { queueSessionStatuses } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueStatus } from '../db/schema.js';
+import type { NewQueueSessionStatus } from '../db/schema.js';
 import type { CreateStatusInput, UpdateStatusInput } from '../validators/status.validator.js';
 import { getDatabaseErrorMessage } from '../middleware/error.js';
 
 export class StatusService {
   /**
-   * Get all statuses for a batch
+   * Get all statuses for a session
    */
-  async getAllStatuses(queueId: string): Promise<typeof queueStatuses.$inferSelect[] | null> {
-    if (!queueId) {
+  async getAllStatuses(sessionId: string): Promise<typeof queueSessionStatuses.$inferSelect[] | null> {
+    if (!sessionId) {
       return null;
     }
 
     return db
       .select()
-      .from(queueStatuses)
-      .where(eq(queueStatuses.queueId, queueId))
-      .orderBy(queueStatuses.order);
+      .from(queueSessionStatuses)
+      .where(eq(queueSessionStatuses.sessionId, sessionId))
+      .orderBy(queueSessionStatuses.order);
   }
 
   /**
    * Get a single status by ID
    */
-  async getStatusById(id: string): Promise<typeof queueStatuses.$inferSelect | null> {
-    const statuses = await db.select().from(queueStatuses).where(eq(queueStatuses.id, id)).limit(1);
+  async getStatusById(id: string): Promise<typeof queueSessionStatuses.$inferSelect | null> {
+    const statuses = await db.select().from(queueSessionStatuses).where(eq(queueSessionStatuses.id, id)).limit(1);
     return statuses[0] || null;
   }
 
   /**
    * Create a new status
    */
-  async createStatus(input: CreateStatusInput): Promise<typeof queueStatuses.$inferSelect> {
-    const newStatus: NewQueueStatus = {
+  async createStatus(input: CreateStatusInput): Promise<typeof queueSessionStatuses.$inferSelect> {
+    const newStatus: NewQueueSessionStatus = {
       id: uuidv7(),
-      queueId: input.queueId,
+      sessionId: input.sessionId,
       templateStatusId: input.templateStatusId || null,
       label: input.label,
       color: input.color,
       order: input.order,
     };
 
-    const result = await db.insert(queueStatuses).values(newStatus).returning();
+    const result = await db.insert(queueSessionStatuses).values(newStatus).returning();
     return result[0];
   }
 
   /**
    * Update a status
    */
-  async updateStatus(id: string, input: UpdateStatusInput): Promise<typeof queueStatuses.$inferSelect | null> {
+  async updateStatus(id: string, input: UpdateStatusInput): Promise<typeof queueSessionStatuses.$inferSelect | null> {
 
     // Check if status exists
     const existing = await this.getStatusById(id);
@@ -64,16 +64,16 @@ export class StatusService {
     }
 
     // Build update object with only provided fields
-    const updateData: Partial<NewQueueStatus> = {};
+    const updateData: Partial<NewQueueSessionStatus> = {};
     if (input.label !== undefined) updateData.label = input.label;
     if (input.color !== undefined) updateData.color = input.color;
     if (input.order !== undefined) updateData.order = input.order;
     if (input.templateStatusId !== undefined) updateData.templateStatusId = input.templateStatusId;
 
     const result = await db
-      .update(queueStatuses)
+      .update(queueSessionStatuses)
       .set(updateData)
-      .where(eq(queueStatuses.id, id))
+      .where(eq(queueSessionStatuses.id, id))
       .returning();
 
     return result[0] || null;
@@ -92,14 +92,14 @@ export class StatusService {
     }
 
     try {
-      await db.delete(queueStatuses).where(eq(queueStatuses.id, id));
+      await db.delete(queueSessionStatuses).where(eq(queueSessionStatuses.id, id));
       return { success: true };
     } catch (error) {
       // Check if it's a foreign key constraint error
       if (getDatabaseErrorMessage(error) === 'This record is referenced by other records and cannot be deleted') {
         return {
           success: false,
-          error: `Cannot delete status with id ${id} because it is referenced by one or more queues`
+          error: `Cannot delete status with id ${id} because it is referenced by one or more sessions`
         };
       }
       throw error;
