@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 export const createQueueItemSchema = z.object({
   queueId: z.string().min(1),
-  batchId: z.string().min(1),
+  sessionId: z.string().min(1),
   queueNumber: z.string().min(1),
   name: z.string().min(1).max(255),
   statusId: z.string().uuid(),

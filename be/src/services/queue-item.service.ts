@@ -14,14 +14,14 @@ export class QueueItemService {
   /**
    * Get all queue items with optional filtering
    */
-  async getAllQueueItems(filters?: { queueId?: string; batchId?: string; statusId?: string }): Promise<QueueItem[]> {
+  async getAllQueueItems(filters?: { queueId?: string; sessionId?: string; statusId?: string }): Promise<QueueItem[]> {
 
     const conditions: (ReturnType<typeof eq>)[] = [];
     if (filters?.queueId) {
       conditions.push(eq(queueItems.queueId, filters.queueId));
     }
-    if (filters?.batchId) {
-      conditions.push(eq(queueItems.batchId, filters.batchId));
+    if (filters?.sessionId) {
+      conditions.push(eq(queueItems.sessionId, filters.sessionId));
     }
     if (filters?.statusId) {
       conditions.push(eq(queueItems.statusId, filters.statusId));
@@ -56,7 +56,7 @@ export class QueueItemService {
     const newItem: NewQueueItem = {
       id: uuidv7(),
       queueId: input.queueId,
-      batchId: input.batchId,
+      sessionId: input.sessionId,
       queueNumber: input.queueNumber,
       name: input.name,
       statusId: input.statusId,

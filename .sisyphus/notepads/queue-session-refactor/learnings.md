@@ -846,3 +846,99 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Tasks 13-24 will update remaining services and routes
 - Delete batch.service.ts once all references are migrated
 - Update frontend to use session-based API endpoints
+
+# Task 13: Update Queue Item Service to Use Sessions (be/src/services/queue-item.service.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### Files Updated
+1. **be/src/validators/queue-item.validator.ts**:
+   - Changed `batchId` → `sessionId` in createQueueItemSchema
+   - Updated CreateQueueItemInput type export
+   
+2. **be/src/services/queue-item.service.ts**:
+   - Updated getAllQueueItems() filters parameter: `batchId` → `sessionId`
+   - Updated filter condition: `eq(queueItems.batchId, filters.batchId)` → `eq(queueItems.sessionId, filters.sessionId)`
+   - Updated createQueueItem(): `batchId: input.batchId` → `sessionId: input.sessionId`
+
+### What Was Not Changed
+- **SQL queries**: Already correct - queueItems table uses sessionId field (from Task 7 schema update)
+- **statusId field**: Already correct - references queue_session_statuses table (from Task 7 schema update)
+- **Function names**: No function renames needed (getAllQueueItems, getQueueItemById, etc.)
+- **SSE broadcasts**: Not implemented in queue-item service (will be handled in route layer)
+
+## Patterns Observed
+
+### Service Update Pattern
+1. **Validator first**: Update validator schemas before service (validators define input types)
+2. **Type inference**: Services import types from validators using `z.infer`
+3. **Minimal changes**: Only update what changed (batchId → sessionId)
+4. **Schema already correct**: database schema from Task 7 already has sessionId field
+
+### Filter Pattern
+1. **Optional filters**: Use optional parameter with optional chaining
+2. **Dynamic conditions**: Build array of conditions, pass to and() if multiple
+3. **Single condition optimization**: Use condition[0] if only one filter
+
+## Learnings
+
+### Database Schema vs Code Updates
+1. **Schema changes precede service updates**: Task 7 updated schema (batchId → sessionId), Task 13 updates service code
+2. **Schema is source of truth**: Service code must match database structure
+3. **FK references already correct**: statusId already references queue_session_statuses from Task 7
+
+### Coupled Files
+1. **Validator-Service coupling**: Services import types from validators, must update both
+2. **Update order**: Update validators first, then services (services depend on validator types)
+3. **Type safety**: TypeScript ensures validator changes propagate to services
+
+### Service API Contracts
+1. **Maintain existing contracts**: Function signatures mostly unchanged (only filters type)
+2. **Parameter names**: External parameter names (sessionId) should match schema field names
+3. **No SSE in service layer**: SSE broadcasts handled at route level (services return data, routes broadcast)
+
+## Issues Encountered
+
+### None
+- Straightforward update, only renaming batchId → sessionId
+- No complex logic changes required
+- Schema already had correct structure from Task 7
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for queue-item.service.ts and queue-item.validator.ts
+- **Errors in other files**: Expected (batch.service.ts, queue.service.ts, status.service.ts, scripts, sse/index.ts)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-13-service-build.log`
+
+### Build Output Analysis
+- Zero errors in `src/services/queue-item.service.ts` ✓
+- Zero errors in `src/validators/queue-item.validator.ts` ✓
+- Expected errors in:
+  - `src/services/batch.service.ts` (references old queueBatches)
+  - `src/services/queue.service.ts` (references old queueBatches, queueStatuses)
+  - `src/services/status.service.ts` (references old queueStatuses)
+  - `src/scripts/*` (multiple seed scripts using old table names)
+  - `src/sse/index.ts` (references old queueBatches)
+  - `scripts/*` (simulation scripts using old structure)
+
+## Dependencies
+
+### Depends On
+- Task 7 (migration applied) - queue_items table has sessionId field
+- Task 12 (session service created) - Session patterns established
+- Task 8 (session validator created) - Validator patterns available
+
+### Blocks
+- Tasks 14-16 (services may import queue-item.service)
+- Task 19 (session status routes may depend on queue-item operations)
+
+## Next Steps
+- Task 14: Update queue.service.ts to use sessions
+- Task 15: Update status.service.ts to use session statuses
+- Task 16: Update SSE broadcaster to handle item events
+- Tasks 17-24: Update routes and remaining files

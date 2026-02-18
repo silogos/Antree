@@ -1556,7 +1556,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 4 group commit)
 
-- [ ] 13. **Update queue-item.service.ts for sessions**
+- [x] 13. **Update queue-item.service.ts for sessions**
 
   **What to do**:
   - Update `be/src/services/queue-item.service.ts` to work with sessions
