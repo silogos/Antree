@@ -2293,7 +2293,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 5 group commit)
 
-- [ ] 20. **Update main index.ts route registration**
+- [x] 20. **Update main index.ts route registration**
 
   **What to do**:
   - Update `be/src/index.ts` route registration

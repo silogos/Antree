@@ -698,6 +698,80 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 23: Update queue items routes to use sessions
 - Task 24: Update SSE broadcaster to handle all new events
 
+# Task 20: Update Index.ts to Register Session Routes and Remove Batch Routes
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Updated
+- **be/src/index.ts** - Removed batch routes, registered session routes
+
+### Import Changes
+1. **Removed batch route import**:
+   - Deleted: `import { batchRoutes } from "./routes/batches.js";`
+   - File line 6 removed
+
+2. **Added session route import**:
+   - Added: `import { sessionRoutes } from "./routes/sessions.js";`
+   - File line 10 added
+
+### Route Registration Changes
+1. **Removed batch route registration**:
+   - Deleted: `app.route("/batches", batchRoutes);`
+   - File line 42 removed
+
+2. **Added session route registration**:
+   - Added: `app.route("/sessions", sessionRoutes);`
+   - File line 41 added
+
+### Verification Steps
+1. **Read index.ts** - Confirmed current route registration
+2. **Edit imports** - Removed batchRoutes, added sessionRoutes
+3. **Edit routes** - Removed /batches route, added /sessions route
+4. **Fixed duplicate statusRoutes** - Removed duplicate registration on line 42
+5. **Verified import extensions** - Changed from `.ts` to `.js` extension (TypeScript config requires .js for ES modules)
+
+### Key Learnings
+
+#### Import Extension Rule
+1. **ES modules require .js extensions**: All route imports must use `.js` extension
+2. **TypeScript config**: `allowImportingTsExtensions` is enabled, but ES modules require .js
+3. **Rule of thumb**: If code uses ES modules (not CommonJS), always use .js extension in imports
+
+#### Route Registration Pattern
+1. **Hono's app.route()**: Mounts routes at a base path
+2. **Route organization**: Routes registered in logical order (health, boards, statuses, queues, items, sessions, templates, SSE)
+3. **No wildcard paths**: Use base path (e.g., `/sessions`) not wildcard (e.g., `/sessions/*`)
+4. **File exports**: Routes exported as `routeNameRoutes` from route files
+
+#### Build Verification
+1. **Zero errors in index.ts**: Index file compiles successfully after changes
+2. **Expected errors remain**: Other files (batch.service.ts, sse/index.ts, scripts) still have errors from Tasks 12-15
+3. **Build evidence**: Output saved to `.sisyphus/evidence/task-20-index-update.log` (88 lines)
+
+### Evidence Files
+- `.sisyphus/evidence/task-20-index-update.log` - Build output showing:
+  - Zero errors in src/index.ts
+  - Expected errors in batch.service.ts, sse/index.ts, scripts
+
+## Dependencies
+
+### Depends On
+- Task 17 (sessions.ts route file created) - source of route exports
+- Task 19 (statuses.ts routes updated for session statuses) - other routes remain unchanged
+
+### Blocks
+- Task 21-23 (SSE integration depends on routes being registered)
+- Frontend API calls (will now use /sessions/* endpoints instead of /batches/*)
+
+## Next Steps
+- Task 21: Update SSE routes to handle session-based endpoints
+- Task 22: Update queue-item routes to use session-based functions
+- Task 23: Update queue routes to use session-based functions
+- Task 24: Update SSE broadcaster to handle all new events
+
 # Task 12: Rename and Update Batch Service to Session Service (be/src/services/session.service.ts)
 
 ## Date
