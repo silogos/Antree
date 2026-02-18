@@ -1869,7 +1869,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 4 group commit)
 
-- [ ] 16. **Update template.service.ts (if needed)**
+- [x] 16. **Update template.service.ts (if needed)**
 
   **What to do**:
   - Review `be/src/services/template.service.ts` for any batch/session dependencies

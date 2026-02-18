@@ -1091,3 +1091,23 @@ Build output saved to `.sisyphus/evidence/task-15-service-build.log`
 - status.service.ts: ✓ Compiles without errors
 - status.validator.ts: ✓ Updated and compiles
 - Errors remain in other files (expected - Tasks 16-24 will fix them)
+=== TASK 16: TEMPLATE SERVICE CHECK SUMMARY ===
+
+### Task 16 - Template Service Check (2026-02-19)
+**Result**: NO UPDATES NEEDED
+
+**File**: `be/src/services/template.service.ts`
+
+**Findings**:
+- Uses `queueTemplateStatuses` (correct - not queue_session_statuses)
+- Does NOT reference `queueStatuses` (old name)
+- Does NOT reference `batchId` (batch/session conversion is specific to queue items)
+- Only manages templates and template-statuses, not queue items or queues
+- TypeScript compilation: NO ERRORS (build shows expected errors in other files only)
+
+**Key Insight**: Template system is independent of batch/session refactor
+- Template service manages: `queueTemplates` and `queueTemplateStatuses`
+- Queue system manages: `queueSessions`, `queueItems`, `queueSessionStatuses`
+- Template statuses use `templateStatusId` foreign key, not queue context
+
+**Evidence**: See `.sisyphus/evidence/task-16-template-check.log`
