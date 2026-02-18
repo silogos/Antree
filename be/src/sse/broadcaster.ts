@@ -14,12 +14,6 @@ interface SSEConnection {
 
 interface SSEEvent {
 	type:
-		| "queue_created"
-		| "queue_updated"
-		| "queue_deleted" // Queue (new) events
-		| "batch_created"
-		| "batch_updated"
-		| "batch_deleted" // Batch events
 		| "session_created"
 		| "session_updated"
 		| "session_closed"
@@ -27,20 +21,21 @@ interface SSEEvent {
 		| "session_status_created"
 		| "session_status_updated"
 		| "session_status_deleted" // Session status events
-		| "queue_item_created"
-		| "queue_item_updated"
-		| "queue_item_deleted" // Queue item events (renamed from queue_*)
-		| "status_created"
-		| "status_updated"
-		| "status_deleted"
-		| "board_updated"
-		| "board_deleted"
+		| "item_created"
+		| "item_updated"
+		| "item_status_changed"
+		| "item_deleted" // Queue item events
+		| "queue_created"
+		| "queue_updated"
+		| "queue_deleted" // Queue events
 		| "template_created"
 		| "template_updated"
-		| "template_deleted";
+		| "template_deleted" // Template events
+		| "board_updated"
+		| "board_deleted"; // Board events (legacy)
 	data: unknown;
 	boardId?: string; // Legacy support
-	batchId?: string; // Batch ID
+	batchId?: string; // Legacy support (deprecated)
 	sessionId?: string; // Session ID
 	queueId?: string; // Queue ID
 	eventId?: string; // Event ID for deduplication

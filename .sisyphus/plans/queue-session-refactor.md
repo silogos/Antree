@@ -2397,7 +2397,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 5 group commit)
 
-- [ ] 21. **Update SSE broadcaster event types**
+- [x] 21. **Update SSE broadcaster event types**
 
   **What to do**:
   - Update `be/src/sse/broadcaster.ts` SSE event type definitions

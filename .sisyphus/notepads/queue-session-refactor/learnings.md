@@ -1463,3 +1463,167 @@ Build output saved to `.sisyphus/evidence/task-15-service-build.log`
 - Task 22: Update SSE routes for sessions
 - Task 23: Register session routes in index.ts
 - Task 24: Delete batch.service.ts and batches.ts
+
+# Task 21: Update SSE Event Types in Broadcaster (be/src/sse/broadcaster.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Updated
+- **be/src/sse/broadcaster.ts** - Updated SSEEvent interface to support session-based architecture
+
+### Event Type Changes
+
+#### Removed Event Types
+1. **batch_created** → Replaced by session_created
+2. **batch_updated** → Replaced by session_updated
+3. **batch_deleted** → Replaced by session_deleted
+
+#### Renamed Event Types
+1. **queue_item_created** → **item_created** (simplified naming)
+2. **queue_item_updated** → **item_updated** (simplified naming)
+3. **queue_item_deleted** → **item_deleted** (simplified naming)
+
+#### Removed Event Types
+1. **status_created** → Replaced by session_status_created
+2. **status_updated** → Replaced by session_status_updated
+3. **status_deleted** → Replaced by session_status_deleted
+
+#### New Event Type
+1. **item_status_changed** - Distinguishes status changes from metadata updates
+
+### Final Event Types
+
+#### Session Events (4)
+1. **session_created**: Session was created
+2. **session_updated**: Session metadata updated (not status changes)
+3. **session_closed**: Session status changed to 'closed'
+4. **session_deleted**: Session was soft-deleted
+
+#### Session Status Events (3)
+1. **session_status_created**: Session status was created
+2. **session_status_updated**: Session status was updated
+3. **session_status_deleted**: Session status was deleted
+
+#### Item Events (4)
+1. **item_created**: Queue item created
+2. **item_updated**: Queue item updated
+3. **item_status_changed**: Queue item status updated
+4. **item_deleted**: Queue item deleted
+
+#### Queue Events (3)
+1. **queue_created**: Queue was created
+2. **queue_updated**: Queue metadata updated
+3. **queue_deleted**: Queue was deleted
+
+#### Template Events (3)
+1. **template_created**: Template was created
+2. **template_updated**: Template was updated
+3. **template_deleted**: Template was deleted
+
+#### Board Events (2 - legacy)
+1. **board_updated**: Board updated (legacy support)
+2. **board_deleted**: Board deleted (legacy support)
+
+### Property Changes
+- **Removed**: `batchId` property initially, then added back with deprecation comment for backward compatibility
+- **Kept**: `boardId`, `sessionId`, `queueId`, `eventId` properties
+- **Added**: `batchId` marked as deprecated for transition period
+
+## Patterns Observed
+
+### Event Naming Convention
+1. **Snake_case**: All event types use snake_case (user preference from Task 4)
+2. **Resource-action pattern**: `{resource}_{action}` (session_created, item_updated)
+3. **Consistent terminology**: "session" instead of "batch", "item" instead of "queue_item"
+4. **Distinct status events**: item_status_changed separate from item_updated
+
+### Event Type Organization
+1. **Session lifecycle**: session_created, session_updated, session_closed, session_deleted
+2. **Session status management**: session_status_created, session_status_updated, session_status_deleted
+3. **Item management**: item_created, item_updated, item_status_changed, item_deleted
+4. **Queue management**: queue_created, queue_updated, queue_deleted
+5. **Template management**: template_created, template_updated, template_deleted
+6. **Legacy support**: board_updated, board_deleted
+
+## Learnings
+
+### Backward Compatibility Considerations
+1. **batchId property**: Removed initially, then added back with deprecation comment
+2. **Transition period**: Keep old properties during migration to allow gradual updates
+3. **Comments document deprecation**: "Legacy support (deprecated)" helps future developers
+4. **SSE broadcaster logic**: References batchId in broadcast() method, so must preserve property
+
+### Event Granularity
+1. **Status change events**: Separate item_status_changed from item_updated for client distinction
+2. **Session closure**: session_closed separate from session_updated to indicate lifecycle transition
+3. **Soft delete events**: session_deleted emitted when is_deleted flag set (not hard delete)
+
+### Naming Convention Enforcement
+1. **User preference**: Strict adherence to snake_case requirement from Task 4
+2. **Consistent patterns**: All event types follow `{resource}_{action}` format
+3. **No camelCase**: Event types never use camelCase (itemCreated, sessionUpdated)
+4. **Template events**: Already correct, no changes needed
+
+## Issues Encountered
+
+### TypeScript Compilation Error
+- **Issue**: Removed batchId property caused error in broadcast() method (line 147)
+- **Root cause**: SSE broadcaster logic still references `event.batchId` for backward compatibility
+- **Resolution**: Added batchId back with deprecation comment "Legacy support (deprecated)"
+- **Lesson**: Before removing properties, check all references in the same file
+
+### Event Type Updates
+- **Issue**: Had to ensure all event type strings use snake_case
+- **Resolution**: Systematically reviewed all event types for consistency
+- **Lesson**: Naming conventions must be enforced consistently across all types
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for broadcaster.ts
+- **Errors in other files**: Expected (routes using old event types will be updated in Tasks 22-24)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-21-sse-events.log`
+
+### Build Output Analysis
+- Zero errors in `src/sse/broadcaster.ts` ✓
+- Expected errors in:
+  - `src/routes/batches.ts` (uses batch_created, batch_updated, batch_deleted)
+  - `src/routes/queue-items.ts` (uses queue_item_created, queue_item_updated, queue_item_deleted)
+  - `src/routes/queues.ts` (uses batch_created)
+  - `src/routes/statuses.ts` (uses status_created, status_updated, status_deleted)
+  - Other dependent files (scripts, services referencing old event types)
+
+## Conventions
+
+### SSE Event Interface Design
+1. **Discriminated union**: Type field is literal union for type safety
+2. **Optional IDs**: Multiple optional ID fields for different broadcast contexts
+3. **Unknown data type**: Data field uses `unknown` for flexibility
+4. **Event ID tracking**: eventId field for deduplication and reconnection
+
+### Deprecation Strategy
+1. **Comment deprecation**: Add "deprecated" or "legacy" comments to old properties
+2. **Gradual migration**: Keep old properties during transition period
+3. **Clear naming**: New types clearly indicate their purpose (session_*, item_*)
+4. **Documentation updates**: Update SSE mapping documentation to reflect new types
+
+## Dependencies
+
+### Depends On
+- Task 11 (SSE mapping documentation created) - Reference for event type definitions
+- Task 12 (session service created) - Session event broadcast methods created
+- Task 20 (routes registered) - Session routes available for integration
+
+### Blocks
+- Tasks 22-24 (routes must use new event types)
+- Frontend SSE client implementation (depends on new event types)
+
+## Next Steps
+- Task 22: Update batches.ts routes to use session_* events
+- Task 23: Update queue-items.ts routes to use item_* events
+- Task 24: Update statuses.ts routes to use session_status_* events
+- Frontend updates to handle new event types
