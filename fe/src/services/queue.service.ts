@@ -7,12 +7,27 @@ import http from "./http";
  */
 export const queueItemService = {
   /**
-   * Get all queue items (optionally filtered by queue or status)
+   * Get all queue items for a specific queue/batch
+   * Uses RESTful endpoint /queues/:id/items
    */
   async getQueueItems(params?: {
     queueId?: string;
     statusId?: string;
   }): Promise<ApiResponse<QueueItem[]>> {
+    // Use /queues/:id/items endpoint when queueId is provided
+    if (params?.queueId) {
+      const queryParams: { statusId?: string } = {};
+      if (params.statusId) {
+        queryParams.statusId = params.statusId;
+      }
+
+      return http.get<ApiResponse<QueueItem[]>>(`/queues/${params.queueId}/items`, {
+        params: queryParams,
+        withAuth: false,
+      });
+    }
+
+    // Fallback to /queue-items for general queries (no queue filter)
     return http.get<ApiResponse<QueueItem[]>>("/queue-items", {
       params,
       withAuth: false,

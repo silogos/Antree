@@ -6,7 +6,7 @@
 import { db } from '../db/index.js';
 import { queueItems } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueItem, QueueItem } from '../db/schema.js';
 import type { CreateQueueItemInput, UpdateQueueItemInput } from '../validators/queue-item.validator.js';
 
@@ -14,11 +14,14 @@ export class QueueItemService {
   /**
    * Get all queue items with optional filtering
    */
-  async getAllQueueItems(filters?: { queueId?: string; statusId?: string }): Promise<QueueItem[]> {
+  async getAllQueueItems(filters?: { queueId?: string; batchId?: string; statusId?: string }): Promise<QueueItem[]> {
 
     const conditions: (ReturnType<typeof eq>)[] = [];
     if (filters?.queueId) {
       conditions.push(eq(queueItems.queueId, filters.queueId));
+    }
+    if (filters?.batchId) {
+      conditions.push(eq(queueItems.batchId, filters.batchId));
     }
     if (filters?.statusId) {
       conditions.push(eq(queueItems.statusId, filters.statusId));
@@ -51,8 +54,9 @@ export class QueueItemService {
    */
   async createQueueItem(input: CreateQueueItemInput): Promise<QueueItem> {
     const newItem: NewQueueItem = {
-      id: uuidv4(),
+      id: uuidv7(),
       queueId: input.queueId,
+      batchId: input.batchId,
       queueNumber: input.queueNumber,
       name: input.name,
       statusId: input.statusId,

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAutoMovement } from "../hooks/useAutoMovement";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
-import { useQueueList } from "../hooks/useQueueList";
 import { useBatchSSE } from "../hooks/useBatchSSE";
+import { useQueueList } from "../hooks/useQueueList";
 import { useQueues } from "../hooks/useQueues";
 import { useSound } from "../hooks/useSound";
 import { useStatuses } from "../hooks/useStatuses";
@@ -24,7 +24,11 @@ export function QueueBoard() {
   const { id: queueId } = useParams<{ id: string }>();
 
   // Get queue information with active batch
-  const { currentQueue, loading: queueLoading, fetchQueueById } = useQueueList();
+  const {
+    currentQueue,
+    loading: queueLoading,
+    fetchQueueById,
+  } = useQueueList();
 
   // Queue management (items)
   const [queues, setQueues] = useState<QueueItem[]>([]);
@@ -38,7 +42,7 @@ export function QueueBoard() {
     addQueueLocal,
     updateQueueLocal,
     removeQueueLocal,
-  } = useQueues({ queueId: currentQueue?.activeBatchId || undefined });
+  } = useQueues({ queueId: currentQueue?.id || undefined });
 
   // Status management
   const [statuses, setStatuses] = useState<QueueStatus[]>([]);
@@ -134,20 +138,22 @@ export function QueueBoard() {
     playAnnouncement,
   });
 
-  // Initialize: fetch queue with active batch
+  // Initialize: fetch queue with active batch - run only when queueId changes
   useEffect(() => {
     if (queueId) {
       fetchQueueById(queueId);
     }
-  }, [queueId, fetchQueueById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueId]);
 
-  // Initialize data when activeBatchId is available
+  // Initialize data when activeBatchId is available - run only when activeBatchId changes
   useEffect(() => {
     if (currentQueue?.activeBatchId) {
       fetchQueuesData();
       fetchStatusesData();
     }
-  }, [currentQueue?.activeBatchId, fetchQueuesData, fetchStatusesData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQueue?.activeBatchId]);
 
   // Update local state when hook data changes
   useEffect(() => {
@@ -230,13 +236,11 @@ export function QueueBoard() {
   }
 
   return (
-    <div className="App">
+    <div className="App flex flex-col h-screen">
       {/* Topbar */}
       <Topbar
         title={
-          currentQueue?.activeBatch?.name ||
-          currentQueue?.name ||
-          "Queue Board"
+          currentQueue?.activeBatch?.name || currentQueue?.name || "Queue Board"
         }
         lastRefresh={lastRefresh}
         soundEnabled={soundEnabled}
@@ -247,7 +251,7 @@ export function QueueBoard() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 bg-gray-800">
+      <div className="flex-1 bg-gray-800 min-h-0">
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center h-full">

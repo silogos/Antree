@@ -115,8 +115,10 @@ export function BoardList() {
   const queueList = useQueueList();
 
   useEffect(() => {
+    // Fetch queues on mount - only run once
     queueList.fetchQueues();
-  }, [queueList.fetchQueues]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-800">

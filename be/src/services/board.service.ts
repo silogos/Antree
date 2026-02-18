@@ -6,7 +6,7 @@
 import { db } from '../db/index.js';
 import { queueBoards } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueBoard, QueueBoard } from '../db/schema.js';
 import type { CreateBoardInput, UpdateBoardInput } from '../validators/board.validator.js';
 
@@ -31,7 +31,7 @@ export class BoardService {
    */
   async createBoard(input: CreateBoardInput): Promise<QueueBoard> {
     const newBoard: NewQueueBoard = {
-      id: uuidv4(),
+      id: uuidv7(),
       name: input.name,
       description: input.description || null,
       isActive: input.isActive !== undefined ? input.isActive : true,

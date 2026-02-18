@@ -6,7 +6,7 @@
 import { db } from '../db/index.js';
 import { queueTemplates, queueTemplateStatuses } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueTemplate, NewQueueTemplateStatus } from '../db/schema.js';
 import type { CreateTemplateInput, UpdateTemplateInput, CreateTemplateStatusInput } from '../validators/template.validator.js';
 
@@ -31,7 +31,7 @@ export class TemplateService {
    */
   async createTemplate(input: CreateTemplateInput): Promise<typeof queueTemplates.$inferSelect> {
     const newTemplate: NewQueueTemplate = {
-      id: uuidv4(),
+      id: uuidv7(),
       name: input.name,
       description: input.description || null,
       isActive: input.isActive !== undefined ? input.isActive : true,
@@ -109,7 +109,7 @@ export class TemplateService {
     }
 
     const newStatus: NewQueueTemplateStatus = {
-      id: uuidv4(),
+      id: uuidv7(),
       templateId,
       label: input.label,
       color: input.color,

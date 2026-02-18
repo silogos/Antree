@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { queueBatches, queueItems } from '../db/schema.js';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 async function createCustomers() {
   const batchId = '955ba95e-656f-4dca-a118-969d4adb7084';
@@ -20,7 +20,7 @@ async function createCustomers() {
 
   for (let i = 0; i < 15; i++) {
     customers.push({
-      id: uuidv4(),
+      id: uuidv7(),
       batchId: batchId,
       templateId: templateId,
       queueNumber: `A${String(i + 1).padStart(3, '0')}`,

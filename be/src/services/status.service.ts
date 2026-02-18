@@ -6,7 +6,7 @@
 import { db } from '../db/index.js';
 import { queueStatuses } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueStatus } from '../db/schema.js';
 import type { CreateStatusInput, UpdateStatusInput } from '../validators/status.validator.js';
 import { getDatabaseErrorMessage } from '../middleware/error.js';
@@ -40,7 +40,7 @@ export class StatusService {
    */
   async createStatus(input: CreateStatusInput): Promise<typeof queueStatuses.$inferSelect> {
     const newStatus: NewQueueStatus = {
-      id: uuidv4(),
+      id: uuidv7(),
       queueId: input.queueId,
       templateStatusId: input.templateStatusId || null,
       label: input.label,

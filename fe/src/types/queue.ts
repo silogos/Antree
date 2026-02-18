@@ -21,6 +21,7 @@ export interface QueueTemplate {
  */
 export interface QueueBatch {
   id: string;
+  templateId: string;
   queueId: string;
   name: string;
   status: "active" | "closed";
@@ -48,6 +49,7 @@ export interface QueueBoard {
 export interface QueueItem {
   id: string;
   queueId: string;
+  batchId: string;
   queueNumber: string;
   name: string;
   statusId: string;
@@ -142,6 +144,7 @@ export interface UpdateBatchInput {
  */
 export interface CreateQueueItemInput {
   queueId: string;
+  batchId: string;
   queueNumber: string;
   name: string;
   statusId: string;

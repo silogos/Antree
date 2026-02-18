@@ -3,208 +3,290 @@
  * Business logic for queue operations (template-based queues)
  */
 
-import { db } from '../db/index.js';
-import { queues, queueBatches, queueTemplates, queueTemplateStatuses, queueStatuses } from '../db/schema.js';
-import { eq, desc, and } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
-import type { NewQueue, Queue, QueueBatch } from '../db/schema.js';
-import type { CreateQueueInput, UpdateQueueInput, ResetQueueInput } from '../validators/queue.validator.js';
+import { and, desc, eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { db } from "../db/index.js";
+import type { NewQueue, Queue, QueueBatch, QueueItem } from "../db/schema.js";
+import {
+	queueBatches,
+	queueItems,
+	queueStatuses,
+	queues,
+	queueTemplateStatuses,
+	queueTemplates,
+} from "../db/schema.js";
+import type {
+	CreateQueueInput,
+	ResetQueueInput,
+	UpdateQueueInput,
+} from "../validators/queue.validator.js";
 
 export class QueueService {
-  /**
-   * Get all queues
-   */
-  async getAllQueues(): Promise<Queue[]> {
-    return db.select().from(queues).orderBy(desc(queues.createdAt));
-  }
+	/**
+	 * Get all queues
+	 */
+	async getAllQueues(): Promise<Queue[]> {
+		return db.select().from(queues).orderBy(desc(queues.createdAt));
+	}
 
-  /**
-   * Get a single queue by ID with active batch information
-   */
-  async getQueueById(id: string): Promise<(Queue & { activeBatchId: string | null; activeBatch: QueueBatch | null }) | null> {
-    const queue = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
+	/**
+	 * Get a single queue by ID with active batch information
+	 */
+	async getQueueById(id: string): Promise<
+		| (Queue & {
+				activeBatchId: string | null;
+				activeBatch: QueueBatch | null;
+		  })
+		| null
+	> {
+		const queue = await db
+			.select()
+			.from(queues)
+			.where(eq(queues.id, id))
+			.limit(1);
 
-    if (!queue || queue.length === 0) {
-      return null;
-    }
+		if (!queue || queue.length === 0) {
+			return null;
+		}
 
-    // Get active batch for this queue
-    const activeBatch = await db
-      .select()
-      .from(queueBatches)
-      .where(and(eq(queueBatches.queueId, id), eq(queueBatches.status, 'active')))
-      .limit(1);
+		// Get active batch for this queue
+		const activeBatch = await db
+			.select()
+			.from(queueBatches)
+			.where(
+				and(eq(queueBatches.queueId, id), eq(queueBatches.status, "active")),
+			)
+			.limit(1);
 
-    return {
-      ...queue[0],
-      activeBatchId: activeBatch && activeBatch.length > 0 ? activeBatch[0].id : null,
-      activeBatch: activeBatch && activeBatch.length > 0 ? activeBatch[0] : null,
-    };
-  }
+		return {
+			...queue[0],
+			activeBatchId:
+				activeBatch && activeBatch.length > 0 ? activeBatch[0].id : null,
+			activeBatch:
+				activeBatch && activeBatch.length > 0 ? activeBatch[0] : null,
+		};
+	}
 
-  /**
-   * Get active batch for a queue with its statuses
-   */
-  async getActiveBatch(queueId: string): Promise<{ batch: QueueBatch; statuses: typeof queueStatuses.$inferSelect[] } | null> {
+	/**
+	 * Get queue items for a queue (from active batch)
+	 */
+	async getQueueItems(batchId: string): Promise<QueueItem[]> {
+		// Get active batch for this queue
+		const conditions: ReturnType<typeof eq>[] = [
+			eq(queueItems.batchId, batchId),
+		];
 
-    // Verify queue exists
-    const queue = await db.select().from(queues).where(eq(queues.id, queueId)).limit(1);
-    if (!queue || queue.length === 0) {
-      return null;
-    }
+		const items = await db
+			.select()
+			.from(queueItems)
+			.where(conditions.length === 1 ? conditions[0] : and(...conditions))
+			.orderBy(queueItems.createdAt);
 
-    // Get active batch
-    const activeBatch = await db
-      .select()
-      .from(queueBatches)
-      .where(and(eq(queueBatches.queueId, queueId), eq(queueBatches.status, 'active')))
-      .limit(1);
+		return items;
+	}
 
-    if (!activeBatch || activeBatch.length === 0) {
-      return null;
-    }
+	/**
+	 * Get active batch for a queue with its statuses
+	 */
+	async getActiveBatch(queueId: string): Promise<{
+		batch: QueueBatch;
+		statuses: (typeof queueStatuses.$inferSelect)[];
+	} | null> {
+		// Verify queue exists
+		const queue = await db
+			.select()
+			.from(queues)
+			.where(eq(queues.id, queueId))
+			.limit(1);
+		if (!queue || queue.length === 0) {
+			return null;
+		}
 
-    // Get statuses for the batch
-    const statuses = await db
-      .select()
-      .from(queueStatuses)
-      .where(eq(queueStatuses.queueId, activeBatch[0].id))
-      .orderBy(queueStatuses.order);
+		// Get active batch
+		const activeBatch = await db
+			.select()
+			.from(queueBatches)
+			.where(
+				and(
+					eq(queueBatches.queueId, queueId),
+					eq(queueBatches.status, "active"),
+				),
+			)
+			.limit(1);
 
-    return {
-      batch: activeBatch[0],
-      statuses,
-    };
-  }
+		if (!activeBatch || activeBatch.length === 0) {
+			return null;
+		}
 
-  /**
-   * Create a new queue
-   */
-  async createQueue(input: CreateQueueInput): Promise<Queue | null> {
+		// Get statuses for the batch
+		const statuses = await db
+			.select()
+			.from(queueStatuses)
+			.where(eq(queueStatuses.queueId, activeBatch[0].id))
+			.orderBy(queueStatuses.order);
 
-    // Verify template exists
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, input.templateId)).limit(1);
-    if (!template || template.length === 0) {
-      return null;
-    }
+		return {
+			batch: activeBatch[0],
+			statuses,
+		};
+	}
 
-    const newQueue: NewQueue = {
-      id: uuidv4(),
-      name: input.name,
-      templateId: input.templateId,
-      createdBy: input.createdBy || null,
-      updatedBy: input.updatedBy || null,
-      isActive: input.isActive !== undefined ? input.isActive : true,
-    };
+	/**
+	 * Create a new queue
+	 */
+	async createQueue(input: CreateQueueInput): Promise<Queue | null> {
+		// Verify template exists
+		const template = await db
+			.select()
+			.from(queueTemplates)
+			.where(eq(queueTemplates.id, input.templateId))
+			.limit(1);
+		if (!template || template.length === 0) {
+			return null;
+		}
 
-    const result = await db.insert(queues).values(newQueue).returning();
-    return result[0] || null;
-  }
+		const newQueue: NewQueue = {
+			id: uuidv7(),
+			name: input.name,
+			templateId: input.templateId,
+			createdBy: input.createdBy || null,
+			updatedBy: input.updatedBy || null,
+			isActive: input.isActive !== undefined ? input.isActive : true,
+		};
 
-  /**
-   * Update a queue
-   */
-  async updateQueue(id: string, input: UpdateQueueInput): Promise<Queue | null> {
+		const result = await db.insert(queues).values(newQueue).returning();
+		return result[0] || null;
+	}
 
-    // Check if queue exists
-    const existing = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
-    if (!existing || existing.length === 0) {
-      return null;
-    }
+	/**
+	 * Update a queue
+	 */
+	async updateQueue(
+		id: string,
+		input: UpdateQueueInput,
+	): Promise<Queue | null> {
+		// Check if queue exists
+		const existing = await db
+			.select()
+			.from(queues)
+			.where(eq(queues.id, id))
+			.limit(1);
+		if (!existing || existing.length === 0) {
+			return null;
+		}
 
-    // Build update object with only provided fields
-    const updateData: Partial<NewQueue> = {};
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.isActive !== undefined) updateData.isActive = input.isActive;
-    if (input.updatedBy !== undefined) updateData.updatedBy = input.updatedBy;
+		// Build update object with only provided fields
+		const updateData: Partial<NewQueue> = {};
+		if (input.name !== undefined) updateData.name = input.name;
+		if (input.isActive !== undefined) updateData.isActive = input.isActive;
+		if (input.updatedBy !== undefined) updateData.updatedBy = input.updatedBy;
 
-    const result = await db
-      .update(queues)
-      .set(updateData)
-      .where(eq(queues.id, id))
-      .returning();
+		const result = await db
+			.update(queues)
+			.set(updateData)
+			.where(eq(queues.id, id))
+			.returning();
 
-    return result[0] || null;
-  }
+		return result[0] || null;
+	}
 
-  /**
-   * Delete a queue (cascades to batches, statuses, items)
-   */
-  async deleteQueue(id: string): Promise<boolean> {
+	/**
+	 * Delete a queue (cascades to batches, statuses, items)
+	 */
+	async deleteQueue(id: string): Promise<boolean> {
+		// Check if queue exists
+		const existing = await db
+			.select()
+			.from(queues)
+			.where(eq(queues.id, id))
+			.limit(1);
+		if (!existing || existing.length === 0) {
+			return false;
+		}
 
-    // Check if queue exists
-    const existing = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
-    if (!existing || existing.length === 0) {
-      return false;
-    }
+		await db.delete(queues).where(eq(queues.id, id));
+		return true;
+	}
 
-    await db.delete(queues).where(eq(queues.id, id));
-    return true;
-  }
+	/**
+	 * Reset queue by closing current active batch and creating a new one
+	 */
+	async resetQueue(
+		id: string,
+		input: ResetQueueInput = {},
+	): Promise<QueueBatch | null> {
+		// Verify queue exists
+		const queue = await db
+			.select()
+			.from(queues)
+			.where(eq(queues.id, id))
+			.limit(1);
+		if (!queue || queue.length === 0) {
+			return null;
+		}
 
-  /**
-   * Reset queue by closing current active batch and creating a new one
-   */
-  async resetQueue(id: string, input: ResetQueueInput = {}): Promise<QueueBatch | null> {
+		// Get template for the queue
+		const template = await db
+			.select()
+			.from(queueTemplates)
+			.where(eq(queueTemplates.id, queue[0].templateId))
+			.limit(1);
 
-    // Verify queue exists
-    const queue = await db.select().from(queues).where(eq(queues.id, id)).limit(1);
-    if (!queue || queue.length === 0) {
-      return null;
-    }
+		// Close current active batch if exists
+		const currentActiveBatch = await db
+			.select()
+			.from(queueBatches)
+			.where(
+				and(eq(queueBatches.queueId, id), eq(queueBatches.status, "active")),
+			)
+			.limit(1);
 
-    // Get template for the queue
-    const template = await db.select().from(queueTemplates).where(eq(queueTemplates.id, queue[0].templateId)).limit(1);
+		if (currentActiveBatch && currentActiveBatch.length > 0) {
+			await db
+				.update(queueBatches)
+				.set({ status: "closed" })
+				.where(eq(queueBatches.id, currentActiveBatch[0].id));
+		}
 
-    // Close current active batch if exists
-    const currentActiveBatch = await db
-      .select()
-      .from(queueBatches)
-      .where(and(eq(queueBatches.queueId, id), eq(queueBatches.status, 'active')))
-      .limit(1);
+		// Create new batch
+		const newBatch = {
+			id: uuidv7(),
+			templateId: queue[0].templateId,
+			queueId: id,
+			name: input.name || `Batch - ${new Date().toISOString()}`,
+			status: "active" as const,
+		};
 
-    if (currentActiveBatch && currentActiveBatch.length > 0) {
-      await db
-        .update(queueBatches)
-        .set({ status: 'closed' })
-        .where(eq(queueBatches.id, currentActiveBatch[0].id));
-    }
+		const batchResult = await db
+			.insert(queueBatches)
+			.values(newBatch)
+			.returning();
+		const batchId = batchResult[0].id;
 
-    // Create new batch
-    const newBatch = {
-      id: uuidv4(),
-      queueId: id,
-      name: input.name || `Batch - ${new Date().toISOString()}`,
-      status: 'active' as const,
-    };
+		// Copy statuses from template
+		if (template && template.length > 0) {
+			const templateStatuses = await db
+				.select()
+				.from(queueTemplateStatuses)
+				.where(eq(queueTemplateStatuses.templateId, queue[0].templateId))
+				.orderBy(queueTemplateStatuses.order);
 
-    const batchResult = await db.insert(queueBatches).values(newBatch).returning();
-    const batchId = batchResult[0].id;
+			const batchStatuses = templateStatuses.map((ts) => ({
+				id: uuidv7(),
+				queueId: batchId,
+				templateStatusId: ts.id,
+				label: ts.label,
+				color: ts.color,
+				order: ts.order,
+			}));
 
-    // Copy statuses from template
-    if (template && template.length > 0) {
-      const templateStatuses = await db
-        .select()
-        .from(queueTemplateStatuses)
-        .where(eq(queueTemplateStatuses.templateId, queue[0].templateId))
-        .orderBy(queueTemplateStatuses.order);
+			if (batchStatuses.length > 0) {
+				await db.insert(queueStatuses).values(batchStatuses);
+			}
+		}
 
-      const batchStatuses = templateStatuses.map((ts) => ({
-        id: uuidv4(),
-        queueId: batchId,
-        templateStatusId: ts.id,
-        label: ts.label,
-        color: ts.color,
-        order: ts.order,
-      }));
-
-      if (batchStatuses.length > 0) {
-        await db.insert(queueStatuses).values(batchStatuses);
-      }
-    }
-
-    return batchResult[0];
-  }
+		return batchResult[0];
+	}
 }
 
 export const queueService = new QueueService();

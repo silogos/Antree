@@ -60,6 +60,26 @@ batchRoutes.get('/:id', async (c) => {
 });
 
 /**
+ * GET /batches/:id/statuses
+ * Get all statuses for a batch
+ */
+batchRoutes.get('/:id/statuses', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const statuses = await batchService.getBatchStatuses(id);
+
+    if (!statuses || statuses.length === 0) {
+      return c.json(successResponse([], 'No statuses found for this batch'));
+    }
+
+    return c.json(successResponse(statuses));
+  } catch (error) {
+    console.error('[BatchRoutes] GET /batches/:id/statuses error:', error);
+    return c.json(internalErrorResponse(error), 500);
+  }
+});
+
+/**
  * POST /batches
  * Create a new batch (copies statuses from template)
  */

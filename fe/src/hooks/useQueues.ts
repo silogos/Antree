@@ -20,10 +20,12 @@ export function useQueues(options: UseQueuesOptions = {}) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await queueService.getQueueItems({
-        queueId: options.queueId,
-        statusId: options.statusId,
-      });
+      // Build params object, only include non-undefined values
+      const params: { queueId?: string; statusId?: string } = {};
+      if (options.queueId) params.queueId = options.queueId;
+      if (options.statusId) params.statusId = options.statusId;
+
+      const { data } = await queueService.getQueueItems(params);
       setQueues(data || []);
     } catch (err: any) {
       setError(err instanceof Error ? err.message : "Failed to fetch queues");

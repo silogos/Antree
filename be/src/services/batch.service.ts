@@ -6,7 +6,7 @@
 import { db } from '../db/index.js';
 import { queueBatches, queues, queueTemplates, queueTemplateStatuses, queueStatuses } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueBatch } from '../db/schema.js';
 import type { CreateBatchInput, UpdateBatchInput } from '../validators/batch.validator.js';
 
@@ -42,6 +42,29 @@ export class BatchService {
   }
 
   /**
+   * Get statuses for a specific batch
+   */
+  async getBatchStatuses(batchId: string): Promise<Array<{
+    id: string;
+    label: string;
+    color: string;
+    order: number;
+  }>> {
+    const statuses = await db
+      .select({
+        id: queueStatuses.id,
+        label: queueStatuses.label,
+        color: queueStatuses.color,
+        order: queueStatuses.order,
+      })
+      .from(queueStatuses)
+      .where(eq(queueStatuses.queueId, batchId))
+      .orderBy(queueStatuses.order);
+
+    return statuses;
+  }
+
+  /**
    * Get a single batch by ID
    */
   async getBatchById(id: string): Promise<typeof queueBatches.$inferSelect | null> {
@@ -65,7 +88,8 @@ export class BatchService {
 
     // Create batch
     const newBatch: NewQueueBatch = {
-      id: uuidv4(),
+      id: uuidv7(),
+      templateId: queue[0].templateId,
       queueId: input.queueId,
       name: input.name || `Batch - ${new Date().toISOString()}`,
       status: input.status || 'active',
@@ -84,7 +108,7 @@ export class BatchService {
 
       // Create batch statuses as copies of template statuses
       const batchStatuses = templateStatuses.map((ts) => ({
-        id: uuidv4(),
+        id: uuidv7(),
         queueId: batchId,
         templateStatusId: ts.id, // Track origin
         label: ts.label,

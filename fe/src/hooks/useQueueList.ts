@@ -26,16 +26,19 @@ export function useQueueList(options: UseQueueListOptions = {}) {
         isActive: options.isActive,
       });
       setQueues(data || []);
-      // Set first queue as current if none selected
-      if (!currentQueue && data && data.length > 0) {
-        setCurrentQueue(data[0]);
-      }
+      // Set first queue as current if none selected (using functional update to avoid dependency)
+      setCurrentQueue((prev) => {
+        if (!prev && data && data.length > 0) {
+          return data[0];
+        }
+        return prev;
+      });
     } catch (err: any) {
       setError(err instanceof Error ? err.message : "Failed to fetch queues");
     } finally {
       setLoading(false);
     }
-  }, [options.templateId, options.isActive, currentQueue]);
+  }, [options.templateId, options.isActive]);
 
   const fetchQueueById = useCallback(async (id: string) => {
     setLoading(true);
