@@ -1111,3 +1111,165 @@ Build output saved to `.sisyphus/evidence/task-15-service-build.log`
 - Template statuses use `templateStatusId` foreign key, not queue context
 
 **Evidence**: See `.sisyphus/evidence/task-16-template-check.log`
+
+# Task 17: Rename and Update Batch Routes to Session Routes (be/src/routes/sessions.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Created
+- Created `be/src/routes/sessions.ts` by renaming and updating batch.service.ts
+
+### Route Path Updates
+1. **GET /sessions** (was /batches)
+2. **GET /sessions/:id** (was /batches/:id)
+3. **GET /sessions/:id/statuses** (was /batches/:id/statuses)
+4. **POST /sessions** (was /batches)
+5. **PUT /sessions/:id** (was /batches/:id)
+6. **PATCH /sessions/:id/lifecycle** (NEW route)
+7. **DELETE /sessions/:id** (was /batches/:id)
+
+### Function Renames
+1. **getAllBatches(filters) → getAllSessions(filters)**:
+   - Same filter parameters (queueId, status)
+   
+2. **getBatchById(id) → getSessionById(id)**:
+   - Same functionality, renamed for consistency
+   
+3. **createBatch(input) → createSession(input)**:
+   - Uses session validator (createSessionSchema)
+   - Broadcasts session_created event
+   
+4. **updateBatch(id, input) → updateSession(id, input)**:
+   - Uses session validator (updateSessionSchema)
+   - Broadcasts session_updated event
+   
+5. **deleteBatch(id) → deleteSession(id)**:
+   - Uses soft delete
+   - Broadcasts session_deleted event
+   
+6. **getBatchStatuses(id) → getSessionStatuses(id)**:
+   - Same functionality, renamed for consistency
+
+### Imports Updated
+1. **Validator imports**: 
+   - `createBatchSchema, updateBatchSchema` → `createSessionSchema, updateSessionSchema, lifecycleUpdateSchema`
+   - Import from: `'../validators/session.validator.js'`
+   
+2. **Service imports**:
+   - `batchService` → `sessionService`
+   - Import from: `'../services/session.service.js'`
+   
+3. **SSE imports**: No changes (already correct)
+
+### SSE Event Types Updated
+1. **batch_created → session_created**: Emits when new session is created
+2. **batch_updated → session_updated**: Emits when session metadata is updated
+3. **batch_deleted → session_deleted**: Emits when session is soft-deleted
+4. **NEW**: session_closed event for lifecycle PATCH when status → 'closed'
+5. **NEW**: session_updated event for lifecycle PATCH when status not 'closed'
+
+### Lifecycle Implementation
+- **No lifecycleUpdate() method**: SessionService uses updateSession() for all status transitions
+- **Status validation**: Handled by updateSession() method (draft → active → closed)
+- **Timestamp setting**: updateSession() sets started_at/ended_at based on status
+- **Broadcast logic**: Uses session_closed event when status → 'closed', session_updated otherwise
+
+## Patterns Observed
+
+### Route Update Pattern
+1. **Path changes**: /batches/* → /sessions/*
+2. **Function renames**: All service function names updated to use "session" prefix
+3. **Message updates**: All error/success messages updated from "Batch" to "Session"
+4. **Console errors**: Updated error messages to reference "SessionRoutes" instead of "BatchRoutes"
+
+### Validation Pattern
+1. **Separate schemas**: createSessionSchema, updateSessionSchema, lifecycleUpdateSchema
+2. **Middleware reuse**: validateBody() middleware for all POST/PUT/PATCH routes
+3. **Type inference**: `c.get('validatedBody')` returns typed data
+
+### SSE Broadcast Pattern
+1. **Event selection**: Based on operation type (create/update/delete/lifecycle)
+2. **Lifecycle events**: session_closed when closing, session_updated otherwise
+3. **Context data**: Always include sessionId, queueId when available
+4. **Broadcast location**: Routes broadcast after service operations complete
+
+## Learnings
+
+### SSE Event Type Constraints
+1. **No session_lifecycle_updated**: SSE broadcaster only defines session_created, session_updated, session_closed, session_deleted
+2. **Lifecycle uses existing events**: PATCH /lifecycle uses session_closed or session_updated based on status
+3. **Event naming follows state**: session_closed is separate from session_updated to indicate terminal state
+
+### Service Method Naming
+1. **No separate lifecycle method**: SessionService.updateSession() handles all updates including status transitions
+2. **Status transition logic**: Encapsulated in service, not route layer
+3. **Route delegates to service**: Routes should call service methods, not implement business logic
+
+### Lifecycle Route Design
+1. **PATCH /lifecycle**: Dedicated endpoint for status changes (vs PUT for metadata updates)
+2. **Different validator**: lifecycleUpdateSchema requires status field, updateSessionSchema makes it optional
+3. **Event selection**: Based on resulting status (closed → session_closed, otherwise → session_updated)
+
+### Type Safety in Routes
+1. **Type inference from middleware**: `c.get('validatedBody')` has correct type from validator
+2. **Parameters<typeof service.method>[n]**: Extracts parameter types from service methods
+3. **Null handling**: Optional chaining (?.) for queueId when not guaranteed
+
+### Build Verification Strategy
+1. **File-specific checks**: Use grep to check for errors in specific file
+2. **Expected errors in other files**: During refactoring, errors in other files are normal
+3. **Evidence preservation**: Store full build output for reference
+
+## Issues Encountered
+
+### Initial SSE Event Type Error
+- **Issue**: First version used 'session_lifecycle_updated' which doesn't exist
+- **Resolution**: Used conditional logic to select session_closed or session_updated
+- **Root cause**: SSE broadcaster defines specific event types, no generic lifecycle event
+
+### Service Method Misconception
+- **Issue**: Expected lifecycleUpdate() method on SessionService
+- **Resolution**: updateSession() handles all status transitions with validation
+- **Learning**: Read service implementation before assuming method names
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for sessions.ts (zero errors)
+- **Errors in other files**: Expected (batch.service.ts, queues.ts, statuses.ts, scripts)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-17-routes-build.log`
+
+### Build Output Analysis
+- Zero errors in `src/routes/sessions.ts` ✓
+- Expected errors in:
+  - `src/routes/queues.ts` (uses getActiveBatch, activeBatchId)
+  - `src/routes/statuses.ts` (uses queueId field)
+  - `src/services/batch.service.ts` (references old queueBatches)
+  - `src/scripts/*` (multiple seed scripts using old table names)
+  - `src/sse/index.ts` (references old queueBatches)
+
+## Dependencies
+
+### Depends On
+- Task 8 (session validator created) - createSessionSchema, updateSessionSchema, lifecycleUpdateSchema available
+- Task 9 (session DTO types) - SessionDTO, SessionLifecycleDTO defined (though not directly used in routes)
+- Task 12 (session service created) - SessionService with all methods available
+- Task 16 (SSE updated) - session_* event types defined in broadcaster
+
+### Blocks
+- Tasks 18-20 (other route files may reference sessions.ts)
+- Task 23 (routes registration in index.ts will need sessions.ts)
+- Frontend updates (will use /sessions/* endpoints)
+
+## Next Steps
+- Task 18: Update queue-item routes to use sessions
+- Task 19: Update status routes for session statuses
+- Task 20: Update template routes (if needed)
+- Task 21: Update health routes (if needed)
+- Task 22: Update SSE routes for sessions
+- Task 23: Register session routes in index.ts
+- Task 24: Delete batch.service.ts and batches.ts

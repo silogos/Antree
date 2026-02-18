@@ -1962,7 +1962,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 4 group commit)
 
-- [ ] 17. **Rename/Update batches.ts → sessions.ts routes**
+- [x] 17. **Rename/Update batches.ts → sessions.ts routes**
 
   **What to do**:
   - Rename `be/src/routes/batches.ts` to `sessions.ts`
