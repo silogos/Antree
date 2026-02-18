@@ -1,0 +1,20 @@
+# SSE Event Mapping Documentation
+
+Server-Sent Events (SSE) for real-time queue session system updates. This document describes all event types, endpoints, and payload structures for the session-based queue system.
+
+## Overview
+
+The SSE system provides real-time updates for queue sessions and items. Clients can subscribe to specific sessions or items to receive live updates when changes occur.
+
+**Important:** All event payloads use `snake_case` property names per project convention.
+
+## Session Events
+
+### `session_created`
+
+Emitted when a new queue session is created.
+
+**Payload:**
+```json
+{
+  "type": "session_created",

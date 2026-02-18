@@ -1306,7 +1306,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 3 group commit)
 
-- [ ] 11. **Create SSE channel mapping document**
+- [x] 11. **Create SSE channel mapping document**
 
   **What to do**:
   - Create `docs/sse-mapping.md` file

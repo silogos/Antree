@@ -569,3 +569,128 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 9: Update SSE broadcaster to handle session events
 - Tasks 12-24: Fix TypeScript compilation errors in dependent files
 
+
+# Task 11: Create SSE Mapping Documentation (docs/sse-mapping.md)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Created
+- Created `docs/sse-mapping.md` with comprehensive SSE event type and endpoint documentation
+
+### Event Types Documented
+
+#### Session Events (4)
+1. **session_created**: Emitted when new session is created
+2. **session_updated**: Emitted when session metadata is updated
+3. **session_closed**: Emitted when session status changes to 'closed'
+4. **session_deleted**: Emitted when session is soft-deleted
+
+#### Session Status Events (3)
+1. **session_status_created**: Emitted when session status is created
+2. **session_status_updated**: Emitted when session status is updated
+3. **session_status_deleted**: Emitted when session status is deleted
+
+#### Item Events (4)
+1. **item_created**: Emitted when queue item is created
+2. **item_updated**: Emitted when queue item metadata is updated
+3. **item_status_changed**: Emitted when queue item status is updated
+4. **item_deleted**: Emitted when queue item is deleted
+
+### SSE Endpoints Documented
+1. **GET /sse/sessions/:sessionId/stream**: Stream events for specific session
+2. **GET /sse/items/:itemId/stream**: Stream events for specific item
+
+### Additional Content
+- Event payload structure documentation with snake_case properties
+- Deprecation notice for batch_* and queue_item_* events
+- Reconnection support documentation (Last-Event-ID header)
+- Connection management (limits, rate limiting, heartbeat)
+- Special events (connected, error, disconnect, catch_up_start, catch_up_complete)
+- Best practices for SSE client implementation
+
+## Patterns Observed
+
+### Event Naming Conventions
+1. **Session events**: Use `session_{action}` pattern (session_created, session_updated, session_closed, session_deleted)
+2. **Status events**: Use `session_status_{action}` pattern (session_status_created, session_status_updated, session_status_deleted)
+3. **Item events**: Use `item_{action}` pattern (item_created, item_updated, item_status_changed, item_deleted)
+4. **Distinct status change**: `item_status_changed` is separate from `item_updated` to distinguish status changes from metadata updates
+
+### Event Payload Structure
+1. **Standard format**: All events have `type`, `data`, and `timestamp` fields
+2. **Snake_case properties**: All data properties use snake_case (session_id, status_id, queue_number, etc.)
+3. **UUID strings**: All IDs are strings (not UUID objects)
+4. **ISO 8601 timestamps**: All timestamps use ISO 8601 format
+
+### Endpoint Design
+1. **Session streams**: `/sse/sessions/:sessionId/stream` receives all session and item events
+2. **Item streams**: `/sse/items/:itemId/stream` receives only item-related events
+3. **Reconnection support**: Last-Event-ID header for catching up on missed events
+4. **Heartbeat**: Keep-alive message every 30 seconds
+
+## Conventions
+
+### Documentation Structure
+1. **Overview section**: High-level description and important notes
+2. **Event sections**: Grouped by entity type (sessions, statuses, items)
+3. **Endpoint sections**: Detailed documentation of each SSE endpoint
+4. **Deprecation notice**: Clear deprecation warnings for legacy events
+5. **Best practices**: Implementation guidance for SSE clients
+
+### Event Payload Examples
+1. **Complete payloads**: Include all relevant fields in examples
+2. **Realistic data**: Use realistic UUIDs, timestamps, and values
+3. **Snake_case consistency**: Maintain snake_case throughout all examples
+4. **Date format**: Use ISO 8601 timestamps consistently
+
+## Learnings
+
+### SSE Event Design Principles
+1. **Granular events**: Separate events for different types of changes (item_updated vs item_status_changed)
+2. **Session lifecycle**: Dedicated event for session closure (session_closed) separate from general updates
+3. **Soft delete handling**: session_deleted event includes minimal data (id, queue_id) only
+4. **Status change distinction**: item_status_changed allows clients to distinguish status moves from metadata updates
+
+### Legacy Event Migration
+1. **batch_* → session_***: Direct mapping for batch events to session events
+2. **queue_item_* → item_***: Simplified naming for queue item events
+3. **Deprecation notice**: Clear documentation of what to use instead of deprecated events
+4. **Backward compatibility**: Not maintained - clear deprecation to encourage migration
+
+### Client Implementation Guidance
+1. **Reconnection handling**: Store last event ID and use Last-Event-ID header
+2. **Error handling**: Handle disconnect and error events gracefully
+3. **Rate limiting**: Document connection limits and rate limits for clients
+4. **Catch-up mechanism**: Explain catch_up_start and catch_up_complete events
+
+## Successful Approaches
+
+1. **Comprehensive documentation**: Covered all 11 event types with full payload examples
+2. **Snake_case consistency**: Strictly maintained snake_case in all property names
+3. **Clear deprecation**: Provided mapping from deprecated to new event types
+4. **Implementation details**: Included reconnection, rate limiting, and heartbeat information
+5. **Best practices section**: Added guidance for client-side SSE implementation
+
+## Dependencies
+
+### Depends On
+- Task 7 (migration applied) - Queue sessions table exists in database
+- Task 9 (session DTO types) - Used as reference for payload structures
+- Task 10 (type exports) - Schema type exports available for documentation
+
+### Enables
+- Task 16 (SSE broadcaster update) - Reference for implementing new event types
+- Task 19 (session status routes) - Understanding of session status events
+- Frontend SSE client implementation - Documentation for subscribing to new endpoints
+
+## Evidence Files
+- `.sisyphus/evidence/task-11-sse-doc-valid.txt` - First 20 lines of documentation (verification)
+- `.sisyphus/evidence/task-11-sse-events-doc.log` - grep results for all event types and endpoints
+
+## Next Steps
+- Task 12: Update batch.service.ts → session.service.ts (use session event names)
+- Task 16: Update SSE broadcaster to emit new session and item events
+- Task 19: Update session status routes to emit session_status_* events
