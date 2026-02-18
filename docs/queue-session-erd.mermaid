@@ -1,0 +1,101 @@
+```mermaid
+erDiagram
+    users {
+        uuid id PK
+        text username UK
+        text email UK
+        text password
+        text full_name
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queue_templates {
+        uuid id PK
+        text name
+        text description
+        boolean is_system_template
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queue_template_statuses {
+        uuid id PK
+        uuid template_id FK
+        text label
+        text color
+        integer order
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queues {
+        uuid id PK
+        text name
+        uuid template_id FK
+        uuid created_by FK
+        uuid updated_by FK
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queue_sessions {
+        uuid id PK
+        uuid queue_id FK
+        uuid template_id FK
+        text name
+        text status
+        integer session_number
+        timestamp started_at
+        timestamp ended_at
+        boolean is_deleted
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queue_session_statuses {
+        uuid id PK
+        uuid session_id FK
+        uuid template_status_id FK
+        text label
+        text color
+        integer order
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    queue_items {
+        uuid id PK
+        uuid queue_id FK
+        uuid session_id FK
+        uuid status_id FK
+        text queue_number
+        text name
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users ||--o{ queues : "creates/updates"
+    queue_templates ||--o{ queues : "template"
+    queue_templates ||--o{ queue_template_statuses : "has"
+    queues ||--o{ queue_sessions : "contains"
+    queue_templates ||--o{ queue_sessions : "template"
+    queue_sessions ||--o{ queue_session_statuses : "has"
+    queue_template_statuses ||--o{ queue_session_statuses : "origin"
+    queue_sessions ||--o{ queue_items : "contains"
+    queue_session_statuses ||--o{ queue_items : "status"
+    queues ||--o{ queue_items : "contains"
+
+    %% Legend
+    %% PK: Primary Key
+    %% FK: Foreign Key
+    %% UK: Unique Key
+    %% 1:1: One-to-One relationship
+    %% 1:N: One-to-Many relationship
+    %% N:M: Many-to-Many relationship
+    %% is_deleted: Soft delete flag (boolean)
+```

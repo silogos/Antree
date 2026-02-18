@@ -71,22 +71,26 @@ export const queues = pgTable('queues', {
 export type Queue = typeof queues.$inferSelect;
 export type NewQueue = typeof queues.$inferInsert;
 
-export const queueBatches = pgTable('queue_batches', {
+export const queueSessions = pgTable('queue_sessions', {
   id: uuid('id').primaryKey(),
   templateId: uuid('template_id').notNull().references(() => queueTemplates.id, { onDelete: 'cascade' }),
   queueId: uuid('queue_id').references(() => queues.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  status: text('status').notNull().default('active'), // active, closed
+  status: text('status').notNull().default('draft'), // draft | active | closed
+  sessionNumber: integer('session_number'),
+  startedAt: timestamp('started_at'),
+  endedAt: timestamp('ended_at'),
+  isDeleted: boolean('is_deleted').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export type QueueBatch = typeof queueBatches.$inferSelect;
-export type NewQueueBatch = typeof queueBatches.$inferInsert;
+export type QueueSession = typeof queueSessions.$inferSelect;
+export type NewQueueSession = typeof queueSessions.$inferInsert;
 
-export const queueStatuses = pgTable('queue_statuses', {
+export const queueSessionStatuses = pgTable('queue_session_statuses', {
   id: uuid('id').primaryKey(),
-  queueId: uuid('queue_id').notNull().references(() => queueBatches.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').notNull().references(() => queueSessions.id, { onDelete: 'cascade' }),
   templateStatusId: uuid('template_status_id').references(() => queueTemplateStatuses.id), // Track origin from template
   label: text('label').notNull(),
   color: text('color').notNull(),
@@ -95,16 +99,16 @@ export const queueStatuses = pgTable('queue_statuses', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export type QueueStatus = typeof queueStatuses.$inferSelect;
-export type NewQueueStatus = typeof queueStatuses.$inferInsert;
+export type QueueSessionStatus = typeof queueSessionStatuses.$inferSelect;
+export type NewQueueSessionStatus = typeof queueSessionStatuses.$inferInsert;
 
 export const queueItems = pgTable('queue_items', {
   id: uuid('id').primaryKey(),
   queueId: uuid('queue_id').notNull().references(() => queues.id, { onDelete: 'cascade' }),
-  batchId: uuid('batch_id').notNull().references(() => queueBatches.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').notNull().references(() => queueSessions.id, { onDelete: 'cascade' }),
   queueNumber: text('queue_number').notNull(),
   name: text('name').notNull(),
-  statusId: uuid('status_id').notNull().references(() => queueStatuses.id, { onDelete: 'restrict' }),
+  statusId: uuid('status_id').notNull().references(() => queueSessionStatuses.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   metadata: jsonb('metadata'),
@@ -115,7 +119,7 @@ export type NewQueueItem = typeof queueItems.$inferInsert;
 
 export const queueBoardsRelations = relations(queueBoards, ({ many }) => ({
   // Legacy: queue_boards is deprecated, keeping for backward compatibility
-  // New flow uses queue_templates → queue_batches → queue_statuses
+  // New flow uses queue_templates → queue_sessions → queue_session_statuses
 }));
 
 export const queueTemplatesRelations = relations(queueTemplates, ({ many }) => ({
@@ -128,7 +132,7 @@ export const queueTemplateStatusesRelations = relations(queueTemplateStatuses, (
     fields: [queueTemplateStatuses.templateId],
     references: [queueTemplates.id],
   }),
-  statuses: many(queueStatuses),
+  sessionStatuses: many(queueSessionStatuses),
 }));
 
 export const queuesRelations = relations(queues, ({ one, many }) => ({
@@ -136,29 +140,29 @@ export const queuesRelations = relations(queues, ({ one, many }) => ({
     fields: [queues.templateId],
     references: [queueTemplates.id],
   }),
-  batches: many(queueBatches),
+  sessions: many(queueSessions),
 }));
 
-export const queueBatchesRelations = relations(queueBatches, ({ one, many }) => ({
+export const queueSessionsRelations = relations(queueSessions, ({ one, many }) => ({
   template: one(queueTemplates, {
-    fields: [queueBatches.templateId],
+    fields: [queueSessions.templateId],
     references: [queueTemplates.id],
   }),
   queue: one(queues, {
-    fields: [queueBatches.queueId],
+    fields: [queueSessions.queueId],
     references: [queues.id],
   }),
-  statuses: many(queueStatuses),
+  sessionStatuses: many(queueSessionStatuses),
   items: many(queueItems),
 }));
 
-export const queueStatusesRelations = relations(queueStatuses, ({ one, many }) => ({
-  batch: one(queueBatches, {
-    fields: [queueStatuses.queueId],
-    references: [queueBatches.id],
+export const queueSessionStatusesRelations = relations(queueSessionStatuses, ({ one, many }) => ({
+  session: one(queueSessions, {
+    fields: [queueSessionStatuses.sessionId],
+    references: [queueSessions.id],
   }),
   templateStatus: one(queueTemplateStatuses, {
-    fields: [queueStatuses.templateStatusId],
+    fields: [queueSessionStatuses.templateStatusId],
     references: [queueTemplateStatuses.id],
   }),
   queueItems: many(queueItems),
@@ -169,12 +173,12 @@ export const queueItemsRelations = relations(queueItems, ({ one }) => ({
     fields: [queueItems.queueId],
     references: [queues.id],
   }),
-  batch: one(queueBatches, {
-    fields: [queueItems.batchId],
-    references: [queueBatches.id],
+  session: one(queueSessions, {
+    fields: [queueItems.sessionId],
+    references: [queueSessions.id],
   }),
-  status: one(queueStatuses, {
+  status: one(queueSessionStatuses, {
     fields: [queueItems.statusId],
-    references: [queueStatuses.id],
+    references: [queueSessionStatuses.id],
   }),
 }));

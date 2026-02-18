@@ -235,7 +235,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 > Implementation = ONE Task. Every task MUST have: Recommended Agent Profile + Parallelization info + QA Scenarios.
 > **A task WITHOUT QA Scenarios is INCOMPLETE. No exceptions.**
 
-- [ ] 1. **Commit existing system before refactor**
+- [x] 1. **Commit existing system before refactor**
 
   **What to do**:
   - Create a git commit to preserve current state before any destructive changes
@@ -326,7 +326,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 1 group commit)
 
-- [ ] 2. **Create migration SQL script**
+- [x] 2. **Create migration SQL script**
 
   **What to do**:
   - Create SQL migration file at `docs/queue-session-migration.sql`
@@ -433,7 +433,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 1 group commit)
 
-- [ ] 3. **Create ERD diagram**
+- [x] 3. **Create ERD diagram**
 
   **What to do**:
   - Create ERD diagram at `docs/queue-session-erd.png`
@@ -533,7 +533,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 1 group commit)
 
-- [ ] 4. **Create OpenAPI specification**
+- [x] 4. **Create OpenAPI specification**
 
   **What to do**:
   - Create OpenAPI spec file at `docs/queue-session-openapi.yaml`
@@ -658,7 +658,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 1 group commit)
 
-- [ ] 5. **Update database schema (schema.ts)**
+- [x] 5. **Update database schema (schema.ts)**
 
   **What to do**:
   - Modify `be/src/db/schema.ts` to rename tables and add fields
@@ -778,7 +778,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 2 group commit)
 
-- [ ] 6. **Generate Drizzle migration**
+- [x] 6. **Generate Drizzle migration**
 
   **What to do**:
   - Run Drizzle migration generation: `pnpm --filter @antree/backend db:generate`
@@ -891,7 +891,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 2 group commit)
 
-- [ ] 7. **Apply migration to database via Docker**
+- [x] 7. **Apply migration to database via Docker**
 
   **What to do**:
   - Start database if not running: `docker-compose up -d`

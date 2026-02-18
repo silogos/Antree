@@ -1,0 +1,1645 @@
+openapi: 3.0.3
+info:
+  title: Antree Queue Session API
+  description: |
+    Real-time queue management system with session-based architecture.
+    This API provides endpoints for managing queues, sessions, queue items,
+    templates, and real-time updates via Server-Sent Events (SSE).
+
+    ## Core Concepts
+    - **Queue**: A permanent dashboard for managing queues
+    - **Session**: An operational runtime period (e.g., Morning Shift, Batch #12)
+    - **Queue Item**: An immutable item within a session
+    - **Template**: Reusable status definitions for queues and sessions
+
+    ## Architecture
+    - Multiple sessions may be active simultaneously
+    - Queue numbering resets per session
+    - Queue items are immutable to their session
+    - Sessions use soft delete
+    - Template statuses are cloned into sessions
+  version: 2.0.0
+  contact:
+    name: Antree API Support
+    email: support@antree.io
+
+servers:
+  - url: http://localhost:3001
+    description: Development server
+  - url: https://api.antree.io
+    description: Production server
+
+tags:
+  - name: Queues
+    description: Queue management operations
+  - name: Sessions
+    description: Queue session lifecycle management
+  - name: Session Statuses
+    description: Status definitions for sessions
+  - name: Items
+    description: Queue item management
+  - name: Templates
+    description: Template management for reusable configurations
+  - name: SSE
+    description: Server-Sent Events for real-time updates
+
+paths:
+  /queues:
+    get:
+      tags:
+        - Queues
+      summary: Get all queues
+      description: Retrieve a list of all queues
+      operationId: getAllQueues
+      responses:
+        '200':
+          description: Successfully retrieved queues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_QueueList'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Queues
+      summary: Create a new queue
+      description: Create a new queue with a template reference
+      operationId: createQueue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQueueRequest'
+      responses:
+        '201':
+          description: Queue created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Queue'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /queues/{id}:
+    get:
+      tags:
+        - Queues
+      summary: Get a single queue
+      description: Retrieve details of a specific queue by ID
+      operationId: getQueueById
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: Successfully retrieved queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Queue'
+        '404':
+          description: Queue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Queues
+      summary: Update a queue
+      description: Update queue properties (soft deactivate by setting is_active to false)
+      operationId: updateQueue
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQueueRequest'
+      responses:
+        '200':
+          description: Queue updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Queue'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Queue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Queues
+      summary: Delete a queue
+      description: Soft delete a queue by setting is_active to false
+      operationId: deleteQueue
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: Queue deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Deleted'
+        '404':
+          description: Queue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /queues/{queueId}/sessions:
+    get:
+      tags:
+        - Sessions
+      summary: Get all sessions for a queue
+      description: Retrieve all sessions for a specific queue (excludes soft-deleted sessions)
+      operationId: getSessionsByQueueId
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: Successfully retrieved sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_SessionList'
+        '404':
+          description: Queue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Sessions
+      summary: Create a new session
+      description: Create a new session for a queue with statuses cloned from template
+      operationId: createSession
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Session'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Queue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{id}:
+    get:
+      tags:
+        - Sessions
+      summary: Get a single session
+      description: Retrieve details of a specific session by ID
+      operationId: getSessionById
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Successfully retrieved session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Session'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Sessions
+      summary: Update a session
+      description: Update session properties (name only)
+      operationId: updateSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Session'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Sessions
+      summary: Delete a session
+      description: Soft delete a session
+      operationId: deleteSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Session deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Deleted'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{id}/lifecycle:
+    patch:
+      tags:
+        - Sessions
+      summary: Update session lifecycle status
+      description: Update the lifecycle status of a session (active, paused, completed, archived)
+      operationId: updateSessionLifecycle
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionLifecycleRequest'
+      responses:
+        '200':
+          description: Session lifecycle updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Session'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{sessionId}/statuses:
+    get:
+      tags:
+        - Session Statuses
+      summary: Get all statuses for a session
+      description: Retrieve all statuses for a specific session
+      operationId: getSessionStatuses
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Successfully retrieved session statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_SessionStatusList'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /session-statuses/{id}:
+    patch:
+      tags:
+        - Session Statuses
+      summary: Update a session status
+      description: Update session status properties (label, color, order)
+      operationId: updateSessionStatus
+      parameters:
+        - $ref: '#/components/parameters/SessionStatusId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionStatusRequest'
+      responses:
+        '200':
+          description: Session status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_SessionStatus'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session status not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{sessionId}/items:
+    get:
+      tags:
+        - Items
+      summary: Get all items for a session
+      description: Retrieve all queue items for a specific session
+      operationId: getItemsBySessionId
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Successfully retrieved items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_ItemList'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Items
+      summary: Create a new queue item
+      description: Create a new queue item within a session (immutable to session)
+      operationId: createQueueItem
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQueueItemRequest'
+      responses:
+        '201':
+          description: Queue item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Item'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /items/{id}:
+    get:
+      tags:
+        - Items
+      summary: Get a single queue item
+      description: Retrieve details of a specific queue item by ID
+      operationId: getItemById
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: Successfully retrieved queue item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Item'
+        '404':
+          description: Queue item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Items
+      summary: Update a queue item
+      description: Update queue item properties (display_name, metadata)
+      operationId: updateQueueItem
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQueueItemRequest'
+      responses:
+        '200':
+          description: Queue item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Item'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Queue item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Items
+      summary: Delete a queue item
+      description: Delete a queue item
+      operationId: deleteQueueItem
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: Queue item deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Deleted'
+        '404':
+          description: Queue item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /items/{id}/status:
+    patch:
+      tags:
+        - Items
+      summary: Update queue item status
+      description: Update the status of a queue item
+      operationId: updateItemStatus
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemStatusRequest'
+      responses:
+        '200':
+          description: Item status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Item'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Queue item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /templates:
+    get:
+      tags:
+        - Templates
+      summary: Get all templates
+      description: Retrieve all queue templates
+      operationId: getAllTemplates
+      responses:
+        '200':
+          description: Successfully retrieved templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_TemplateList'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Templates
+      summary: Create a new template
+      description: Create a new queue template
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_Template'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /templates/{id}/statuses:
+    get:
+      tags:
+        - Templates
+      summary: Get all statuses for a template
+      description: Retrieve all statuses for a specific template
+      operationId: getTemplateStatuses
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+      responses:
+        '200':
+          description: Successfully retrieved template statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_TemplateStatusList'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Templates
+      summary: Create a template status
+      description: Create a new status for a template
+      operationId: createTemplateStatus
+      parameters:
+        - $ref: '#/components/parameters/TemplateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateStatusRequest'
+      responses:
+        '201':
+          description: Template status created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse_TemplateStatus'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{sessionId}/stream:
+    get:
+      tags:
+        - SSE
+      summary: Session event stream
+      description: |
+        Establish a Server-Sent Events connection to receive real-time updates for a session.
+
+        **Events:**
+        - `item_created` - A new queue item was created in this session
+        - `item_updated` - A queue item was updated
+        - `item_status_changed` - A queue item's status was changed
+        - `session_paused` - Session lifecycle status changed to paused
+        - `session_resumed` - Session lifecycle status changed to active
+        - `session_completed` - Session lifecycle status changed to completed
+
+        **Connection Requirements:**
+        - Client must handle keep-alive messages
+        - Client should reconnect with exponential backoff on disconnect
+        - Use `Last-Event-ID` header for resume capability
+      operationId: sessionStream
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: SSE connection established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: {\"type\":\"item_created\",\"data\":{\"id\":\"...\"}}\n\n"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /items/{itemId}/stream:
+    get:
+      tags:
+        - SSE
+      summary: Item event stream
+      description: |
+        Establish a Server-Sent Events connection to receive real-time updates for a specific queue item.
+
+        **Events:**
+        - `item_updated` - The item was updated
+        - `item_status_changed` - The item's status was changed
+
+        **Connection Requirements:**
+        - Client must handle keep-alive messages
+        - Client should reconnect with exponential backoff on disconnect
+        - Use `Last-Event-ID` header for resume capability
+      operationId: itemStream
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: SSE connection established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: {\"type\":\"item_updated\",\"data\":{\"id\":\"...\"}}\n\n"
+        '404':
+          description: Queue item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    QueueId:
+      name: id
+      in: path
+      description: Queue UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    SessionId:
+      name: id
+      in: path
+      description: Session UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    SessionIdParam:
+      name: sessionId
+      in: path
+      description: Session UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ItemId:
+      name: id
+      in: path
+      description: Queue item UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ItemIdParam:
+      name: itemId
+      in: path
+      description: Queue item UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    SessionStatusId:
+      name: id
+      in: path
+      description: Session status UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TemplateId:
+      name: id
+      in: path
+      description: Template UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ============================================
+    # Common Response Schemas
+    # ============================================
+    SuccessResponse_Queue:
+      type: object
+      description: Successful response with queue data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Queue'
+        message:
+          type: string
+          example: "Queue retrieved successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_QueueList:
+      type: object
+      description: Successful response with queue list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Queue'
+        total:
+          type: integer
+          example: 5
+      required:
+        - success
+        - data
+
+    SuccessResponse_Session:
+      type: object
+      description: Successful response with session data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Session'
+        message:
+          type: string
+          example: "Session retrieved successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_SessionList:
+      type: object
+      description: Successful response with session list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+        total:
+          type: integer
+          example: 3
+      required:
+        - success
+        - data
+
+    SuccessResponse_SessionStatus:
+      type: object
+      description: Successful response with session status data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/SessionStatus'
+        message:
+          type: string
+          example: "Session status updated successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_SessionStatusList:
+      type: object
+      description: Successful response with session status list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionStatus'
+        total:
+          type: integer
+          example: 4
+      required:
+        - success
+        - data
+
+    SuccessResponse_Item:
+      type: object
+      description: Successful response with queue item data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/QueueItem'
+        message:
+          type: string
+          example: "Queue item retrieved successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_ItemList:
+      type: object
+      description: Successful response with queue item list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueueItem'
+        total:
+          type: integer
+          example: 10
+      required:
+        - success
+        - data
+
+    SuccessResponse_Template:
+      type: object
+      description: Successful response with template data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Template'
+        message:
+          type: string
+          example: "Template retrieved successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_TemplateList:
+      type: object
+      description: Successful response with template list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+        total:
+          type: integer
+          example: 5
+      required:
+        - success
+        - data
+
+    SuccessResponse_TemplateStatus:
+      type: object
+      description: Successful response with template status data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/TemplateStatus'
+        message:
+          type: string
+          example: "Template status created successfully"
+      required:
+        - success
+        - data
+
+    SuccessResponse_TemplateStatusList:
+      type: object
+      description: Successful response with template status list
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateStatus'
+        total:
+          type: integer
+          example: 4
+      required:
+        - success
+        - data
+
+    SuccessResponse_Deleted:
+      type: object
+      description: Successful response for delete operations
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440000"
+        message:
+          type: string
+          example: "Resource deleted successfully"
+      required:
+        - success
+        - data
+
+    ErrorResponse:
+      type: object
+      description: Error response
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Not Found"
+        message:
+          type: string
+          example: "Queue with id 550e8400-e29b-41d4-a716-446655440000 not found"
+      required:
+        - success
+        - error
+        - message
+
+    # ============================================
+    # Domain Schemas
+    # ============================================
+    Queue:
+      type: object
+      description: A queue is a permanent dashboard for managing queue operations
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Queue unique identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: Queue display name
+          example: "Customer Service"
+        template_id:
+          type: string
+          format: uuid
+          description: Reference to the template this queue uses
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        is_active:
+          type: boolean
+          description: Whether the queue is active (soft delete sets to false)
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Queue creation timestamp
+          example: "2026-02-19T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Queue last update timestamp
+          example: "2026-02-19T10:00:00.000Z"
+      required:
+        - id
+        - name
+        - template_id
+        - is_active
+        - created_at
+        - updated_at
+
+    CreateQueueRequest:
+      type: object
+      description: Request body for creating a new queue
+      properties:
+        name:
+          type: string
+          description: Queue display name
+          example: "Customer Service"
+        template_id:
+          type: string
+          format: uuid
+          description: Reference to the template this queue should use
+          example: "660e8400-e29b-41d4-a716-446655440001"
+      required:
+        - name
+        - template_id
+
+    UpdateQueueRequest:
+      type: object
+      description: Request body for updating a queue
+      properties:
+        name:
+          type: string
+          description: Queue display name
+          example: "Customer Service - Updated"
+        is_active:
+          type: boolean
+          description: Whether the queue is active (soft delete)
+          example: false
+
+    Session:
+      type: object
+      description: A session represents an operational runtime period for a queue
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Session unique identifier
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        queue_id:
+          type: string
+          format: uuid
+          description: Reference to the parent queue
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: Session display name
+          example: "Morning Shift"
+        lifecycle_status:
+          type: string
+          enum: [active, paused, completed, archived]
+          description: Session lifecycle state (runtime status)
+          example: "active"
+        session_number:
+          type: integer
+          description: Sequential session number within the queue
+          example: 12
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start timestamp
+          example: "2026-02-19T08:00:00.000Z"
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end timestamp (null if active)
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+          example: "2026-02-19T08:00:00.000Z"
+      required:
+        - id
+        - queue_id
+        - name
+        - lifecycle_status
+        - session_number
+        - started_at
+        - created_at
+
+    CreateSessionRequest:
+      type: object
+      description: Request body for creating a new session
+      properties:
+        name:
+          type: string
+          description: Session display name
+          example: "Morning Shift"
+      required:
+        - name
+
+    UpdateSessionRequest:
+      type: object
+      description: Request body for updating a session
+      properties:
+        name:
+          type: string
+          description: Session display name
+          example: "Morning Shift - Updated"
+
+    UpdateSessionLifecycleRequest:
+      type: object
+      description: Request body for updating session lifecycle status
+      properties:
+        lifecycle_status:
+          type: string
+          enum: [active, paused, completed, archived]
+          description: New lifecycle status for the session
+          example: "paused"
+      required:
+        - lifecycle_status
+
+    SessionStatus:
+      type: object
+      description: A status definition within a session
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Session status unique identifier
+          example: "880e8400-e29b-41d4-a716-446655440003"
+        session_id:
+          type: string
+          format: uuid
+          description: Reference to the parent session
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        label:
+          type: string
+          description: Status display label
+          example: "Cooking"
+        color:
+          type: string
+          description: Status color (hex or CSS color)
+          example: "#FFAA00"
+        order:
+          type: integer
+          description: Status order for display
+          example: 2
+      required:
+        - id
+        - session_id
+        - label
+        - color
+        - order
+
+    UpdateSessionStatusRequest:
+      type: object
+      description: Request body for updating a session status
+      properties:
+        label:
+          type: string
+          description: Status display label
+          example: "Cooking - Updated"
+        color:
+          type: string
+          description: Status color (hex or CSS color)
+          example: "#FFBB00"
+        order:
+          type: integer
+          description: Status order for display
+          example: 3
+
+    QueueItem:
+      type: object
+      description: A queue item represents an entity waiting in a queue session
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Queue item unique identifier
+          example: "990e8400-e29b-41d4-a716-446655440004"
+        queue_id:
+          type: string
+          format: uuid
+          description: Reference to the parent queue
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        session_id:
+          type: string
+          format: uuid
+          description: Reference to the parent session (immutable)
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        status_id:
+          type: string
+          format: uuid
+          description: Reference to the session status
+          example: "880e8400-e29b-41d4-a716-446655440003"
+        queue_number:
+          type: string
+          description: Queue number within the session (resets per session)
+          example: "A-12"
+        display_name:
+          type: string
+          description: Display name for the queue item
+          example: "Budi"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata for the queue item
+          example:
+            order_id: "ORD-99123"
+            channel: "grab"
+        created_at:
+          type: string
+          format: date-time
+          description: Queue item creation timestamp
+          example: "2026-02-19T08:15:00.000Z"
+      required:
+        - id
+        - queue_id
+        - session_id
+        - status_id
+        - queue_number
+        - display_name
+        - created_at
+
+    CreateQueueItemRequest:
+      type: object
+      description: Request body for creating a new queue item
+      properties:
+        queue_number:
+          type: string
+          description: Queue number within the session (auto-generated if not provided)
+          example: "A-13"
+        display_name:
+          type: string
+          description: Display name for the queue item
+          example: "Siti"
+        status_id:
+          type: string
+          format: uuid
+          description: Initial status reference (defaults to first status if not provided)
+          example: "880e8400-e29b-41d4-a716-446655440003"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata for the queue item
+          example:
+            order_id: "ORD-99124"
+            channel: "gojek"
+      required:
+        - display_name
+
+    UpdateQueueItemRequest:
+      type: object
+      description: Request body for updating a queue item
+      properties:
+        display_name:
+          type: string
+          description: Display name for the queue item
+          example: "Budi - Updated"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata for the queue item (merged with existing)
+          example:
+            order_id: "ORD-99123"
+            channel: "grab"
+            notes: "VIP customer"
+
+    UpdateItemStatusRequest:
+      type: object
+      description: Request body for updating a queue item's status
+      properties:
+        status_id:
+          type: string
+          format: uuid
+          description: New status reference
+          example: "880e8400-e29b-41d4-a716-446655440005"
+      required:
+        - status_id
+
+    Template:
+      type: object
+      description: A template defines reusable status configurations for queues
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Template unique identifier
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        name:
+          type: string
+          description: Template display name
+          example: "Standard Restaurant Queue"
+        description:
+          type: string
+          nullable: true
+          description: Template description
+          example: "Standard queue flow for restaurants"
+        is_system_template:
+          type: boolean
+          description: Whether this is a system-provided template
+          example: false
+        is_active:
+          type: boolean
+          description: Whether the template is active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Template creation timestamp
+          example: "2026-02-19T09:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Template last update timestamp
+          example: "2026-02-19T09:00:00.000Z"
+      required:
+        - id
+        - name
+        - is_system_template
+        - is_active
+        - created_at
+        - updated_at
+
+    CreateTemplateRequest:
+      type: object
+      description: Request body for creating a new template
+      properties:
+        name:
+          type: string
+          description: Template display name
+          example: "Hospital Queue"
+        description:
+          type: string
+          description: Template description
+          example: "Standard queue flow for hospitals"
+
+    TemplateStatus:
+      type: object
+      description: A status definition within a template
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Template status unique identifier
+          example: "880e8400-e29b-41d4-a716-446655440003"
+        template_id:
+          type: string
+          format: uuid
+          description: Reference to the parent template
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        label:
+          type: string
+          description: Status display label
+          example: "Waiting"
+        color:
+          type: string
+          description: Status color (hex or CSS color)
+          example: "#94A3B8"
+        order:
+          type: integer
+          description: Status order for display
+          example: 1
+      required:
+        - id
+        - template_id
+        - label
+        - color
+        - order
+
+    CreateTemplateStatusRequest:
+      type: object
+      description: Request body for creating a new template status
+      properties:
+        label:
+          type: string
+          description: Status display label
+          example: "In Progress"
+        color:
+          type: string
+          description: Status color (hex or CSS color)
+          example: "#3B82F6"
+        order:
+          type: integer
+          description: Status order for display
+          example: 2
+      required:
+        - label
+        - color
+        - order
+
+    # ============================================
+    # SSE Event Schemas
+    # ============================================
+    SSEEvent:
+      type: object
+      description: Server-Sent Event structure
+      properties:
+        type:
+          type: string
+          description: Event type
+          enum:
+            - item_created
+            - item_updated
+            - item_status_changed
+            - session_paused
+            - session_resumed
+            - session_completed
+        data:
+          description: Event payload (structure depends on event type)
+          oneOf:
+            - $ref: '#/components/schemas/QueueItem'
+            - $ref: '#/components/schemas/Session'
+        timestamp:
+          type: string
+          format: date-time
+          description: Event timestamp
+          example: "2026-02-19T08:15:00.000Z"
+      required:
+        - type
+        - data
+        - timestamp
