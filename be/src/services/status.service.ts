@@ -10,6 +10,7 @@ import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueSessionStatus } from '../db/schema.js';
 import type { CreateStatusInput, UpdateStatusInput } from '../validators/status.validator.js';
 import { getDatabaseErrorMessage } from '../middleware/error.js';
+import { sseBroadcaster } from '../sse/broadcaster.js';
 
 export class StatusService {
   /**
@@ -49,6 +50,10 @@ export class StatusService {
     };
 
     const result = await db.insert(queueSessionStatuses).values(newStatus).returning();
+
+    // Broadcast session_status_created event
+    this.broadcastSessionStatusCreated(result[0]);
+
     return result[0];
   }
 
@@ -76,6 +81,11 @@ export class StatusService {
       .where(eq(queueSessionStatuses.id, id))
       .returning();
 
+    // Broadcast session_status_updated event
+    if (result[0]) {
+      this.broadcastSessionStatusUpdated(result[0]);
+    }
+
     return result[0] || null;
   }
 
@@ -91,8 +101,14 @@ export class StatusService {
       return { success: false, error: 'Status not found' };
     }
 
+    const sessionId = existing.sessionId;
+
     try {
       await db.delete(queueSessionStatuses).where(eq(queueSessionStatuses.id, id));
+
+      // Broadcast session_status_deleted event
+      this.broadcastSessionStatusDeleted(id, sessionId);
+
       return { success: true };
     } catch (error) {
       // Check if it's a foreign key constraint error
@@ -104,6 +120,54 @@ export class StatusService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Broadcast session_status_created event
+   */
+  broadcastSessionStatusCreated(status: typeof queueSessionStatuses.$inferSelect): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_created',
+      data: {
+        id: status.id,
+        session_id: status.sessionId,
+        label: status.label,
+        color: status.color,
+        order: status.order,
+      },
+      sessionId: status.sessionId,
+    });
+  }
+
+  /**
+   * Broadcast session_status_updated event
+   */
+  broadcastSessionStatusUpdated(status: typeof queueSessionStatuses.$inferSelect): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_updated',
+      data: {
+        id: status.id,
+        session_id: status.sessionId,
+        label: status.label,
+        color: status.color,
+        order: status.order,
+      },
+      sessionId: status.sessionId,
+    });
+  }
+
+  /**
+   * Broadcast session_status_deleted event
+   */
+  broadcastSessionStatusDeleted(statusId: string, sessionId: string): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_deleted',
+      data: {
+        id: statusId,
+        session_id: sessionId,
+      },
+      sessionId: sessionId,
+    });
   }
 }
 

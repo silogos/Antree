@@ -9,6 +9,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueItem, QueueItem } from '../db/schema.js';
 import type { CreateQueueItemInput, UpdateQueueItemInput } from '../validators/queue-item.validator.js';
+import { sseBroadcaster } from '../sse/broadcaster.js';
 
 export class QueueItemService {
   /**
@@ -64,6 +65,10 @@ export class QueueItemService {
     };
 
     const result = await db.insert(queueItems).values(newItem).returning();
+
+    // Broadcast item_created event
+    this.broadcastItemCreated(result[0]);
+
     return result[0];
   }
 
@@ -78,6 +83,8 @@ export class QueueItemService {
       return null;
     }
 
+    const oldItem = existing[0];
+
     // Build update object with only provided fields
     const updateData: Partial<NewQueueItem> = {};
     if (input.name !== undefined) updateData.name = input.name;
@@ -89,6 +96,17 @@ export class QueueItemService {
       .set(updateData)
       .where(eq(queueItems.id, id))
       .returning();
+
+    if (result[0]) {
+      // Broadcast appropriate event based on what changed
+      if (input.statusId !== undefined && input.statusId !== oldItem.statusId) {
+        // Status changed - broadcast item_status_changed
+        this.broadcastItemStatusChanged(result[0]);
+      } else {
+        // Other metadata changed - broadcast item_updated
+        this.broadcastItemUpdated(result[0]);
+      }
+    }
 
     return result[0] || null;
   }
@@ -104,8 +122,93 @@ export class QueueItemService {
       return false;
     }
 
+    const item = existing[0];
+
     await db.delete(queueItems).where(eq(queueItems.id, id));
+
+    // Broadcast item_deleted event
+    this.broadcastItemDeleted(item);
+
     return true;
+  }
+
+  /**
+   * Broadcast item_created event
+   */
+  broadcastItemCreated(item: QueueItem): void {
+    sseBroadcaster.broadcast({
+      type: 'item_created',
+      data: {
+        id: item.id,
+        queue_id: item.queueId,
+        session_id: item.sessionId,
+        status_id: item.statusId,
+        queue_number: item.queueNumber,
+        name: item.name,
+        metadata: item.metadata || undefined,
+        created_at: item.createdAt.toISOString(),
+      },
+      sessionId: item.sessionId,
+      queueId: item.queueId,
+    });
+  }
+
+  /**
+   * Broadcast item_updated event
+   */
+  broadcastItemUpdated(item: QueueItem): void {
+    sseBroadcaster.broadcast({
+      type: 'item_updated',
+      data: {
+        id: item.id,
+        queue_id: item.queueId,
+        session_id: item.sessionId,
+        status_id: item.statusId,
+        queue_number: item.queueNumber,
+        name: item.name,
+        metadata: item.metadata || undefined,
+        created_at: item.createdAt.toISOString(),
+      },
+      sessionId: item.sessionId,
+      queueId: item.queueId,
+    });
+  }
+
+  /**
+   * Broadcast item_status_changed event
+   */
+  broadcastItemStatusChanged(item: QueueItem): void {
+    sseBroadcaster.broadcast({
+      type: 'item_status_changed',
+      data: {
+        id: item.id,
+        queue_id: item.queueId,
+        session_id: item.sessionId,
+        status_id: item.statusId,
+        queue_number: item.queueNumber,
+        name: item.name,
+        metadata: item.metadata || undefined,
+        created_at: item.createdAt.toISOString(),
+      },
+      sessionId: item.sessionId,
+      queueId: item.queueId,
+    });
+  }
+
+  /**
+   * Broadcast item_deleted event
+   */
+  broadcastItemDeleted(item: QueueItem): void {
+    sseBroadcaster.broadcast({
+      type: 'item_deleted',
+      data: {
+        id: item.id,
+        queue_id: item.queueId,
+        session_id: item.sessionId,
+      },
+      sessionId: item.sessionId,
+      queueId: item.queueId,
+    });
   }
 }
 

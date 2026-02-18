@@ -2602,7 +2602,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 6 group commit)
 
-- [ ] 23. **Update all services to broadcast session events**
+- [x] 23. **Update all services to broadcast session events**
 
   **What to do**:
   - Review all service files (`session.service.ts`, `queue-item.service.ts`, `queue.service.ts`, `status.service.ts`, `template.service.ts`)

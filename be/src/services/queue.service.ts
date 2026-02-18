@@ -20,6 +20,7 @@ import type {
 	ResetQueueInput,
 	UpdateQueueInput,
 } from "../validators/queue.validator.js";
+import { sseBroadcaster } from "../sse/broadcaster.js";
 
 export class QueueService {
 	/**
@@ -155,6 +156,12 @@ export class QueueService {
 		};
 
 		const result = await db.insert(queues).values(newQueue).returning();
+
+		// Broadcast queue_created event
+		if (result[0]) {
+			this.broadcastQueueCreated(result[0]);
+		}
+
 		return result[0] || null;
 	}
 
@@ -187,6 +194,11 @@ export class QueueService {
 			.where(eq(queues.id, id))
 			.returning();
 
+		// Broadcast queue_updated event
+		if (result[0]) {
+			this.broadcastQueueUpdated(result[0]);
+		}
+
 		return result[0] || null;
 	}
 
@@ -204,7 +216,13 @@ export class QueueService {
 			return false;
 		}
 
+		const queue = existing[0];
+
 		await db.delete(queues).where(eq(queues.id, id));
+
+		// Broadcast queue_deleted event
+		this.broadcastQueueDeleted(queue);
+
 		return true;
 	}
 
@@ -286,6 +304,59 @@ export class QueueService {
 		}
 
 		return sessionResult[0];
+	}
+
+	/**
+	 * Broadcast queue_created event
+	 */
+	broadcastQueueCreated(queue: Queue): void {
+		sseBroadcaster.broadcast({
+			type: 'queue_created',
+			data: {
+				id: queue.id,
+				name: queue.name,
+				template_id: queue.templateId,
+				is_active: queue.isActive,
+				created_by: queue.createdBy ?? undefined,
+				updated_by: queue.updatedBy ?? undefined,
+				created_at: queue.createdAt.toISOString(),
+				updated_at: queue.updatedAt?.toISOString(),
+			},
+			queueId: queue.id,
+		});
+	}
+
+	/**
+	 * Broadcast queue_updated event
+	 */
+	broadcastQueueUpdated(queue: Queue): void {
+		sseBroadcaster.broadcast({
+			type: 'queue_updated',
+			data: {
+				id: queue.id,
+				name: queue.name,
+				template_id: queue.templateId,
+				is_active: queue.isActive,
+				created_by: queue.createdBy ?? undefined,
+				updated_by: queue.updatedBy ?? undefined,
+				created_at: queue.createdAt.toISOString(),
+				updated_at: queue.updatedAt?.toISOString(),
+			},
+			queueId: queue.id,
+		});
+	}
+
+	/**
+	 * Broadcast queue_deleted event
+	 */
+	broadcastQueueDeleted(queue: Queue): void {
+		sseBroadcaster.broadcast({
+			type: 'queue_deleted',
+			data: {
+				id: queue.id,
+			},
+			queueId: queue.id,
+		});
 	}
 }
 

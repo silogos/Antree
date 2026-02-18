@@ -1753,3 +1753,160 @@ Build output saved to `.sisyphus/evidence/task-15-service-build.log`
 - Task 23: Update queue-items.ts routes to use item_* events
 - Task 24: Update statuses.ts routes to use session_status_* events
 - Frontend updates to handle new event types
+
+# Task 23: Update All Services to Broadcast Session Events
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### Files Updated
+
+1. **be/src/services/session.service.ts**:
+   - ✅ Already had session_* broadcast methods from Task 12
+   - ✅ Event types verified: session_created, session_updated, session_closed, session_deleted
+   - ✅ Session status events verified: session_status_created, session_status_updated, session_status_deleted
+   - No changes needed - already correct
+
+2. **be/src/services/queue-item.service.ts**:
+   - ✅ Added `sseBroadcaster` import
+   - ✅ Added broadcast calls in createQueueItem() for item_created
+   - ✅ Added broadcast calls in updateQueueItem() for item_updated or item_status_changed
+   - ✅ Added broadcast calls in deleteQueueItem() for item_deleted
+   - ✅ Added 4 broadcast methods:
+      - broadcastItemCreated()
+      - broadcastItemUpdated()
+      - broadcastItemStatusChanged()
+      - broadcastItemDeleted()
+
+3. **be/src/services/queue.service.ts**:
+   - ✅ Added `sseBroadcaster` import
+   - ✅ Added broadcast calls in createQueue() for queue_created
+   - ✅ Added broadcast calls in updateQueue() for queue_updated
+   - ✅ Added broadcast calls in deleteQueue() for queue_deleted
+   - ✅ Added 3 broadcast methods:
+      - broadcastQueueCreated()
+      - broadcastQueueUpdated()
+      - broadcastQueueDeleted()
+
+4. **be/src/services/status.service.ts**:
+   - ✅ Added `sseBroadcaster` import
+   - ✅ Added broadcast calls in createStatus() for session_status_created
+   - ✅ Added broadcast calls in updateStatus() for session_status_updated
+   - ✅ Added broadcast calls in deleteStatus() for session_status_deleted
+   - ✅ Added 3 broadcast methods:
+      - broadcastSessionStatusCreated()
+      - broadcastSessionStatusUpdated()
+      - broadcastSessionStatusDeleted()
+
+## SSE Event Types Implemented
+
+### Session Events (4)
+1. ✅ session_created - from session.service.ts
+2. ✅ session_updated - from session.service.ts
+3. ✅ session_closed - from session.service.ts
+4. ✅ session_deleted - from session.service.ts
+
+### Session Status Events (3)
+1. ✅ session_status_created - from session.service.ts and status.service.ts
+2. ✅ session_status_updated - from session.service.ts and status.service.ts
+3. ✅ session_status_deleted - from session.service.ts and status.service.ts
+
+### Item Events (4)
+1. ✅ item_created - from queue-item.service.ts
+2. ✅ item_updated - from queue-item.service.ts (metadata changes)
+3. ✅ item_status_changed - from queue-item.service.ts (status changes)
+4. ✅ item_deleted - from queue-item.service.ts
+
+### Queue Events (3)
+1. ✅ queue_created - from queue.service.ts
+2. ✅ queue_updated - from queue.service.ts
+3. ✅ queue_deleted - from queue.service.ts
+
+## Patterns Observed
+
+### Broadcast Call Placement
+1. **After database operations**: Broadcast calls placed after successful DB operations
+2. **Before return**: Broadcast calls before returning result to caller
+3. **Error handling**: No broadcast on failure (DB errors thrown before broadcast)
+
+### Broadcast Method Signature
+1. **Standard structure**: All broadcast methods follow same pattern
+2. **Event type**: string literal matching SSEEvent interface
+3. **Data payload**: Object with snake_case properties
+4. **Routing**: sessionId and queueId for proper event routing
+5. **Timestamp handling**: Convert Date objects to ISO 8601 strings
+
+### Event Type Selection
+1. **Status change distinction**: item_status_changed vs item_updated
+2. **Lifecycle events**: session_closed separate from session_updated
+3. **Minimal payloads**: deleted events include only id and routing fields
+
+## Learnings
+
+### Event Granularity
+1. **Status changes distinct**: item_status_changed separate from item_updated allows clients to handle differently
+2. **Lifecycle events**: session_closed emitted when status changes to 'closed' (not in session_updated)
+3. **Deleted events**: Minimal payload (id + routing fields) for deleted events
+
+### Broadcast Method Organization
+1. **Separation of concerns**: Broadcast methods separate from CRUD operations
+2. **Reusable methods**: Broadcast methods can be called from anywhere in service
+3. **Consistent naming**: broadcast{Entity}{Action}() pattern throughout
+
+### Data Transformation
+1. **Date handling**: Use `.toISOString()` to convert Date to string
+2. **Null/undefined handling**: Use `?? undefined` to convert null to undefined
+3. **Optional fields**: Metadata fields handled with `?? undefined` to exclude if null
+
+### Type Safety
+1. **Literal types**: Event types are string literals, not enums
+2. **Interface matching**: All events match SSEEvent interface in broadcaster.ts
+3. **Snake_case enforcement**: All payload properties use snake_case
+
+## Issues Encountered
+
+### None
+- Straightforward task - all services updated successfully
+- Build verification passed for all 4 service files
+- Errors only in other files (routes, scripts, batch.service.ts) which are expected
+
+## Verification
+
+### Build Status
+- ✅ **session.service.ts**: Zero TypeScript errors
+- ✅ **queue-item.service.ts**: Zero TypeScript errors
+- ✅ **queue.service.ts**: Zero TypeScript errors
+- ✅ **status.service.ts**: Zero TypeScript errors
+- ✅ **Build command**: `pnpm --filter @antree/backend build`
+- ⚠️ **Expected errors**: Errors in routes (batches.ts, queue-items.ts, queues.ts, statuses.ts), scripts, and batch.service.ts
+
+### Build Output Analysis
+- Zero errors in all 4 service files ✓
+- Expected errors in:
+  - `src/routes/batches.ts` (batch_* event types)
+  - `src/routes/queue-items.ts` (queue_item_* event types)
+  - `src/routes/queues.ts` (batch references, activeBatchId property)
+  - `src/routes/statuses.ts` (status_* event types)
+  - `src/services/batch.service.ts` (old table names)
+  - `src/scripts/*` (seed scripts using old structure)
+
+### Evidence Files
+- `.sisyphus/evidence/task-23-services-broadcast.log` - Build output showing successful compilation of all 4 service files
+
+## Dependencies
+
+### Depends On
+- Task 12 (session service created) - session_* broadcast methods already exist
+- Task 21 (SSE event types updated) - SSEEvent interface includes all event types
+- Task 22 (SSE index updated) - Session-based endpoints available
+
+### Blocks
+- Task 24 (end-to-end verification) - Services must emit correct events before full SSE verification
+- Frontend SSE client - Will depend on all event types being broadcast correctly
+
+## Next Steps
+- Task 24: End-to-end verification of SSE event broadcasting
+- Update routes to call service broadcast methods
+- Frontend: Implement SSE client to handle all event types
