@@ -2080,7 +2080,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 5 group commit)
 
-- [ ] 18. **Update queue-items.ts routes for sessions**
+- [x] 18. **Update queue-items.ts routes for sessions**
 
   **What to do**:
   - Update `be/src/routes/queue-items.ts` to work with sessions

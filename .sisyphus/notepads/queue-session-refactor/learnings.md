@@ -1273,3 +1273,116 @@ Build output saved to `.sisyphus/evidence/task-15-service-build.log`
 - Task 22: Update SSE routes for sessions
 - Task 23: Register session routes in index.ts
 - Task 24: Delete batch.service.ts and batches.ts
+
+# Task 18: Update Queue Items Routes to Use Sessions (be/src/routes/queue-items.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### Files Updated
+1. **be/src/routes/queue-items.ts**:
+   - Updated comment: "filter by batch or status" → "filter by session or status"
+   - Added `sessionId` query parameter extraction: `const sessionId = c.req.query('sessionId');`
+   - Added `sessionId` to filters object passed to queueItemService.getAllQueueItems()
+   - Added `QueueItemDTO` import from session.dto.ts for type documentation
+
+### Route Changes
+1. **GET /queue-items**:
+   - Query parameters: Now accepts `sessionId` in addition to `queueId` and `statusId`
+   - Filters object: Updated to include `sessionId` parameter
+   - Service call: `queueItemService.getAllQueueItems(filters)` now receives sessionId filter
+
+### Import Changes
+- Line 21: Added `import type { QueueItemDTO } from '../types/session.dto.js'`
+- Other imports unchanged (queue-item.validator already has sessionId field from Task 13)
+
+### SSE Events
+- No changes needed to SSE event types
+- Events remain: queue_item_created, queue_item_updated, queue_item_deleted
+- Data structure unchanged (queueId field, not sessionId)
+
+## Patterns Observed
+
+### Route Update Pattern
+1. **Query parameter extraction**: Use `c.req.query()` to extract query parameters
+2. **Filter object construction**: Build filters object from extracted parameters
+3. **Service delegation**: Pass filters to service layer for filtering logic
+4. **No SQL in routes**: Routes don't contain SQL queries, service layer handles DB operations
+
+### Minimal Update Strategy
+1. **Comments matter**: Update all comments to reflect new terminology (batch → session)
+2. **Add parameters**: Extract new query parameters without removing old ones
+3. **Pass through**: Simply pass parameters to service, no validation needed (query parameters are optional)
+4. **Type imports**: Import DTO types for documentation and potential future use
+
+## Learnings
+
+### Routes vs Services
+1. **Routes are thin layers**: Routes extract parameters, validate, call services, return responses
+2. **Services contain business logic**: All SQL queries and filtering logic in service layer
+3. **Parameter passing**: Routes pass parameters to services, services implement filtering
+4. **No SQL in routes**: Routes should never contain SQL queries (separation of concerns)
+
+### Query Parameter Handling
+1. **Optional parameters**: Query parameters are always optional, use `c.req.query()` without validation
+2. **Filter object**: Build filter object from query parameters, pass to service
+3. **Service handles filtering**: Service layer implements actual filtering logic with Drizzle ORM
+4. **Type safety**: Service methods define filter types, TypeScript ensures correct usage
+
+### Update Sequence
+1. **Service first**: Task 13 updated queue-item.service.ts to use sessionId
+2. **Routes second**: Task 18 updated routes to pass sessionId to service
+3. **Type propagation**: Type changes in service propagate to routes automatically
+4. **Incremental updates**: Each task updates one layer (service, then routes)
+
+## Issues Encountered
+
+### None
+- Straightforward update, only adding sessionId query parameter support
+- No complex logic changes required
+- Service layer already supported sessionId filtering (from Task 13)
+- No SSE event type changes needed (events already correct)
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for queue-items.ts (zero errors)
+- **Errors in other files**: Expected (batch.service.ts, queues.ts, statuses.ts, scripts)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-18-routes-build.log`
+
+### Build Output Analysis
+- Zero errors in `src/routes/queue-items.ts` ✓
+- Expected errors in:
+  - `src/routes/queues.ts` (uses getActiveBatch, activeBatchId)
+  - `src/routes/statuses.ts` (uses queueId field)
+  - `src/services/batch.service.ts` (references old queueBatches)
+  - `src/scripts/*` (multiple seed scripts using old table names)
+  - `src/sse/index.ts` (references old queueBatches)
+
+### Code Review
+- Comment updated: "filter by batch or status" → "filter by session or status" ✓
+- Query parameter added: `const sessionId = c.req.query('sessionId');` ✓
+- Filter object updated: Includes sessionId ✓
+- Import added: QueueItemDTO from session.dto.ts ✓
+
+## Dependencies
+
+### Depends On
+- Task 7 (migration applied) - queue_items table has sessionId field
+- Task 13 (queue-item service updated) - getAllQueueItems() accepts sessionId filter
+- Task 9 (session DTO types) - QueueItemDTO available for import
+
+### Blocks
+- Tasks 19-20 (other route files may reference queue-items routes)
+- Frontend updates (will use /queue-items?sessionId=X endpoint)
+
+## Next Steps
+- Task 19: Update status routes for session statuses
+- Task 20: Update template routes (if needed)
+- Task 21: Update health routes (if needed)
+- Task 22: Update SSE routes for sessions
+- Task 23: Register session routes in index.ts
+- Task 24: Delete batch.service.ts and batches.ts

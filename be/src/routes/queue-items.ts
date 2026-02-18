@@ -17,20 +17,23 @@ import {
   createQueueItemSchema,
   updateQueueItemSchema,
 } from '../validators/queue-item.validator.js';
+import type { QueueItemDTO } from '../types/session.dto.js';
 
 export const queueItemRoutes = new Hono();
 
 /**
  * GET /queue-items
- * Get all queue items. Optionally filter by batch or status.
+ * Get all queue items. Optionally filter by session or status.
  */
 queueItemRoutes.get('/', async (c) => {
   try {
     const queueId = c.req.query('queueId');
+    const sessionId = c.req.query('sessionId');
     const statusId = c.req.query('statusId');
 
     const filters = {
       queueId,
+      sessionId,
       statusId,
     };
 
