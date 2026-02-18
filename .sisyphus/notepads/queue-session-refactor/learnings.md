@@ -694,3 +694,155 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 12: Update batch.service.ts → session.service.ts (use session event names)
 - Task 16: Update SSE broadcaster to emit new session and item events
 - Task 19: Update session status routes to emit session_status_* events
+
+# Task 12: Rename and Update Batch Service to Session Service (be/src/services/session.service.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Created
+- Created `be/src/services/session.service.ts` with session-based business logic
+
+### File Updated
+- Updated `be/src/db/schema.ts` to use `deletedAt` timestamp instead of `isDeleted` boolean
+- Updated `be/src/sse/broadcaster.ts` to add session_* event types
+
+### Function Renames
+1. **getAllBatches() → getAllSessions(filters)**:
+   - Added optional filter parameters: queueId, status, isDeleted
+   - Filters out soft-deleted sessions by default
+
+2. **getBatchById(id) → getSessionById(id)**:
+   - Same functionality, renamed for consistency
+
+3. **createBatch(input) → createSession(input)**:
+   - Added session number auto-increment logic
+   - Validates that only one active session exists per queue
+
+4. **updateBatch(id, input) → updateSession(id, input)**:
+   - Added lifecycle status validation
+   - Sets started_at when transitioning to 'active'
+   - Sets ended_at when transitioning to 'closed'
+
+5. **deleteBatch(id) → deleteSession(id)**:
+   - Implemented soft delete using deleted_at timestamp
+   - Broadcasts session_deleted event
+
+6. **getBatchStatuses(id) → getSessionStatuses(id)**:
+   - Same functionality, renamed for consistency
+
+### New Features Implemented
+
+1. **Session Number Auto-Increment**:
+   - Queries max session_number for queue
+   - Increments by 1 for new session
+   - Defaults to 1 if no existing sessions
+
+2. **Soft Delete Implementation**:
+   - Uses deleted_at timestamp field (not is_deleted boolean)
+   - Filters out deleted sessions in getAllSessions()
+   - Preserves data for audit trail
+
+3. **Lifecycle Status Validation**:
+   - Valid transitions: draft → active → closed
+   - Direct transition: draft → closed allowed
+   - Prevents: active → draft, closed → active/draft
+   - Ensures only one active session per queue
+
+4. **SSE Broadcast Methods**:
+   - broadcastSessionCreated(): Emits session_created event
+   - broadcastSessionUpdated(): Emits session_updated event
+   - broadcastSessionClosed(): Emits session_closed event
+   - broadcastSessionDeleted(): Emits session_deleted event
+   - broadcastSessionStatusCreated(): Emits session_status_created event
+   - broadcastSessionStatusUpdated(): Emits session_status_updated event
+   - broadcastSessionStatusDeleted(): Emits session_status_deleted event
+
+### SQL Query Updates
+- Changed `queueBatches` → `queue_sessions`
+- Changed `queueStatuses` → `queue_session_statuses`
+- Changed `batchId` → `sessionId`
+- Added `isNull(queueSessions.deletedAt)` for soft delete filtering
+
+### Type Updates
+- Import QueueSession, NewQueueSession, QueueSessionStatus from schema
+- Import SessionLifecycleDTO from session.dto.ts
+- Import CreateSessionInput, UpdateSessionInput from session.validator
+- Import sseBroadcaster from sse/broadcaster.js
+
+### SSE Event Types Added
+- session_created
+- session_updated
+- session_closed
+- session_deleted
+- session_status_created
+- session_status_updated
+- session_status_deleted
+
+## Learnings
+
+### Database Schema Mismatch
+- The migration added `deleted_at` (timestamp) to queue_sessions table
+- The schema.ts file had `is_deleted` (boolean) which was incorrect
+- Database is the source of truth - updated schema.ts to match database
+- Lesson: Always verify database structure matches code definitions
+
+### TypeScript Type Safety
+- Session status is `string` from database but needs type narrowing to `'draft' | 'active' | 'closed'`
+- Timestamp fields can be `null` and require null checks before calling `.toISOString()`
+- Optional chaining `?.` returns `undefined` for null values
+- Null coalescing `??` converts null to undefined for optional fields
+
+### SSE Broadcast Pattern
+- Broadcast methods should be separate from business logic
+- All broadcast methods follow same pattern: type, data, sessionId, queueId
+- Data properties use snake_case per project convention
+- Handle null/undefined values properly for optional fields (started_at, ended_at)
+
+### Session Numbering
+- Session numbers are per-queue, not global
+- Must query max(session_number) WHERE queueId = X
+- Auto-increment ensures sequential numbering within each queue
+
+### Lifecycle Validation
+- State machine pattern: draft → active → closed
+- One-way transitions prevent invalid states
+- Active session constraint prevents concurrent sessions
+- Null checks required for optional queueId field
+
+## Issues Encountered
+
+### Schema-Database Mismatch
+- **Issue**: Schema had `is_deleted` (boolean) but database has `deleted_at` (timestamp)
+- **Resolution**: Updated schema.ts to match database structure
+- **Root Cause**: Migration added timestamp field but schema wasn't updated
+
+### Type Errors with Optional Fields
+- **Issue**: TypeScript complained about `string | null` not assignable to `string | undefined`
+- **Resolution**: Used null coalescing `??` to convert null to undefined
+- **Pattern**: `session.queueId ?? undefined` for SSE broadcasts
+
+### SSE Event Type Definitions
+- **Issue**: SSE broadcaster type definition didn't include session_* events
+- **Resolution**: Added session event types to SSEEvent interface
+- **Events Added**: session_created, session_updated, session_closed, session_deleted, session_status_created, session_status_updated, session_status_deleted
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for session.service.ts
+- **Errors in other files**: Expected (will be fixed in Tasks 13-24)
+- **Build command**: `pnpm --filter @antree/backend build`
+
+### Files Modified
+- ✅ be/src/services/session.service.ts (created)
+- ✅ be/src/db/schema.ts (updated queueSessions deleted_at)
+- ✅ be/src/sse/broadcaster.ts (added session event types)
+- ⚠️ be/src/services/batch.service.ts (not deleted - still has old table names)
+
+## Next Steps
+- Tasks 13-24 will update remaining services and routes
+- Delete batch.service.ts once all references are migrated
+- Update frontend to use session-based API endpoints

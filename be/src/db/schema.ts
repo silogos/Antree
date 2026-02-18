@@ -80,7 +80,7 @@ export const queueSessions = pgTable('queue_sessions', {
   sessionNumber: integer('session_number'),
   startedAt: timestamp('started_at'),
   endedAt: timestamp('ended_at'),
-  isDeleted: boolean('is_deleted').notNull().default(false),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

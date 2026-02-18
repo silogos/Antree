@@ -20,6 +20,13 @@ interface SSEEvent {
 		| "batch_created"
 		| "batch_updated"
 		| "batch_deleted" // Batch events
+		| "session_created"
+		| "session_updated"
+		| "session_closed"
+		| "session_deleted" // Session events
+		| "session_status_created"
+		| "session_status_updated"
+		| "session_status_deleted" // Session status events
 		| "queue_item_created"
 		| "queue_item_updated"
 		| "queue_item_deleted" // Queue item events (renamed from queue_*)
@@ -34,6 +41,7 @@ interface SSEEvent {
 	data: unknown;
 	boardId?: string; // Legacy support
 	batchId?: string; // Batch ID
+	sessionId?: string; // Session ID
 	queueId?: string; // Queue ID
 	eventId?: string; // Event ID for deduplication
 }

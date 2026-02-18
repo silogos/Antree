@@ -1433,7 +1433,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 3 group commit)
 
-- [ ] 12. **Rename/Update batch.service.ts → session.service.ts**
+- [x] 12. **Rename/Update batch.service.ts → session.service.ts**
 
   **What to do**:
   - Rename `be/src/services/batch.service.ts` to `session.service.ts`

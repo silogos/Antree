@@ -1,0 +1,476 @@
+/**
+ * Session Service
+ * Business logic for session operations
+ */
+
+import { db } from '../db/index.js';
+import {
+  queueSessions,
+  queues,
+  queueTemplates,
+  queueTemplateStatuses,
+  queueSessionStatuses,
+} from '../db/schema.js';
+import { eq, and, desc, isNull } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+import type {
+  NewQueueSession,
+  QueueSession,
+  QueueSessionStatus,
+} from '../db/schema.js';
+import type {
+  CreateSessionInput,
+  UpdateSessionInput,
+} from '../validators/session.validator.js';
+import type { SessionLifecycleDTO } from '../types/session.dto.js';
+import { sseBroadcaster } from '../sse/broadcaster.js';
+
+export class SessionService {
+  /**
+   * Get all sessions with optional filtering
+   */
+  async getAllSessions(filters?: {
+    queueId?: string;
+    status?: 'draft' | 'active' | 'closed';
+    isDeleted?: boolean;
+  }): Promise<typeof queueSessions.$inferSelect[]> {
+    let sessions: typeof queueSessions.$inferSelect[];
+
+    if (filters?.queueId) {
+      // Filter by queue
+      const conditions = [eq(queueSessions.queueId, filters.queueId)];
+
+      // Filter by status if provided
+      if (filters.status) {
+        conditions.push(eq(queueSessions.status, filters.status));
+      }
+
+      // Filter by deleted status
+      if (filters.isDeleted === false) {
+        conditions.push(isNull(queueSessions.deletedAt));
+      }
+
+      sessions = await db
+        .select()
+        .from(queueSessions)
+        .where(and(...conditions))
+        .orderBy(desc(queueSessions.createdAt));
+    } else {
+      // Get all sessions
+      const conditions = [];
+
+      if (filters?.status) {
+        conditions.push(eq(queueSessions.status, filters.status));
+      }
+
+      if (filters?.isDeleted === false) {
+        conditions.push(isNull(queueSessions.deletedAt));
+      }
+
+      if (conditions.length > 0) {
+        sessions = await db
+          .select()
+          .from(queueSessions)
+          .where(and(...conditions))
+          .orderBy(desc(queueSessions.createdAt));
+      } else {
+        sessions = await db
+          .select()
+          .from(queueSessions)
+          .orderBy(desc(queueSessions.createdAt));
+      }
+    }
+
+    return sessions;
+  }
+
+  /**
+   * Get statuses for a specific session
+   */
+  async getSessionStatuses(sessionId: string): Promise<Array<{
+    id: string;
+    label: string;
+    color: string;
+    order: number;
+  }>> {
+    const statuses = await db
+      .select({
+        id: queueSessionStatuses.id,
+        label: queueSessionStatuses.label,
+        color: queueSessionStatuses.color,
+        order: queueSessionStatuses.order,
+      })
+      .from(queueSessionStatuses)
+      .where(eq(queueSessionStatuses.sessionId, sessionId))
+      .orderBy(queueSessionStatuses.order);
+
+    return statuses;
+  }
+
+  /**
+   * Get a single session by ID
+   */
+  async getSessionById(id: string): Promise<typeof queueSessions.$inferSelect | null> {
+    const sessions = await db
+      .select()
+      .from(queueSessions)
+      .where(eq(queueSessions.id, id))
+      .limit(1);
+    return sessions[0] || null;
+  }
+
+  /**
+   * Validate lifecycle status transition
+   */
+  private validateStatusTransition(
+    currentStatus: 'draft' | 'active' | 'closed',
+    newStatus: 'draft' | 'active' | 'closed',
+  ): boolean {
+    // Valid transitions: draft -> active -> closed
+    // draft -> closed (direct closing)
+    // Cannot go backwards: closed -> active or closed -> draft
+    // Cannot go: active -> draft
+
+    if (currentStatus === 'draft') {
+      return newStatus === 'active' || newStatus === 'closed';
+    }
+
+    if (currentStatus === 'active') {
+      return newStatus === 'closed';
+    }
+
+    if (currentStatus === 'closed') {
+      // Closed cannot be reopened
+      return false;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if queue already has an active session
+   */
+  private async hasActiveSession(queueId: string): Promise<boolean> {
+    const activeSessions = await db
+      .select()
+      .from(queueSessions)
+      .where(
+        and(
+          eq(queueSessions.queueId, queueId),
+          eq(queueSessions.status, 'active'),
+          isNull(queueSessions.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    return activeSessions.length > 0;
+  }
+
+  /**
+   * Create a new session (copies statuses from template)
+   */
+  async createSession(
+    input: CreateSessionInput,
+  ): Promise<typeof queueSessions.$inferSelect | null> {
+    // Verify queue exists
+    const queue = await db
+      .select()
+      .from(queues)
+      .where(eq(queues.id, input.queueId))
+      .limit(1);
+
+    if (!queue || queue.length === 0) {
+      return null;
+    }
+
+    // If status is 'active', check if queue already has an active session
+    if (input.status === 'active') {
+      const hasActive = await this.hasActiveSession(input.queueId);
+      if (hasActive) {
+        return null;
+      }
+    }
+
+    // Get template for the queue
+    const template = await db
+      .select()
+      .from(queueTemplates)
+      .where(eq(queueTemplates.id, queue[0].templateId))
+      .limit(1);
+
+    // Calculate next session number for this queue
+    const maxSessionNumberResult = await db
+      .select({ sessionNumber: queueSessions.sessionNumber })
+      .from(queueSessions)
+      .where(eq(queueSessions.queueId, input.queueId))
+      .orderBy(desc(queueSessions.sessionNumber))
+      .limit(1);
+
+    const nextSessionNumber = maxSessionNumberResult[0]?.sessionNumber
+      ? maxSessionNumberResult[0].sessionNumber + 1
+      : 1;
+
+    // Create session
+    const newSession: NewQueueSession = {
+      id: uuidv7(),
+      templateId: queue[0].templateId,
+      queueId: input.queueId,
+      name: input.name || `Session ${nextSessionNumber}`,
+      status: input.status || 'draft',
+      sessionNumber: nextSessionNumber,
+    };
+
+    const sessionResult = await db
+      .insert(queueSessions)
+      .values(newSession)
+      .returning();
+    const sessionId = sessionResult[0].id;
+
+    // Copy statuses from template
+    if (template && template.length > 0) {
+      const templateStatuses = await db
+        .select()
+        .from(queueTemplateStatuses)
+        .where(eq(queueTemplateStatuses.templateId, queue[0].templateId))
+        .orderBy(queueTemplateStatuses.order);
+
+      // Create session statuses as copies of template statuses
+      const sessionStatuses = templateStatuses.map((ts) => ({
+        id: uuidv7(),
+        sessionId: sessionId,
+        templateStatusId: ts.id, // Track origin
+        label: ts.label,
+        color: ts.color,
+        order: ts.order,
+      }));
+
+      if (sessionStatuses.length > 0) {
+        await db.insert(queueSessionStatuses).values(sessionStatuses);
+      }
+    }
+
+    return sessionResult[0];
+  }
+
+  /**
+   * Update a session
+   */
+  async updateSession(
+    id: string,
+    input: UpdateSessionInput,
+  ): Promise<typeof queueSessions.$inferSelect | null> {
+    // Check if session exists
+    const existing = await db
+      .select()
+      .from(queueSessions)
+      .where(eq(queueSessions.id, id))
+      .limit(1);
+
+    if (!existing || existing.length === 0) {
+      return null;
+    }
+
+    const session = existing[0];
+
+    // If status is being updated, validate the transition
+    if (input.status !== undefined && input.status !== session.status) {
+      const isValidTransition = this.validateStatusTransition(
+        session.status as 'draft' | 'active' | 'closed',
+        input.status,
+      );
+
+      if (!isValidTransition) {
+        return null;
+      }
+
+      // If transitioning to 'active', check for existing active session
+      if (input.status === 'active') {
+        if (!session.queueId) {
+          return null;
+        }
+        const hasActive = await this.hasActiveSession(session.queueId);
+        if (hasActive) {
+          return null;
+        }
+      }
+    }
+
+    // Build update object with only provided fields
+    const updateData: Partial<NewQueueSession> = {};
+
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.status !== undefined) updateData.status = input.status;
+
+    // Set timestamps based on lifecycle
+    if (input.status === 'active' && !session.startedAt) {
+      // Starting the session
+      updateData.startedAt = new Date();
+    }
+
+    if (input.status === 'closed' && !session.endedAt) {
+      // Closing the session
+      updateData.endedAt = new Date();
+    }
+
+    const result = await db
+      .update(queueSessions)
+      .set(updateData)
+      .where(eq(queueSessions.id, id))
+      .returning();
+
+    return result[0] || null;
+  }
+
+  /**
+   * Delete a session (soft delete)
+   */
+  async deleteSession(id: string): Promise<boolean> {
+    // Check if session exists
+    const existing = await db
+      .select()
+      .from(queueSessions)
+      .where(eq(queueSessions.id, id))
+      .limit(1);
+
+    if (!existing || existing.length === 0) {
+      return false;
+    }
+
+    const session = existing[0];
+
+    // Soft delete: set deleted_at
+    await db
+      .update(queueSessions)
+      .set({ deletedAt: new Date() })
+      .where(eq(queueSessions.id, id));
+
+    // Broadcast session_deleted event
+    sseBroadcaster.broadcast({
+      type: 'session_deleted',
+      data: {
+        id: session.id,
+        queue_id: session.queueId ?? undefined,
+      },
+      sessionId: session.id,
+      queueId: session.queueId ?? undefined,
+    });
+
+    return true;
+  }
+
+  /**
+   * Broadcast session_created event
+   */
+  broadcastSessionCreated(session: QueueSession): void {
+    sseBroadcaster.broadcast({
+      type: 'session_created',
+      data: {
+        id: session.id,
+        queue_id: session.queueId ?? undefined,
+        template_id: session.templateId,
+        name: session.name,
+        status: session.status as 'draft' | 'active' | 'closed',
+        session_number: session.sessionNumber,
+        started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
+        ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
+        created_at: session.createdAt.toISOString(),
+      },
+      sessionId: session.id,
+      queueId: session.queueId ?? undefined,
+    });
+  }
+
+  /**
+   * Broadcast session_updated event
+   */
+  broadcastSessionUpdated(session: QueueSession): void {
+    sseBroadcaster.broadcast({
+      type: 'session_updated',
+      data: {
+        id: session.id,
+        queue_id: session.queueId ?? undefined,
+        template_id: session.templateId,
+        name: session.name,
+        status: session.status as 'draft' | 'active' | 'closed',
+        session_number: session.sessionNumber,
+        started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
+        ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
+        created_at: session.createdAt.toISOString(),
+      },
+      sessionId: session.id,
+      queueId: session.queueId ?? undefined,
+    });
+  }
+
+  /**
+   * Broadcast session_closed event (when status changes to 'closed')
+   */
+  broadcastSessionClosed(session: QueueSession): void {
+    sseBroadcaster.broadcast({
+      type: 'session_closed',
+      data: {
+        id: session.id,
+        queue_id: session.queueId ?? undefined,
+        template_id: session.templateId,
+        name: session.name,
+        status: 'closed' as const,
+        session_number: session.sessionNumber,
+        started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
+        ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
+        created_at: session.createdAt.toISOString(),
+      },
+      sessionId: session.id,
+      queueId: session.queueId ?? undefined,
+    });
+  }
+
+  /**
+   * Broadcast session_status_created event
+   */
+  broadcastSessionStatusCreated(status: QueueSessionStatus): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_created',
+      data: {
+        id: status.id,
+        session_id: status.sessionId,
+        label: status.label,
+        color: status.color,
+        order: status.order,
+      },
+      sessionId: status.sessionId,
+    });
+  }
+
+  /**
+   * Broadcast session_status_updated event
+   */
+  broadcastSessionStatusUpdated(status: QueueSessionStatus): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_updated',
+      data: {
+        id: status.id,
+        session_id: status.sessionId,
+        label: status.label,
+        color: status.color,
+        order: status.order,
+      },
+      sessionId: status.sessionId,
+    });
+  }
+
+  /**
+   * Broadcast session_status_deleted event
+   */
+  broadcastSessionStatusDeleted(statusId: string, sessionId: string): void {
+    sseBroadcaster.broadcast({
+      type: 'session_status_deleted',
+      data: {
+        id: statusId,
+        session_id: sessionId,
+      },
+      sessionId: sessionId,
+    });
+  }
+}
+
+export const sessionService = new SessionService();
