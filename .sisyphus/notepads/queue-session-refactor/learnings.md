@@ -694,6 +694,9 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 12: Update batch.service.ts → session.service.ts (use session event names)
 - Task 16: Update SSE broadcaster to emit new session and item events
 - Task 19: Update session status routes to emit session_status_* events
+- Task 20: Update queues.ts routes to use session-based functions
+- Task 23: Update queue items routes to use sessions
+- Task 24: Update SSE broadcaster to handle all new events
 
 # Task 12: Rename and Update Batch Service to Session Service (be/src/services/session.service.ts)
 

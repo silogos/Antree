@@ -1,6 +1,6 @@
 /**
  * Status Routes
- * API endpoints for status management
+ * API endpoints for session status management
  */
 
 import { Hono } from 'hono';
@@ -14,22 +14,23 @@ import {
 } from '../middleware/response.js';
 import { validateBody } from '../middleware/validation.js';
 import { createStatusSchema, updateStatusSchema } from '../validators/status.validator.js';
+import type { SessionStatusDTO } from '../types/session.dto.js';
 
 export const statusRoutes = new Hono();
 
 /**
  * GET /statuses
- * Get all status items for a batch, ordered by their display order
+ * Get all status items for a session, ordered by their display order
  */
 statusRoutes.get('/', async (c) => {
   try {
-    const queueId = c.req.query('queueId');
+    const sessionId = c.req.query('sessionId');
 
-    if (!queueId) {
-      return c.json(validationErrorResponse('queueId query parameter is required'), 400);
+    if (!sessionId) {
+      return c.json(validationErrorResponse('sessionId query parameter is required'), 400);
     }
 
-    const statuses = await statusService.getAllStatuses(queueId);
+    const statuses = await statusService.getAllStatuses(sessionId);
 
     if (!statuses) {
       return c.json(successResponse([], undefined, 0));
@@ -75,7 +76,7 @@ statusRoutes.post('/', validateBody(createStatusSchema), async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_created',
       data: status,
-      queueId: status.queueId,
+      sessionId: status.sessionId,
     });
 
     return c.json(successResponse(status, 'Status created successfully'), 201);
@@ -110,7 +111,7 @@ statusRoutes.put('/:id', validateBody(updateStatusSchema), async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_updated',
       data: status,
-      queueId: existing.queueId,
+      sessionId: existing.sessionId,
     });
 
     return c.json(successResponse(status, 'Status updated successfully'));
@@ -150,7 +151,7 @@ statusRoutes.delete('/:id', async (c) => {
     sseBroadcaster.broadcast({
       type: 'status_deleted',
       data: { id },
-      queueId: existing.queueId,
+      sessionId: existing.sessionId,
     });
 
     return c.json(successResponse({ id }, 'Status deleted successfully'));

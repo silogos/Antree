@@ -2191,7 +2191,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 5 group commit)
 
-- [ ] 19. **Update statuses.ts routes for session statuses**
+- [x] 19. **Update statuses.ts routes for session statuses**
 
   **What to do**:
   - Update `be/src/routes/statuses.ts` to work with session statuses
