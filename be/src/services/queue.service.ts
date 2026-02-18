@@ -6,11 +6,11 @@
 import { and, desc, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { db } from "../db/index.js";
-import type { NewQueue, Queue, QueueBatch, QueueItem } from "../db/schema.js";
+import type { NewQueue, Queue, QueueSession, QueueItem } from "../db/schema.js";
 import {
-	queueBatches,
+	queueSessions,
 	queueItems,
-	queueStatuses,
+	queueSessionStatuses,
 	queues,
 	queueTemplateStatuses,
 	queueTemplates,
@@ -30,12 +30,12 @@ export class QueueService {
 	}
 
 	/**
-	 * Get a single queue by ID with active batch information
+	 * Get a single queue by ID with active session information
 	 */
 	async getQueueById(id: string): Promise<
 		| (Queue & {
-				activeBatchId: string | null;
-				activeBatch: QueueBatch | null;
+				activeSessionId: string | null;
+				activeSession: QueueSession | null;
 		  })
 		| null
 	> {
@@ -49,31 +49,31 @@ export class QueueService {
 			return null;
 		}
 
-		// Get active batch for this queue
-		const activeBatch = await db
+		// Get active session for this queue
+		const activeSession = await db
 			.select()
-			.from(queueBatches)
+			.from(queueSessions)
 			.where(
-				and(eq(queueBatches.queueId, id), eq(queueBatches.status, "active")),
+				and(eq(queueSessions.queueId, id), eq(queueSessions.status, "active")),
 			)
 			.limit(1);
 
 		return {
 			...queue[0],
-			activeBatchId:
-				activeBatch && activeBatch.length > 0 ? activeBatch[0].id : null,
-			activeBatch:
-				activeBatch && activeBatch.length > 0 ? activeBatch[0] : null,
+			activeSessionId:
+				activeSession && activeSession.length > 0 ? activeSession[0].id : null,
+			activeSession:
+				activeSession && activeSession.length > 0 ? activeSession[0] : null,
 		};
 	}
 
 	/**
-	 * Get queue items for a queue (from active batch)
+	 * Get queue items for a queue (from active session)
 	 */
-	async getQueueItems(batchId: string): Promise<QueueItem[]> {
-		// Get active batch for this queue
+	async getQueueItems(sessionId: string): Promise<QueueItem[]> {
+		// Get active session for this queue
 		const conditions: ReturnType<typeof eq>[] = [
-			eq(queueItems.batchId, batchId),
+			eq(queueItems.sessionId, sessionId),
 		];
 
 		const items = await db
@@ -86,11 +86,11 @@ export class QueueService {
 	}
 
 	/**
-	 * Get active batch for a queue with its statuses
+	 * Get active session for a queue with its statuses
 	 */
-	async getActiveBatch(queueId: string): Promise<{
-		batch: QueueBatch;
-		statuses: (typeof queueStatuses.$inferSelect)[];
+	async getActiveSession(queueId: string): Promise<{
+		session: QueueSession;
+		statuses: (typeof queueSessionStatuses.$inferSelect)[];
 	} | null> {
 		// Verify queue exists
 		const queue = await db
@@ -102,31 +102,31 @@ export class QueueService {
 			return null;
 		}
 
-		// Get active batch
-		const activeBatch = await db
+		// Get active session
+		const activeSession = await db
 			.select()
-			.from(queueBatches)
+			.from(queueSessions)
 			.where(
 				and(
-					eq(queueBatches.queueId, queueId),
-					eq(queueBatches.status, "active"),
+					eq(queueSessions.queueId, queueId),
+					eq(queueSessions.status, "active"),
 				),
 			)
 			.limit(1);
 
-		if (!activeBatch || activeBatch.length === 0) {
+		if (!activeSession || activeSession.length === 0) {
 			return null;
 		}
 
-		// Get statuses for the batch
+		// Get statuses for the session
 		const statuses = await db
 			.select()
-			.from(queueStatuses)
-			.where(eq(queueStatuses.queueId, activeBatch[0].id))
-			.orderBy(queueStatuses.order);
+			.from(queueSessionStatuses)
+			.where(eq(queueSessionStatuses.sessionId, activeSession[0].id))
+			.orderBy(queueSessionStatuses.order);
 
 		return {
-			batch: activeBatch[0],
+			session: activeSession[0],
 			statuses,
 		};
 	}
@@ -191,7 +191,7 @@ export class QueueService {
 	}
 
 	/**
-	 * Delete a queue (cascades to batches, statuses, items)
+	 * Delete a queue (cascades to sessions, statuses, items)
 	 */
 	async deleteQueue(id: string): Promise<boolean> {
 		// Check if queue exists
@@ -209,12 +209,12 @@ export class QueueService {
 	}
 
 	/**
-	 * Reset queue by closing current active batch and creating a new one
+	 * Reset queue by closing current active session and creating a new one
 	 */
 	async resetQueue(
 		id: string,
 		input: ResetQueueInput = {},
-	): Promise<QueueBatch | null> {
+	): Promise<QueueSession | null> {
 		// Verify queue exists
 		const queue = await db
 			.select()
@@ -232,36 +232,36 @@ export class QueueService {
 			.where(eq(queueTemplates.id, queue[0].templateId))
 			.limit(1);
 
-		// Close current active batch if exists
-		const currentActiveBatch = await db
+		// Close current active session if exists
+		const currentActiveSession = await db
 			.select()
-			.from(queueBatches)
+			.from(queueSessions)
 			.where(
-				and(eq(queueBatches.queueId, id), eq(queueBatches.status, "active")),
+				and(eq(queueSessions.queueId, id), eq(queueSessions.status, "active")),
 			)
 			.limit(1);
 
-		if (currentActiveBatch && currentActiveBatch.length > 0) {
+		if (currentActiveSession && currentActiveSession.length > 0) {
 			await db
-				.update(queueBatches)
+				.update(queueSessions)
 				.set({ status: "closed" })
-				.where(eq(queueBatches.id, currentActiveBatch[0].id));
+				.where(eq(queueSessions.id, currentActiveSession[0].id));
 		}
 
-		// Create new batch
-		const newBatch = {
+		// Create new session
+		const newSession = {
 			id: uuidv7(),
 			templateId: queue[0].templateId,
 			queueId: id,
-			name: input.name || `Batch - ${new Date().toISOString()}`,
+			name: input.name || `Session - ${new Date().toISOString()}`,
 			status: "active" as const,
 		};
 
-		const batchResult = await db
-			.insert(queueBatches)
-			.values(newBatch)
+		const sessionResult = await db
+			.insert(queueSessions)
+			.values(newSession)
 			.returning();
-		const batchId = batchResult[0].id;
+		const sessionId = sessionResult[0].id;
 
 		// Copy statuses from template
 		if (template && template.length > 0) {
@@ -271,21 +271,21 @@ export class QueueService {
 				.where(eq(queueTemplateStatuses.templateId, queue[0].templateId))
 				.orderBy(queueTemplateStatuses.order);
 
-			const batchStatuses = templateStatuses.map((ts) => ({
+			const sessionStatuses = templateStatuses.map((ts) => ({
 				id: uuidv7(),
-				queueId: batchId,
+				sessionId: sessionId,
 				templateStatusId: ts.id,
 				label: ts.label,
 				color: ts.color,
 				order: ts.order,
 			}));
 
-			if (batchStatuses.length > 0) {
-				await db.insert(queueStatuses).values(batchStatuses);
+			if (sessionStatuses.length > 0) {
+				await db.insert(queueSessionStatuses).values(sessionStatuses);
 			}
 		}
 
-		return batchResult[0];
+		return sessionResult[0];
 	}
 }
 

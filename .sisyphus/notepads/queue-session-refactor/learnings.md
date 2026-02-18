@@ -942,3 +942,123 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 15: Update status.service.ts to use session statuses
 - Task 16: Update SSE broadcaster to handle item events
 - Tasks 17-24: Update routes and remaining files
+
+# Task 14: Update Queue Service to Use Sessions (be/src/services/queue.service.ts)
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### Files Updated
+1. **be/src/services/queue.service.ts**:
+   - Updated imports: QueueBatch → QueueSession, queueBatches → queueSessions, queueStatuses → queueSessionStatuses
+   - Updated getQueueById(): activeBatchId/activeBatch → activeSessionId/activeSession
+   - Updated getQueueItems(batchId) → getQueueItems(sessionId)
+   - Updated getActiveBatch() → getActiveSession(): batch/statuses → session/statuses
+   - Updated resetQueue(): Returns QueueSession (was QueueBatch), uses queueSessions table
+   - Updated deleteQueue comment: "cascades to batches" → "cascades to sessions"
+
+### Import Changes
+- Line 9: `import type { NewQueue, Queue, QueueSession, QueueItem }` (QueueBatch replaced)
+- Line 11: `queueSessions` (was queueBatches)
+- Line 13: `queueSessionStatuses` (was queueStatuses)
+
+### Function Signature Updates
+
+1. **getQueueById**:
+   - Return type: `{activeBatchId, activeBatch}` → `{activeSessionId, activeSession}`
+   - Query: `from(queueBatches)` → `from(queueSessions)`
+
+2. **getQueueItems**:
+   - Parameter: `batchId: string` → `sessionId: string`
+   - Query: `eq(queueItems.batchId, batchId)` → `eq(queueItems.sessionId, sessionId)`
+
+3. **getActiveBatch → getActiveSession**:
+   - Function renamed: `getActiveBatch` → `getActiveSession`
+   - Return type: `{batch, statuses}` → `{session, statuses}`
+   - Statuses type: `typeof queueStatuses.$inferSelect` → `typeof queueSessionStatuses.$inferSelect`
+   - Query: `from(queueBatches)` → `from(queueSessions)`, `from(queueStatuses)` → `from(queueSessionStatuses)`
+   - Status query: `eq(queueStatuses.queueId, activeBatch[0].id)` → `eq(queueSessionStatuses.sessionId, activeSession[0].id)`
+
+4. **resetQueue**:
+   - Return type: `QueueBatch | null` → `QueueSession | null`
+   - Query: `from(queueBatches)` → `from(queueSessions)`
+   - Status insertion: `queueStatuses` → `queueSessionStatuses`
+   - Status mapping: `queueId: batchId` → `sessionId: sessionId`
+   - Comment: "batch" → "session", "Batch" → "Session"
+
+## Patterns Observed
+
+### Service Update Pattern
+1. **Systematic replacement**: batchId → sessionId, queueBatches → queueSessions, queueStatuses → queueSessionStatuses
+2. **Function renames**: getActiveBatch → getActiveSession (not just parameter changes)
+3. **Comment updates**: Update all comments to use session terminology
+4. **Foreign key changes**: queueStatuses.queueId → queueSessionStatuses.sessionId
+
+### Query Update Pattern
+1. **Table references**: Replace all old table names with new ones
+2. **Field references**: Replace all old field names with new ones
+3. **Return types**: Update type exports to match new types
+4. **Comments**: Keep comments in sync with code changes
+
+## Learnings
+
+### Session vs Batch Terminology
+1. **Consistent naming**: All references to "batch" replaced with "session"
+2. **Function names matter**: getActiveBatch had to be renamed to getActiveSession, not just updated internally
+3. **Comments are part of API**: Comments are read by consumers, must be updated
+4. **Return types**: Return types must match new type exports
+
+### Foreign Key Relationships
+1. **queueSessionStatuses.sessionId**: References queueSessions.id (not queueId)
+2. **queueStatuses had queueId**: Old pattern referenced batch by queueId field
+3. **queueSessionStatuses has sessionId**: New pattern references session by sessionId field
+4. **Query updates**: Must update field names in WHERE clauses (eq(queueSessionStatuses.sessionId, ...))
+
+### SQL Query Consistency
+1. **FROM clauses**: Always update table names (queueBatches → queueSessions)
+2. **WHERE clauses**: Update field references (queueItems.batchId → queueItems.sessionId)
+3. **INSERT statements**: Update field mappings (queueId: batchId → sessionId: sessionId)
+4. **Status queries**: Update status table references (queueStatuses → queueSessionStatuses)
+
+## Issues Encountered
+
+### None
+- Straightforward update with systematic replacement
+- No complex logic changes required
+- All changes were direct renames from batch → session
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for queue.service.ts (zero errors)
+- **Errors in other files**: Expected (will be fixed in Tasks 15-24)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-14-service-build.log`
+
+### Build Output Analysis
+- Zero errors in `src/services/queue.service.ts` ✓
+- Expected errors in:
+  - `src/routes/queues.ts` (uses getActiveBatch, activeBatchId)
+  - `src/services/batch.service.ts` (references old queueBatches)
+  - `src/services/status.service.ts` (references old queueStatuses)
+  - `src/scripts/*` (multiple seed scripts using old table names)
+  - `src/sse/index.ts` (references old queueBatches)
+
+## Dependencies
+
+### Depends On
+- Task 7 (migration applied) - queue_sessions table exists in database
+- Task 10 (type exports) - QueueSession, QueueSessionStatus types available
+- Task 13 (queue-item service updated) - queueItems.sessionId field already updated
+
+### Blocks
+- Tasks 15-16 (services may import queue.service)
+- Task 17-18 (routes depend on queue.service functions)
+- Task 23 (routes use queue.service for API endpoints)
+
+## Next Steps
+- Task 15: Update status.service.ts to use session statuses
+- Task 16: Update SSE broadcaster to handle session events
+- Task 17: Update queues.ts routes to use session-based functions
