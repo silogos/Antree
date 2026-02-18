@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { queueBatches } from "../db/schema.js";
+import { queueSessions } from "../db/schema.js";
 import { generateClientId, sseBroadcaster } from "./broadcaster.js";
 
 export const sseRoutes = new Hono();
@@ -18,31 +18,31 @@ function _isAuthenticated(c: Context): boolean {
 }
 
 /**
- * Check if user has access to the batch
+ * Check if user has access to the session
  */
-async function hasBatchAccess(batchId: string): Promise<boolean> {
+async function hasSessionAccess(sessionId: string): Promise<boolean> {
 	try {
-		const batches = await db
+		const sessions = await db
 			.select()
-			.from(queueBatches)
-			.where(eq(queueBatches.id, batchId))
+			.from(queueSessions)
+			.where(eq(queueSessions.id, sessionId))
 			.limit(1);
-		return batches.length > 0;
+		return sessions.length > 0;
 	} catch (error) {
-		console.error("[SSE] Error checking batch access:", error);
+		console.error("[SSE] Error checking session access:", error);
 		return false;
 	}
 }
 
 /**
- * GET /batches/:batchId/events
- * SSE endpoint for real-time batch updates
+ * GET /sessions/:sessionId/events
+ * SSE endpoint for real-time session updates
  */
-sseRoutes.get("/batches/:batchId/events", async (c) => {
-	const batchId = c.req.param("batchId");
+sseRoutes.get("/sessions/:sessionId/events", async (c) => {
+	const sessionId = c.req.param("sessionId");
 
-	if (!batchId) {
-		return c.json({ success: false, error: "batchId is required" }, 400);
+	if (!sessionId) {
+		return c.json({ success: false, error: "sessionId is required" }, 400);
 	}
 
 	// Check authentication
@@ -51,10 +51,10 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 	//   return c.json({ success: false, error: 'Unauthorized' }, 401);
 	// }
 
-	// Check batch access
-	const hasAccess = await hasBatchAccess(batchId);
+	// Check session access
+	const hasAccess = await hasSessionAccess(sessionId);
 	if (!hasAccess) {
-		return c.json({ success: false, error: "Batch not found" }, 404);
+		return c.json({ success: false, error: "Session not found" }, 404);
 	}
 
 	const clientId = generateClientId();
@@ -66,7 +66,7 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 		start(controller) {
 			// Add connection to broadcaster (will return false if limit reached)
 			const connectionAdded = sseBroadcaster.addConnection(
-				batchId,
+				sessionId,
 				controller,
 				clientId,
 				lastEventId,
@@ -91,8 +91,8 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 			controller.enqueue(
 				`id: ${clientId}\nevent: connected\ndata: ${JSON.stringify({
 					type: "connected",
+					sessionId,
 					clientId,
-					batchId,
 					timestamp: new Date().toISOString(),
 				})}\n\n`,
 			);
@@ -101,11 +101,11 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 			const heartbeatInterval = setInterval(() => {
 				try {
 					controller.enqueue(`: keep-alive\n\n`);
-					sseBroadcaster.updateActivity(batchId, clientId);
+					sseBroadcaster.updateActivity(sessionId, clientId);
 				} catch (error) {
 					console.error(`[SSE] Heartbeat error for client ${clientId}:`, error);
 					clearInterval(heartbeatInterval);
-					sseBroadcaster.removeConnection(batchId, clientId);
+					sseBroadcaster.removeConnection(sessionId, clientId);
 				}
 			}, 30000);
 
@@ -113,7 +113,7 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 			const abortHandler = () => {
 				console.log(`[SSE] Client ${clientId} disconnected (abort signal)`);
 				clearInterval(heartbeatInterval);
-				sseBroadcaster.removeConnection(batchId, clientId);
+				sseBroadcaster.removeConnection(sessionId, clientId);
 			};
 
 			signal.addEventListener("abort", abortHandler);
@@ -122,13 +122,13 @@ sseRoutes.get("/batches/:batchId/events", async (c) => {
 			return () => {
 				clearInterval(heartbeatInterval);
 				signal.removeEventListener("abort", abortHandler);
-				sseBroadcaster.removeConnection(batchId, clientId);
+				sseBroadcaster.removeConnection(sessionId, clientId);
 				console.log(`[SSE] Stream closed for client ${clientId}`);
 			};
 		},
 		cancel() {
 			console.log(`[SSE] Stream cancelled for client ${clientId}`);
-			sseBroadcaster.removeConnection(batchId, clientId);
+			sseBroadcaster.removeConnection(sessionId, clientId);
 		},
 	});
 

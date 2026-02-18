@@ -2502,7 +2502,7 @@ Max Concurrent: 4 (Wave 1), 3 (Wave 2), 4 (Wave 3), 5 (Wave 4), 4 (Wave 5), 4 (W
 
   **Commit**: NO (part of Wave 6 group commit)
 
-- [ ] 22. **Update SSE index.ts endpoint paths**
+- [x] 22. **Update SSE index.ts endpoint paths**
 
   **What to do**:
   - Update `be/src/sse/index.ts` SSE endpoint routes

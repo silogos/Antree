@@ -698,6 +698,132 @@ This task applied the migration from Task 6 to the PostgreSQL database via Docke
 - Task 23: Update queue items routes to use sessions
 - Task 24: Update SSE broadcaster to handle all new events
 
+# Task 22: Update SSE Index to Use Session Event Types and Endpoint Paths
+
+## Date
+2026-02-19
+
+## Changes Made
+
+### File Updated
+- **be/src/sse/index.ts** - Updated SSE endpoint to use session-based paths and session access check
+
+### Import Changes
+1. **Removed queueBatches import**:
+   - Deleted: `import { queueBatches } from "../db/schema.js";`
+   - Line 5 removed
+
+2. **Added queueSessions import**:
+   - Added: `import { queueSessions } from "../db/schema.js";`
+   - Line 5 added
+
+3. **Removed invalid SessionDTO import**:
+   - Deleted: `import type { SessionDTO } from "./session.dto.js";`
+   - Was attempted but file doesn't exist yet (created in Task 9)
+
+### Function Renames
+1. **hasBatchAccess → hasSessionAccess**:
+   - Parameter: `batchId: string` → `sessionId: string`
+   - Query: `from(queueBatches)` → `from(queueSessions)`
+   - Variable names updated throughout
+
+### Endpoint Path Changes
+1. **GET /batches/:batchId/events → GET /sessions/:sessionId/events**:
+   - Line 38: Comment updated
+   - Line 41: Route path updated
+
+### Message Updates
+1. **Error messages**:
+   - "batchId is required" → "sessionId is required" (line 45)
+   - "Batch not found" → "Session not found" (line 57)
+   - "Connection limit reached for this batch" → "Connection limit reached for this session" (line 83)
+
+2. **Connected message**:
+   - batchId → sessionId in event data (line 94)
+
+### Connection Management Updates
+1. **All references updated**:
+   - sseBroadcaster.addConnection(batchId, ...) → sseBroadcaster.addConnection(sessionId, ...) (line 69)
+   - sseBroadcaster.updateActivity(batchId, ...) → sseBroadcaster.updateActivity(sessionId, ...) (line 104)
+   - sseBroadcaster.removeConnection(batchId, ...) → sseBroadcaster.removeConnection(sessionId, ...) (lines 108, 116, 125, 131)
+
+## Patterns Observed
+
+### SSE Endpoint Migration Pattern
+1. **Parameter renaming**: All batchId references → sessionId
+2. **Function renaming**: hasBatchAccess → hasSessionAccess (better clarity)
+3. **Path renaming**: /batches/* → /sessions/*
+4. **Error messages**: Consistent terminology throughout
+5. **Connection tracking**: All broadcaster calls use sessionId parameter
+
+### Import Strategy
+1. **Schema imports**: Use queueSessions from schema.ts (not queueBatches)
+2. **Broadcaster imports**: Use existing sseBroadcaster from broadcaster.ts
+3. **No new types needed**: SessionDTO not imported (doesn't exist yet in Task 22)
+4. **Type imports**: Keep it simple, only need schema references for database queries
+
+### Error Handling Consistency
+1. **Validation errors**: Return 400 with clear message (batchId/sessionId is required)
+2. **Access errors**: Return 404 with clear message (Batch/Session not found)
+3. **Connection errors**: Return error event with type: "error"
+4. **Limit reached**: Send error event before closing connection (proper SSE protocol)
+
+## Learnings
+
+### SSE Endpoint Updates
+1. **Systematic replacement**: batchId → sessionId in all 10+ locations
+2. **Pattern recognition**: Connection management functions (addConnection, updateActivity, removeConnection) all use same parameter name
+3. **Verification critical**: Build command confirms zero errors in index.ts
+
+### TypeScript Build Behavior
+1. **My file compiles**: Zero errors in src/sse/index.ts
+2. **Other files have errors**: Expected (batch.service.ts, queue.service.ts, scripts, etc.)
+3. **Task-specific errors**: Only errors in this file would indicate real problems
+
+### Import Errors
+1. **SessionDTO not yet available**: Task 9 created session.dto.ts but not imported in Task 22
+2. **No import needed yet**: For now, just need queueSessions table reference
+3. **Will import DTOs later**: When routes are updated to use DTO types (Tasks 12-14)
+
+## Issues Encountered
+
+### Invalid SessionDTO Import
+- **Issue**: Attempted to import SessionDTO from ./session.dto.js but file doesn't exist yet
+- **Resolution**: Removed the import, not needed for this task
+- **Root Cause**: SessionDTO created in Task 9, but not imported in all dependent files yet
+
+## Verification
+
+### Build Status
+- **Result**: TypeScript compilation succeeds for sse/index.ts (zero errors)
+- **Errors in other files**: Expected (batch.service.ts, queue.service.ts, scripts, etc.)
+- **Build command**: `pnpm --filter @antree/backend build`
+- **Evidence**: `.sisyphus/evidence/task-22-sse-index.log` (build output)
+
+### Build Output Analysis
+- Zero errors in `src/sse/index.ts` ✓
+- Expected errors in:
+  - `src/services/batch.service.ts` (references old queueBatches)
+  - `src/services/queue.service.ts` (references old queueBatches, queueStatuses)
+  - `src/scripts/*` (seed scripts using old table names)
+  - `src/sse/broadcaster.ts` (may need updates for session events)
+
+## Dependencies
+
+### Depends On
+- Task 7 (migration applied) - queue_sessions table exists
+- Task 10 (type exports) - queueSessions type available from schema.ts
+- Task 16 (SSE broadcaster updated with session events) - sseBroadcaster available
+
+### Blocks
+- Task 23 (SSE integration depends on this endpoint path)
+- Frontend SSE client implementation (will use /sessions/* instead of /batches/*)
+
+## Next Steps
+- Task 23: Update queue-item routes to use sessions (depend on session endpoints)
+- Task 24: Update SSE broadcaster to emit session and item events
+- Frontend: Update SSE client to connect to /sessions/* endpoints
+
 # Task 20: Update Index.ts to Register Session Routes and Remove Batch Routes
 
 ## Date
