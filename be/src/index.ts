@@ -3,9 +3,10 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { closeDb } from "./db/index.js";
-import { boardRoutes } from "./routes/boards.js";
+
 import { healthCheckRoutes } from "./routes/health.js";
 import { queueItemRoutes } from "./routes/queue-items.js";
+import { queuesRoutes } from "./routes/queues.js";
 import { sessionRoutes } from "./routes/sessions.js";
 import { templateRoutes } from "./routes/templates.js";
 import { sseBroadcaster } from "./sse/broadcaster.js";
@@ -32,7 +33,7 @@ app.use(
 
 // Routes
 app.route("/", healthCheckRoutes);
-app.route("/boards", boardRoutes);
+app.route("/queues", queuesRoutes);
 app.route("/queue-items", queueItemRoutes);
 app.route("/sessions", sessionRoutes);
 app.route("/templates", templateRoutes);
