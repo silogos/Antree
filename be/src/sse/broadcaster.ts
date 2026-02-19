@@ -144,8 +144,8 @@ class SSEBroadcaster {
 	 * Broadcast an event to all clients connected to a board, batch, or queue
 	 */
 	broadcast(event: SSEEvent): void {
-		// Support queueId (new), batchId (new flow), and boardId (legacy)
-		const targetId = event.queueId || event.batchId || event.boardId;
+		// Support sessionId (new), queueId (new), batchId (legacy), and boardId (legacy)
+		const targetId = event.sessionId || event.queueId || event.batchId || event.boardId;
 		if (!targetId) {
 			console.warn(
 				"[SSE] Broadcast called without queueId, batchId, or boardId",

@@ -11,6 +11,44 @@ export interface ApiResponse<T = unknown> {
 }
 
 /**
+ * Convert camelCase string to snake_case
+ */
+function camelToSnake(str: string): string {
+  return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+}
+
+/**
+ * Recursively convert object keys from camelCase to snake_case
+ */
+function toSnakeCase<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Handle Date objects - convert to ISO string
+  if (obj instanceof Date) {
+    return obj.toISOString() as T;
+  }
+
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(toSnakeCase) as T;
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const snakeKey = camelToSnake(key);
+      result[snakeKey] = toSnakeCase(obj[key]);
+    }
+  }
+  return result as T;
+}
+
+/**
  * Success response helper
  */
 export function successResponse<T>(
@@ -18,7 +56,7 @@ export function successResponse<T>(
   message?: string,
   total?: number,
 ): ApiResponse<T> {
-  const response: ApiResponse<T> = { success: true, data };
+  const response: ApiResponse<T> = { success: true, data: toSnakeCase(data) };
   if (message) response.message = message;
   if (total !== undefined) response.total = total;
   return response;
