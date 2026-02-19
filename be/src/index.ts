@@ -6,9 +6,7 @@ import { closeDb } from "./db/index.js";
 import { boardRoutes } from "./routes/boards.js";
 import { healthCheckRoutes } from "./routes/health.js";
 import { queueItemRoutes } from "./routes/queue-items.js";
-import { queueRoutes } from "./routes/queues.js";
 import { sessionRoutes } from "./routes/sessions.js";
-import { statusRoutes } from "./routes/statuses.js";
 import { templateRoutes } from "./routes/templates.js";
 import { sseBroadcaster } from "./sse/broadcaster.js";
 import { sseRoutes } from "./sse/index.js";
@@ -35,8 +33,6 @@ app.use(
 // Routes
 app.route("/", healthCheckRoutes);
 app.route("/boards", boardRoutes);
-app.route("/statuses", statusRoutes);
-app.route("/queues", queueRoutes);
 app.route("/queue-items", queueItemRoutes);
 app.route("/sessions", sessionRoutes);
 app.route("/templates", templateRoutes);

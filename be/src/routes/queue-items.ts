@@ -76,7 +76,7 @@ queueItemRoutes.post('/', validateBody(createQueueItemSchema), async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_created',
+      type: 'item_created',
       data: item,
       queueId: item.queueId,
     });
@@ -111,7 +111,7 @@ queueItemRoutes.put('/:id', validateBody(updateQueueItemSchema), async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_updated',
+      type: 'item_updated',
       data: item,
       queueId: existing.queueId,
     });
@@ -145,7 +145,7 @@ queueItemRoutes.delete('/:id', async (c) => {
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_deleted',
+      type: 'item_deleted',
       data: { id },
       queueId: existing.queueId,
     });
