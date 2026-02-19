@@ -4,7 +4,7 @@
  */
 
 interface SSEConnection {
-	boardId: string;
+	sessionId: string; // Changed from boardId to sessionId for consistency
 	controller: ReadableStreamDefaultController;
 	clientId: string;
 	lastEventId?: string; // Track last event ID for reconnection
@@ -42,8 +42,8 @@ interface SSEEvent {
 }
 
 class SSEBroadcaster {
-	private connections: Map<string, SSEConnection[]> = new Map(); // boardId/batchId -> connections
-	private eventHistory: Map<string, SSEEvent[]> = new Map(); // boardId/batchId -> event history
+	private connections: Map<string, SSEConnection[]> = new Map(); // sessionId -> connections
+	private eventHistory: Map<string, SSEEvent[]> = new Map(); // sessionId -> event history
 	private maxHistorySize = 1000; // Max events to keep per board
 	private connectionLimit = 50; // Max connections per board
 	private rateLimitInterval = 60; // Rate limit window in seconds
@@ -53,92 +53,92 @@ class SSEBroadcaster {
 		{ count: number; resetTime: number }
 	> = new Map();
 
-	/**
-	 * Add a new SSE connection for a board or batch
-	 */
-	addConnection(
-		boardId: string,
-		controller: ReadableStreamDefaultController,
-		clientId: string,
-		lastEventId?: string,
-	): boolean {
-		// Check connection limit
-		const existingConnections = this.connections.get(boardId);
-		if (
-			existingConnections &&
-			existingConnections.length >= this.connectionLimit
-		) {
-			console.warn(
-				`[SSE] Connection limit reached for board/batch ${boardId} (${this.connectionLimit} max)`,
-			);
-			return false;
-		}
+  /**
+   * Add a new SSE connection for a board or batch
+   */
+  addConnection(
+    sessionId: string,
+    controller: ReadableStreamDefaultController,
+    clientId: string,
+    lastEventId?: string,
+  ): boolean {
+    // Check connection limit
+    const existingConnections = this.connections.get(sessionId);
+    if (
+      existingConnections &&
+      existingConnections.length >= this.connectionLimit
+    ) {
+      console.warn(
+        `[SSE] Connection limit reached for session ${sessionId} (${this.connectionLimit} max)`,
+      );
+      return false;
+    }
 
-		if (!this.connections.has(boardId)) {
-			this.connections.set(boardId, []);
-		}
+    if (!this.connections.has(sessionId)) {
+      this.connections.set(sessionId, []);
+    }
 
-		const now = Date.now();
-		this.connections.get(boardId)?.push({
-			boardId,
-			controller,
-			clientId,
-			lastEventId,
-			connectedAt: now,
-			lastActivity: now,
-		});
-		console.log(
-			`[SSE] Client ${clientId} connected to board/batch ${boardId} (lastEventId: ${lastEventId || "none"})`,
-		);
+    const now = Date.now();
+    this.connections.get(sessionId)?.push({
+      sessionId,
+      controller,
+      clientId,
+      lastEventId,
+      connectedAt: now,
+      lastActivity: now,
+    });
+    console.log(
+      `[SSE] Client ${clientId} connected to session ${sessionId} (lastEventId: ${lastEventId || "none"})`,
+    );
 
-		// If client has lastEventId, replay missed events
-		if (lastEventId) {
-			this.replayMissedEvents(boardId, lastEventId, controller);
-		}
+    // If client has lastEventId, replay missed events
+    if (lastEventId) {
+      this.replayMissedEvents(sessionId, lastEventId, controller);
+    }
 
-		return true;
-	}
+    return true;
+  }
 
-	/**
-	 * Remove an SSE connection
-	 */
-	removeConnection(boardId: string, clientId: string): void {
-		const boardConnections = this.connections.get(boardId);
-		if (boardConnections) {
-			const index = boardConnections.findIndex(
-				(conn) => conn.clientId === clientId,
-			);
-			if (index !== -1) {
-				boardConnections.splice(index, 1);
-				console.log(
-					`[SSE] Client ${clientId} disconnected from board/batch ${boardId}`,
-				);
-			}
+  /**
+   * Remove an SSE connection
+   */
+  removeConnection(sessionId: string, clientId: string): void {
+    const boardConnections = this.connections.get(sessionId);
+    if (boardConnections) {
+      const index = boardConnections.findIndex(
+        (conn) => conn.clientId === clientId,
+      );
+      if (index !== -1) {
+        boardConnections.splice(index, 1);
+        console.log(
+          `[SSE] Client ${clientId} disconnected from session ${sessionId}`,
+        );
+      }
 
-			// Clean up empty board arrays
-			if (boardConnections.length === 0) {
-				this.connections.delete(boardId);
-				// Also clean up event history for this board
-				this.eventHistory.delete(boardId);
-			}
-		}
+      // Clean up empty board arrays
+      if (boardConnections.length === 0) {
+        this.connections.delete(sessionId);
+        // Also clean up event history for this session
+        this.eventHistory.delete(sessionId);
+      }
+    }
 
-		// Clean up rate limit counter for this client
-		this.clientMessageCounts.delete(clientId);
-	}
+    // Clean up rate limit counter for this client
+    this.clientMessageCounts.delete(clientId);
+  }
 
-	/**
-	 * Update client's last activity timestamp
-	 */
-	updateActivity(boardId: string, clientId: string): void {
-		const boardConnections = this.connections.get(boardId);
-		if (boardConnections) {
-			const conn = boardConnections.find((c) => c.clientId === clientId);
-			if (conn) {
-				conn.lastActivity = Date.now();
-			}
-		}
-	}
+  /**
+   * Update client's last activity timestamp
+   */
+  updateActivity(sessionId: string, clientId: string): void {
+    const boardConnections = this.connections.get(sessionId);
+    if (boardConnections) {
+      const conn = boardConnections.find((c) => c.clientId === clientId);
+      if (conn) {
+        conn.lastActivity = Date.now();
+      }
+    }
+  }
 
 	/**
 	 * Broadcast an event to all clients connected to a board, batch, or queue
@@ -333,12 +333,12 @@ class SSEBroadcaster {
 		return true;
 	}
 
-	/**
-	 * Get connection count for a board
-	 */
-	getConnectionCount(boardId: string): number {
-		return this.connections.get(boardId)?.length || 0;
-	}
+  /**
+   * Get connection count for a session
+   */
+  getConnectionCount(sessionId: string): number {
+    return this.connections.get(sessionId)?.length || 0;
+  }
 
 	/**
 	 * Get total connection count across all boards
@@ -351,84 +351,84 @@ class SSEBroadcaster {
 		return total;
 	}
 
-	/**
-	 * Close all SSE connections gracefully (for shutdown)
-	 */
-	closeAllConnections(): void {
-		console.log(
-			`[SSE] Closing all SSE connections (${this.getTotalConnectionCount()} total)`,
-		);
+  /**
+   * Close all SSE connections gracefully (for shutdown)
+   */
+  closeAllConnections(): void {
+    console.log(
+      `[SSE] Closing all SSE connections (${this.getTotalConnectionCount()} total)`,
+    );
 
-		this.connections.forEach((conns, _boardId) => {
-			conns.forEach((conn) => {
-				try {
-					// Send disconnect message
-					const disconnectMessage = `event: disconnect\ndata: ${JSON.stringify({
-						type: "disconnect",
-						data: null,
-						timestamp: new Date().toISOString(),
-						message: "Server shutting down",
-					})}\n\n`;
-					conn.controller.enqueue(disconnectMessage);
+    this.connections.forEach((conns, _sessionId) => {
+      conns.forEach((conn) => {
+        try {
+          // Send disconnect message
+          const disconnectMessage = `event: disconnect\ndata: ${JSON.stringify({
+            type: "disconnect",
+            data: null,
+            timestamp: new Date().toISOString(),
+            message: "Server shutting down",
+          })}\n\n`;
+          conn.controller.enqueue(disconnectMessage);
 
-					// Close the stream
-					try {
-						conn.controller.close();
-					} catch (_e) {
-						// Controller might already be closed
-					}
-				} catch (error) {
-					console.error(
-						`[SSE] Error closing connection for client ${conn.clientId}:`,
-						error,
-					);
-				}
-			});
-		});
+          // Close the stream
+          try {
+            conn.controller.close();
+          } catch (_e) {
+            // Controller might already be closed
+          }
+        } catch (error) {
+          console.error(
+            `[SSE] Error closing connection for client ${conn.clientId}:`,
+            error,
+          );
+        }
+      });
+    });
 
-		// Clear all connections
-		this.connections.clear();
-		this.eventHistory.clear();
-		this.clientMessageCounts.clear();
+    // Clear all connections
+    this.connections.clear();
+    this.eventHistory.clear();
+    this.clientMessageCounts.clear();
 
-		console.log("[SSE] All connections closed");
-	}
+    console.log("[SSE] All connections closed");
+  }
 
-	/**
-	 * Cleanup idle connections (call periodically)
-	 */
-	cleanupIdleConnections(maxIdleTime: number = 300000): void {
-		// 5 minutes default
-		const now = Date.now();
-		let cleanedCount = 0;
+  /**
+   * Cleanup idle connections (call periodically)
+   */
+  cleanupIdleConnections(maxIdleTime: number = 300000): void {
+    // 5 minutes default
+    const now = Date.now();
+    let cleanedCount = 0;
 
-		this.connections.forEach((conns, boardId) => {
-			for (let i = conns.length - 1; i >= 0; i--) {
-				const conn = conns[i];
-				if (now - conn.lastActivity > maxIdleTime) {
-					console.log(
-						`[SSE] Removing idle connection ${conn.clientId} (idle for ${Math.round((now - conn.lastActivity) / 1000)}s)`,
-					);
-					try {
-						conn.controller.close();
-					} catch (_e) {
-						// Controller might already be closed
-					}
-					conns.splice(i, 1);
-					cleanedCount++;
-				}
-			}
+    this.connections.forEach((conns, sessionId) => {
+      for (let i = conns.length - 1; i >= 0; i--) {
+        const conn = conns[i];
+        if (now - conn.lastActivity > maxIdleTime) {
+          console.log(
+            `[SSE] Removing idle connection ${conn.clientId} (idle for ${Math.round((now - conn.lastActivity) / 1000)}s)`,
+          );
+          try {
+            conn.controller.close();
+          } catch (_e) {
+            // Controller might already be closed
+          }
+          conns.splice(i, 1);
+          cleanedCount++;
+        }
+      }
 
-			// Clean up empty board arrays
-			if (conns.length === 0) {
-				this.connections.delete(boardId);
-			}
-		});
+      // Clean up empty session arrays
+      if (conns.length === 0) {
+        this.connections.delete(sessionId);
+      }
+    });
 
-		if (cleanedCount > 0) {
-			console.log(`[SSE] Cleaned up ${cleanedCount} idle connections`);
-		}
-	}
+    if (cleanedCount > 0) {
+      console.log(`[SSE] Cleaned up ${cleanedCount} idle connections`);
+    }
+  }
 }
 
 // Singleton instance
