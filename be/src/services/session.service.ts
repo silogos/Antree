@@ -31,7 +31,7 @@ export class SessionService {
    */
   async getAllSessions(filters?: {
     queueId?: string;
-    status?: 'draft' | 'active' | 'closed';
+    status?: 'active' | 'paused' | 'completed' | 'archived';
     isDeleted?: boolean;
   }): Promise<typeof queueSessions.$inferSelect[]> {
     let sessions: typeof queueSessions.$inferSelect[];
@@ -113,24 +113,29 @@ export class SessionService {
    * Validate lifecycle status transition
    */
   private validateStatusTransition(
-    currentStatus: 'draft' | 'active' | 'closed',
-    newStatus: 'draft' | 'active' | 'closed',
+    currentStatus: 'active' | 'paused' | 'completed' | 'archived',
+    newStatus: 'active' | 'paused' | 'completed' | 'archived',
   ): boolean {
-    // Valid transitions: draft -> active -> closed
-    // draft -> closed (direct closing)
-    // Cannot go backwards: closed -> active or closed -> draft
-    // Cannot go: active -> draft
-
-    if (currentStatus === 'draft') {
-      return newStatus === 'active' || newStatus === 'closed';
-    }
+    // Valid transitions:
+    // active <-> paused (can toggle)
+    // active/paused -> completed
+    // completed/paused -> archived
+    // Cannot go backwards once completed or archived
 
     if (currentStatus === 'active') {
-      return newStatus === 'closed';
+      return newStatus === 'paused' || newStatus === 'completed' || newStatus === 'archived';
     }
 
-    if (currentStatus === 'closed') {
-      // Closed cannot be reopened
+    if (currentStatus === 'paused') {
+      return newStatus === 'active' || newStatus === 'completed' || newStatus === 'archived';
+    }
+
+    if (currentStatus === 'completed') {
+      return newStatus === 'archived';
+    }
+
+    if (currentStatus === 'archived') {
+      // Archived is final state
       return false;
     }
 
@@ -206,7 +211,7 @@ export class SessionService {
       templateId: queue[0].templateId,
       queueId: input.queueId,
       name: input.name || `Session ${nextSessionNumber}`,
-      status: input.status || 'draft',
+      status: input.status || 'active',
       sessionNumber: nextSessionNumber,
     };
 
@@ -265,7 +270,7 @@ export class SessionService {
     // If status is being updated, validate the transition
     if (input.status !== undefined && input.status !== session.status) {
       const isValidTransition = this.validateStatusTransition(
-        session.status as 'draft' | 'active' | 'closed',
+        session.status as 'active' | 'paused' | 'completed' | 'archived',
         input.status,
       );
 
@@ -293,8 +298,13 @@ export class SessionService {
 
     // Set timestamps based on lifecycle
     if (input.status === 'active' && !session.startedAt) {
-      // Starting the session
+      // Starting session
       updateData.startedAt = new Date();
+    }
+
+    if (input.status === 'completed' && !session.endedAt) {
+      // Completing session
+      updateData.endedAt = new Date();
     }
 
     if (input.status === 'closed' && !session.endedAt) {

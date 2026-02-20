@@ -6,21 +6,21 @@
 import { and, desc, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { db } from "../db/index.js";
-import type { NewQueue, Queue, QueueSession, QueueItem } from "../db/schema.js";
+import type { NewQueue, Queue, QueueItem, QueueSession } from "../db/schema.js";
 import {
-	queueSessions,
 	queueItems,
 	queueSessionStatuses,
+	queueSessions,
 	queues,
 	queueTemplateStatuses,
 	queueTemplates,
 } from "../db/schema.js";
+import { sseBroadcaster } from "../sse/broadcaster.js";
 import type {
 	CreateQueueInput,
 	ResetQueueInput,
 	UpdateQueueInput,
 } from "../validators/queue.validator.js";
-import { sseBroadcaster } from "../sse/broadcaster.js";
 
 export class QueueService {
 	/**
@@ -31,15 +31,9 @@ export class QueueService {
 	}
 
 	/**
-	 * Get a single queue by ID with active session information
+	 * Get a single queue by ID
 	 */
-	async getQueueById(id: string): Promise<
-		| (Queue & {
-				activeSessionId: string | null;
-				activeSession: QueueSession | null;
-		  })
-		| null
-	> {
+	async getQueueById(id: string): Promise<Queue | null> {
 		const queue = await db
 			.select()
 			.from(queues)
@@ -50,22 +44,7 @@ export class QueueService {
 			return null;
 		}
 
-		// Get active session for this queue
-		const activeSession = await db
-			.select()
-			.from(queueSessions)
-			.where(
-				and(eq(queueSessions.queueId, id), eq(queueSessions.status, "active")),
-			)
-			.limit(1);
-
-		return {
-			...queue[0],
-			activeSessionId:
-				activeSession && activeSession.length > 0 ? activeSession[0].id : null,
-			activeSession:
-				activeSession && activeSession.length > 0 ? activeSession[0] : null,
-		};
+		return queue[0] || null;
 	}
 
 	/**
@@ -311,7 +290,7 @@ export class QueueService {
 	 */
 	broadcastQueueCreated(queue: Queue): void {
 		sseBroadcaster.broadcast({
-			type: 'queue_created',
+			type: "queue_created",
 			data: {
 				id: queue.id,
 				name: queue.name,
@@ -331,7 +310,7 @@ export class QueueService {
 	 */
 	broadcastQueueUpdated(queue: Queue): void {
 		sseBroadcaster.broadcast({
-			type: 'queue_updated',
+			type: "queue_updated",
 			data: {
 				id: queue.id,
 				name: queue.name,
@@ -351,7 +330,7 @@ export class QueueService {
 	 */
 	broadcastQueueDeleted(queue: Queue): void {
 		sseBroadcaster.broadcast({
-			type: 'queue_deleted',
+			type: "queue_deleted",
 			data: {
 				id: queue.id,
 			},

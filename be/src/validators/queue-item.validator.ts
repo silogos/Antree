@@ -5,17 +5,17 @@
 import { z } from 'zod';
 
 export const createQueueItemSchema = z.object({
-  queueId: z.string().min(1),
-  sessionId: z.string().min(1),
+  queue_id: z.string().min(1),
+  session_id: z.string().min(1),
   queueNumber: z.string().min(1),
   name: z.string().min(1).max(255),
-  statusId: z.string().uuid(),
+  status_id: z.string().uuid(),
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 export const updateQueueItemSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  statusId: z.string().uuid().optional(),
+  status_id: z.string().uuid().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).refine((data) => Object.keys(data).length > 0, {
   message: 'At least one field must be provided',

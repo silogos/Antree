@@ -1,6 +1,6 @@
 /**
  * DTO types for session-based queue API responses
- * All properties use snake_case per user preference (from Task 4)
+ * All properties use camelCase for consistency with modern JSON APIs
  */
 
 /**
@@ -10,10 +10,10 @@
 export interface QueueDTO {
   id: string;
   name: string;
-  template_id: string;
-  is_active: boolean;
-  created_at: Date | string;
-  updated_at: Date | string;
+  templateId: string;
+  isActive: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 /**
@@ -22,14 +22,14 @@ export interface QueueDTO {
  */
 export interface SessionDTO {
   id: string;
-  queue_id: string;
-  template_id: string;
+  queueId: string;
+  templateId: string;
   name: string;
-  status: 'draft' | 'active' | 'closed';
-  session_number: number;
-  started_at: Date | string | null;
-  ended_at: Date | string | null;
-  created_at: Date | string;
+  status: 'active' | 'paused' | 'completed' | 'archived';
+  sessionNumber: number;
+  startedAt: Date | string | null;
+  endedAt: Date | string | null;
+  createdAt: Date | string;
 }
 
 /**
@@ -38,7 +38,7 @@ export interface SessionDTO {
  */
 export interface SessionStatusDTO {
   id: string;
-  session_id: string;
+  sessionId: string;
   label: string;
   color: string;
   order: number;
@@ -50,13 +50,13 @@ export interface SessionStatusDTO {
  */
 export interface QueueItemDTO {
   id: string;
-  queue_id: string;
-  session_id: string;
-  status_id: string;
-  queue_number: string;
-  name: string;
+  queueId: string;
+  sessionId: string;
+  statusId: string;
+  queueNumber: string;
+  displayName: string;
   metadata: any;
-  created_at: Date | string;
+  createdAt: Date | string;
 }
 
 /**
@@ -67,10 +67,10 @@ export interface TemplateDTO {
   id: string;
   name: string;
   description: string;
-  is_system_template: boolean;
-  is_active: boolean;
-  created_at: Date | string;
-  updated_at: Date | string;
+  isSystemTemplate: boolean;
+  isActive: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 /**
@@ -79,7 +79,7 @@ export interface TemplateDTO {
  */
 export interface TemplateStatusDTO {
   id: string;
-  template_id: string;
+  templateId: string;
   label: string;
   color: string;
   order: number;
@@ -90,5 +90,5 @@ export interface TemplateStatusDTO {
  * Used for PATCH /sessions/:id/lifecycle endpoint
  */
 export interface SessionLifecycleDTO {
-  status: 'draft' | 'active' | 'closed';
+  status: 'active' | 'paused' | 'completed' | 'archived';
 }
