@@ -97,7 +97,7 @@ export function SessionDetail() {
 
       try {
         setLoading(true);
-        const response = await sessionService.getSeqssionById(sessionId);
+        const response = await sessionService.getSessionById(sessionId);
 
         if (response.success && response.data) {
           setSession(response.data);
