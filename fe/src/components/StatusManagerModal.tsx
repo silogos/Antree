@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useStatuses } from "../hooks/useStatuses";
+import { useToast } from "../hooks/use-toast";
 import type { QueueStatus } from "../types";
 import { Button } from "./ui/Button";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ interface StatusManagerModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  queueId: string;
+  sessionId: string;
 }
 
 const statusSchema = z.object({
@@ -36,13 +38,18 @@ export function StatusManagerModal({
   open,
   onClose,
   onSuccess,
-  queueId,
+  sessionId,
 }: StatusManagerModalProps) {
   const { statuses, createStatus, updateStatus, deleteStatus } = useStatuses({
-    queueId,
+    sessionId,
   });
+  const { error, success } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingStatus, setEditingStatus] = useState<QueueStatus | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; statusId: string | null }>({
+    open: false,
+    statusId: null,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(statusSchema),
@@ -64,41 +71,54 @@ export function StatusManagerModal({
           color: values.color,
           order: values.order,
         });
-      } else {
-        await createStatus({
-          queueId,
-          label: values.label,
-          color: values.color,
-          order: values.order,
-        });
-      }
+       } else {
+         await createStatus({
+           sessionId,
+           label: values.label,
+           color: values.color,
+           order: values.order,
+         });
+       }
 
       form.reset();
       setEditingStatus(null);
       onSuccess?.();
+      success(
+        isEditing ? "Status updated successfully!" : "Status created successfully!",
+        { description: values.label }
+      );
     } catch (error) {
       console.error("Failed to save status:", error);
-      alert("Failed to save status. Please try again.");
+      error(
+        isEditing ? "Failed to update status" : "Failed to create status",
+        { description: "Please try again later." }
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (statusId: string) => {
-    if (!confirm("Are you sure you want to delete this status?")) return;
+    setDeleteConfirm({ open: true, statusId });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.statusId) return;
 
     try {
       setIsSubmitting(true);
-      await deleteStatus(statusId);
-      if (editingStatus?.id === statusId) {
+      await deleteStatus(deleteConfirm.statusId);
+      if (editingStatus?.id === deleteConfirm.statusId) {
         setEditingStatus(null);
       }
       onSuccess?.();
+      success("Status deleted successfully!");
     } catch (error) {
       console.error("Failed to delete status:", error);
-      alert("Failed to delete status. Please try again.");
+      error("Failed to delete status", { description: "Please try again later." });
     } finally {
       setIsSubmitting(false);
+      setDeleteConfirm({ open: false, statusId: null });
     }
   };
 
@@ -118,6 +138,7 @@ export function StatusManagerModal({
   };
 
   return (
+    <>
     <Dialog open={open} onClose={handleCancel}>
       <DialogContent>
         <DialogHeader>
@@ -280,5 +301,17 @@ export function StatusManagerModal({
         </div>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onClose={() => setDeleteConfirm({ open: false, statusId: null })}
+      onConfirm={handleConfirmDelete}
+      title="Delete Status"
+      description="Are you sure you want to delete this status? This action cannot be undone."
+      confirmLabel="Delete"
+      variant="destructive"
+      loading={isSubmitting}
+    />
+    </>
   );
 }

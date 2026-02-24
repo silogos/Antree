@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useQueues } from "../hooks/useQueues";
 import type { QueueStatus } from "../types";
+import { useToast } from "../hooks/use-toast";
 import { Button } from "./ui/Button";
 import {
   Dialog,
@@ -21,7 +22,8 @@ interface AddQueueModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   statuses?: QueueStatus[];
-  queueId: string;
+  sessionId: string;
+  onCreate?: (data: any) => Promise<any>;
 }
 
 const createQueueSchema = z.object({
@@ -39,10 +41,12 @@ export function AddQueueModal({
   onClose,
   onSuccess,
   statuses = [],
-  queueId,
+  sessionId,
+  onCreate,
 }: AddQueueModalProps) {
   const [loading, setLoading] = useState(false);
-  const { createQueue } = useQueues({ queueId });
+  const { createQueue } = useQueues({ sessionId });
+  const { success, error, loading: toastLoading } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(createQueueSchema),
@@ -56,11 +60,13 @@ export function AddQueueModal({
   });
 
   const onSubmit = async (values: FormValues) => {
+    toastLoading("Adding queue item...", { id: "create-queue" });
+
     try {
       setLoading(true);
 
-      await createQueue({
-        queueId,
+      const queueData = {
+        sessionId,
         queueNumber: values.queueNumber,
         name: values.name,
         statusId: values.statusId,
@@ -68,14 +74,27 @@ export function AddQueueModal({
           customerName: values.customerName,
           duration: values.duration,
         },
-      });
+      };
+
+      if (onCreate) {
+        await onCreate(queueData);
+      } else {
+        await createQueue(queueData);
+      }
 
       form.reset();
       onSuccess?.();
       onClose();
-    } catch (error) {
-      console.error("Failed to create queue:", error);
-      alert("Failed to create queue. Please try again.");
+      success("Queue item added successfully!", {
+        id: "create-queue",
+        description: `${values.queueNumber} - ${values.name}`,
+      });
+    } catch (err) {
+      console.error("Failed to create queue:", err);
+      error("Failed to create queue", {
+        id: "create-queue",
+        description: "Please try again later.",
+      });
     } finally {
       setLoading(false);
     }

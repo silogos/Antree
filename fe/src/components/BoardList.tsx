@@ -1,7 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Plus, Activity, LayoutGrid, ChevronRight, CheckCircle, AlertCircle, Info, Loader2 } from "lucide-react";
 import { useQueueList } from "../hooks/useQueueList";
 import type { Queue } from "../types";
+import { useToast } from "../hooks/use-toast";
+import { Card, CardContent } from "./ui/Card";
+import { Button } from "./ui/Button";
+import { Footer } from "./Footer";
 
 const renderContent = ({
   queues,
@@ -13,8 +18,8 @@ const renderContent = ({
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading queues...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-3 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-slate-500 font-medium">Loading queues...</p>
         </div>
       </div>
     );
@@ -22,14 +27,17 @@ const renderContent = ({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-8 bg-gray-700 rounded-lg max-w-md">
-          <h2 className="text-2xl font-bold mb-4 text-white">Error</h2>
-          <p className="text-gray-300 mb-4">{error}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-slate-200 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-slate-800">Error</h2>
+          <p className="text-slate-500 mb-6">{error}</p>
           <button
             type="button"
             onClick={fetchQueues}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow"
           >
             Retry
           </button>
@@ -40,15 +48,22 @@ const renderContent = ({
 
   if (queues.length === 0)
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-8 bg-gray-700 rounded-lg max-w-md">
-          <h2 className="text-2xl font-bold mb-4 text-white">No Queues Found</h2>
-          <p className="text-gray-300 mb-4">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-slate-200 max-w-md">
+          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LayoutGrid className="w-10 h-10 text-slate-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-slate-800">No Queues Found</h2>
+          <p className="text-slate-500 mb-4">
             Create a queue to get started with queue management.
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-slate-400 mb-6">
             Hint: Use the backend seed script to create initial queues.
           </p>
+          <Button className="shadow-sm hover:shadow transition-shadow">
+            <Plus size={16} className="mr-2" />
+            Create First Queue
+          </Button>
         </div>
       </div>
     );
@@ -59,47 +74,56 @@ const renderContent = ({
         <Link
           key={queue.id}
           to={`/queues/${queue.id}`}
-          className="block p-6 bg-gray-700 rounded-lg border border-gray-600 hover:border-blue-500 hover:shadow-lg transition-all duration-200"
+          className="group"
         >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {queue.name}
-              </h3>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    queue.isActive
-                      ? "bg-green-900 text-green-300"
-                      : "bg-gray-600 text-gray-300"
-                  }`}
-                >
-                  {queue.isActive ? "Active" : "Inactive"}
-                </span>
+          <Card className="h-full border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2 truncate group-hover:text-blue-600 transition-colors">
+                    {queue.name}
+                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {queue.isActive ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold border border-emerald-200">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></span>
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold border border-slate-200">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 ml-2">
+                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
               </div>
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <title>arrow</title>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-600">
-            <p className="text-sm text-gray-400">
-              Created: {new Date(queue.createdAt).toLocaleDateString()}
-            </p>
-          </div>
+              <div className="pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-slate-500">Created</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {new Date(queue.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    View
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </Link>
       ))}
     </div>
@@ -108,34 +132,122 @@ const renderContent = ({
 
 /**
  * BoardList Component
- * Displays all available queues as clickable cards
+ * Displays all available queues as clickable cards with modern design
  * Shown at root route (/)
  */
 export function BoardList() {
   const queueList = useQueueList();
+  const { success, error, info, warning, loading } = useToast();
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Fetch queues on mount - only run once
     queueList.fetchQueues();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [queueList.fetchQueues]);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-800">
-      {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header - BoardList's own header */}
+      <header className="bg-gray-900 border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left side - Title and Time */}
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold text-gray-100">Queue Boards</h1>
+              <div className="hidden sm:block text-sm text-gray-400 font-mono">
+                {formatTime(currentTime)}
+              </div>
+            </div>
+
+            {/* Right side - New Queue Button */}
+            <Button
+              size="sm"
+              className="shadow-sm hover:shadow transition-shadow hidden sm:flex"
+            >
+              <Plus size={16} className="mr-2" />
+              New Queue
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 min-h-0">
+        {/* Queue Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-white">Queue Boards</h1>
-          <p className="text-gray-400 mt-2">
-            Select a queue to manage its batches
-          </p>
+          {/* Toast Demo Section */}
+          <div className="mb-8 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">Toast Notification Demo</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => success("Success!", { description: "This is a success toast notification." })}
+              >
+                <CheckCircle size={14} className="mr-1" />
+                Success
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => error("Error!", { description: "This is an error toast notification." })}
+              >
+                <AlertCircle size={14} className="mr-1" />
+                Error
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => info("Info", { description: "This is an info toast notification." })}
+              >
+                <Info size={14} className="mr-1" />
+                Info
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => warning("Warning!", { description: "This is a warning toast notification." })}
+              >
+                <AlertCircle size={14} className="mr-1" />
+                Warning
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  loading("Loading...", { id: "loading-demo", description: "Please wait..." });
+                  setTimeout(() => {
+                    success("Completed!", { id: "loading-demo", description: "Operation finished successfully." });
+                  }, 2000);
+                }}
+              >
+                <Loader2 size={14} className="mr-1" />
+                Loading
+              </Button>
+            </div>
+          </div>
+
+          {renderContent(queueList)}
         </div>
       </div>
 
-      {/* Queue Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderContent(queueList)}
-      </div>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
