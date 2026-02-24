@@ -3,14 +3,14 @@
  * Business logic for status operations
  */
 
-import { db } from '../db/index.js';
-import { queueSessionStatuses } from '../db/schema.js';
+import { db } from '../../db/index.js';
+import { queueSessionStatuses } from '../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueSessionStatus } from '../db/schema.js';
-import type { CreateStatusInput, UpdateStatusInput } from '../validators/status.validator.js';
-import { getDatabaseErrorMessage } from '../middleware/error.js';
-import { sseBroadcaster } from '../sse/broadcaster.js';
+import type { NewQueueSessionStatus } from '../../db/schema.js';
+import type { CreateStatusInput, UpdateStatusInput } from './status.validator.js';
+import { getDatabaseErrorMessage } from '../../middleware/error.middleware.js';
+import { sseBroadcaster } from '../../sse/broadcaster.js';
 
 export class StatusService {
   /**

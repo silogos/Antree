@@ -5,15 +5,15 @@ import { logger } from "hono/logger";
 import { closeDb } from "./db/index.js";
 import { logger as structuredLogger } from "./lib/logger.js";
 
-import { healthCheckRoutes } from "./routes/health.js";
-import { queuesRoutes } from "./routes/queues.js";
-import { sessionRoutes } from "./routes/sessions.js";
-import { templateRoutes } from "./routes/templates.js";
+import { healthCheckRoutes } from "./features/health/health.route.js";
+import { queuesRoutes } from "./features/queues/queues.route.js";
+import { sessionRoutes } from "./features/sessions/sessions.route.js";
+import { templateRoutes } from "./features/templates/templates.route.js";
 import { sseBroadcaster } from "./sse/broadcaster.js";
 import { sseRoutes } from "./sse/index.js";
-import { itemRoutes, sessionItemRoutes } from "./routes/items.js";
-import { errorHandler } from "./middleware/error.js";
-import { metricsMiddleware } from "./middleware/metrics.js";
+import { itemRoutes, sessionItemRoutes } from "./features/items/items.route.js";
+import { errorHandler } from "./middleware/error.middleware.js";
+import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 
 const app = new Hono();
 

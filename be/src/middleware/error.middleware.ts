@@ -12,7 +12,7 @@ import {
 	validationErrorResponse,
 	type ApiResponse,
 	ErrorCode,
-} from "./response.js";
+} from "./response.middleware.js";
 import { logger } from "../lib/logger.js";
 
 /**

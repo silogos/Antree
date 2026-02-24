@@ -3,15 +3,15 @@
  * Business logic for queue item operations
  */
 
-import { db } from '../db/index.js';
-import { queueItems } from '../db/schema.js';
+import { db } from '../../db/index.js';
+import { queueItems } from '../../db/schema.js';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueItem, QueueItem } from '../db/schema.js';
-import type { CreateQueueItemInput, UpdateQueueItemInput } from '../validators/queue-item.validator.js';
-import { sseBroadcaster } from '../sse/broadcaster.js';
-import type { PaginatedResponse, PaginationParams } from '../lib/pagination.js';
-import { calculatePaginationMetadata, getPaginationOffset } from '../lib/pagination.js';
+import type { NewQueueItem, QueueItem } from '../../db/schema.js';
+import type { CreateQueueItemInput, UpdateQueueItemInput } from './queue-item.validator.js';
+import { sseBroadcaster } from '../../sse/broadcaster.js';
+import type { PaginatedResponse, PaginationParams } from '../../lib/pagination.js';
+import { calculatePaginationMetadata, getPaginationOffset } from '../../lib/pagination.js';
 
 export class QueueItemService {
   /**

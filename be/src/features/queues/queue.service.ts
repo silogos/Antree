@@ -5,8 +5,8 @@
 
 import { and, desc, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import { db } from "../db/index.js";
-import type { NewQueue, Queue, QueueItem, QueueSession } from "../db/schema.js";
+import { db } from "../../db/index.js";
+import type { NewQueue, Queue, QueueItem, QueueSession } from "../../db/schema.js";
 import {
 	queueItems,
 	queueSessionStatuses,
@@ -14,15 +14,15 @@ import {
 	queues,
 	queueTemplateStatuses,
 	queueTemplates,
-} from "../db/schema.js";
-import { sseBroadcaster } from "../sse/broadcaster.js";
+} from "../../db/schema.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
 import type {
 	CreateQueueInput,
 	ResetQueueInput,
 	UpdateQueueInput,
-} from "../validators/queue.validator.js";
-import type { PaginatedResponse, PaginationParams } from "../lib/pagination.js";
-import { calculatePaginationMetadata, getPaginationOffset } from "../lib/pagination.js";
+} from "./queue.validator.js";
+import type { PaginatedResponse, PaginationParams } from "../../lib/pagination.js";
+import { calculatePaginationMetadata, getPaginationOffset } from "../../lib/pagination.js";
 
 export class QueueService {
 	/**

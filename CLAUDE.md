@@ -94,26 +94,50 @@ The system is built around a four-level hierarchy:
 - React Router - Client-side routing
 - Zod - Schema validation
 
-### Backend Structure
+### Backend Structure (Feature-Based)
 
 ```
 be/src/
-├── db/
+├── db/                    # Database layer
 │   ├── schema.ts          # Drizzle schema definitions (all tables)
 │   └── index.ts           # Database connection
-├── routes/
-│   ├── queues.ts          # Queue CRUD endpoints
-│   ├── sessions.ts        # Session lifecycle endpoints
-│   ├── items.ts           # Queue item endpoints
-│   └── templates.ts       # Template management endpoints
-├── services/
-│   ├── session.service.ts # Session business logic
-│   └── [other services]
-├── sse/
+├── features/              # 🆕 Feature modules (grouped by domain)
+│   ├── health/
+│   │   └── health.route.ts
+│   ├── items/             # Queue items feature
+│   │   ├── items.route.ts
+│   │   ├── queue-items.route.ts
+│   │   ├── queue-item.service.ts
+│   │   └── queue-item.validator.ts
+│   ├── queues/            # Queue management feature
+│   │   ├── queues.route.ts
+│   │   ├── queue.service.ts
+│   │   └── queue.validator.ts
+│   ├── sessions/          # Session lifecycle feature
+│   │   ├── sessions.route.ts
+│   │   ├── session.service.ts
+│   │   └── session.validator.ts
+│   ├── statuses/          # Status management feature
+│   │   ├── status.service.ts
+│   │   └── status.validator.ts
+│   └── templates/         # Template management feature
+│       ├── templates.route.ts
+│       ├── template.service.ts
+│       └── template.validator.ts
+├── lib/                   # Shared utilities
+│   ├── logger.ts
+│   ├── metrics.ts
+│   └── pagination.ts
+├── middleware/            # Global middleware
+│   ├── error.middleware.ts
+│   ├── metrics.middleware.ts
+│   ├── response.middleware.ts
+│   └── validation.middleware.ts
+├── sse/                   # Server-Sent Events
 │   ├── broadcaster.ts     # SSE connection manager & event broadcaster
 │   └── index.ts           # SSE route handlers
-├── middleware/            # Request/response middleware
-├── validators/            # Zod validation schemas
+├── types/                 # Shared TypeScript types
+│   └── session.dto.ts
 └── index.ts              # Main server entry point
 ```
 
@@ -242,3 +266,114 @@ When updating item status via `PATCH /items/:itemId/status`:
 - Test files in `be/src/tests/`
 - Use Vitest for backend testing
 - Test utilities in `be/src/tests/utils.ts`
+
+## Backend Conventions
+
+### File Naming
+- **Routes**: Use `.route.ts` suffix (e.g., `queues.route.ts`)
+- **Services**: Use `.service.ts` suffix (e.g., `queue.service.ts`)
+- **Validators**: Use `.validator.ts` suffix (e.g., `queue.validator.ts`)
+- **Middleware**: Use `.middleware.ts` suffix (e.g., `error.middleware.ts`)
+
+### Code Conventions
+- **ES Modules**: All imports must use `.js` extension (TypeScript compiles to JS)
+- **Hono**: Async route handlers, use `c.json()` for responses
+- **Drizzle**: Use `db` instance from `db/index.ts`, relations defined in schema.ts
+- **Feature Organization**: Each feature groups its route, service, and validator together
+
+### Import Patterns
+```typescript
+// Within same feature - use relative import
+import { queueService } from "./queue.service.js";
+
+// Cross-feature imports - use feature path
+import { sessionService } from "../sessions/session.service.js";
+
+// Shared utilities - go up to src root
+import { successResponse } from "../../middleware/response.middleware.js";
+import { db } from "../../db/index.js";
+```
+
+### Anti-Patterns
+- **No CommonJS** imports - must use ES modules with `.js` extension
+- **No direct SQL queries** - use Drizzle ORM
+- **No missing `.js` extensions** - ES modules requirement
+- **Don't split features** - keep related route/service/validator together
+
+### Where to Look
+| Task | Location | Notes |
+|------|----------|-------|
+| Backend entry | `be/src/index.ts` | Hono app with CORS + logger |
+| Frontend entry | `fe/src/main.tsx` | React mount point |
+| DB schema | `be/src/db/schema.ts` | Table definitions (all tables) |
+| DB connection | `be/src/db/index.ts` | PostgreSQL connection via `postgres` package |
+| Route registration | `be/src/index.ts` | All feature routes mounted here |
+| SSE events | `be/src/sse/broadcaster.ts` | Broadcast queue/session changes |
+| Feature logic | `be/src/features/*/` | Each feature is self-contained |
+| Components | `fe/src/components/` | Kanban board, modals, UI components |
+| API services | `fe/src/services/` | Backend API calls |
+| Hooks | `fe/src/hooks/` | React hooks for state/SSE |
+
+## Project Structure
+
+```
+antree-app/
+├── be/                 # @antree/backend - Hono + Drizzle ORM + PostgreSQL
+├── fe/                 # @antree/frontend - React + Vite + TailwindCSS
+├── docs/               # Project documentation
+├── ss/                 # Screenshots/assets
+├── package.json        # Workspace scripts (dev, build, start)
+├── pnpm-workspace.yaml # Monorepo config
+└── docker-compose.yml  # Docker orchestration
+```
+
+## Environment Variables
+
+### Backend (be/.env)
+| Variable | Required | Default | Description |
+|----------|-----------|----------|-------------|
+| `DATABASE_URL` | Yes | - | PostgreSQL connection string (e.g., `postgres://user:pass@host:5432/db`) |
+| `PORT` | No | 3001 | Backend server port |
+| `NODE_ENV` | No | development | Environment mode (development/production) |
+
+### Frontend (fe/.env)
+| Variable | Required | Default | Description |
+|----------|-----------|----------|-------------|
+| `VITE_API_URL` | No | http://localhost:3001 | Backend API base URL |
+
+### Docker Compose (root)
+| Variable | Required | Default | Description |
+|----------|-----------|----------|-------------|
+| `POSTGRES_USER` | No | antree_user | PostgreSQL username |
+| `POSTGRES_PASSWORD` | No | antree_password | PostgreSQL password |
+| `POSTGRES_DB` | No | antree_db | PostgreSQL database name |
+| `POSTGRES_PORT` | No | 5432 | PostgreSQL port |
+
+## Deployment
+
+### Docker Deployment
+```bash
+# Start all services (backend + frontend + postgres)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Rebuild and start
+docker-compose up -d --build
+```
+
+### Database Migrations
+```bash
+# Generate migration from schema changes
+pnpm db:generate
+
+# Push schema directly to database (for development)
+pnpm db:push
+
+# Run migrations (for production)
+pnpm db:migrate
+```

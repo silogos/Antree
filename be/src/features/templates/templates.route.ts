@@ -9,15 +9,15 @@ import {
 	internalErrorResponse,
 	notFoundResponse,
 	successResponse,
-} from "../middleware/response.js";
-import { validateBody } from "../middleware/validation.js";
+} from "../../middleware/response.middleware.js";
+import { validateBody } from "../../middleware/validation.middleware.js";
 
-import { templateService } from "../services/template.service.js";
-import { sseBroadcaster } from "../sse/broadcaster.js";
+import { templateService } from "./template.service.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
 import {
 	createTemplateSchema,
 	createTemplateStatusSchema,
-} from "../validators/template.validator.js";
+} from "./template.validator.js";
 
 export const templateRoutes = new Hono();
 

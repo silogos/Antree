@@ -4,21 +4,21 @@
  */
 
 import { Hono } from 'hono';
-import { queueItemService } from '../services/queue-item.service.js';
-import { sseBroadcaster } from '../sse/broadcaster.js';
+import { queueItemService } from './queue-item.service.js';
+import { sseBroadcaster } from '../../sse/broadcaster.js';
 import {
   successResponse,
   notFoundResponse,
   validationErrorResponse,
   internalErrorResponse,
-} from '../middleware/response.js';
-import { validateBody } from '../middleware/validation.js';
+} from '../../middleware/response.middleware.js';
+import { validateBody } from '../../middleware/validation.middleware.js';
 import {
   createQueueItemSchema,
   updateQueueItemSchema,
-} from '../validators/queue-item.validator.js';
-import type { QueueItemDTO } from '../types/session.dto.js';
-import { parsePaginationParams } from '../lib/pagination.js';
+} from './queue-item.validator.js';
+import type { QueueItemDTO } from '../../types/session.dto.js';
+import { parsePaginationParams } from '../../lib/pagination.js';
 
 export const queueItemRoutes = new Hono();
 

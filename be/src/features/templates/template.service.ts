@@ -3,12 +3,12 @@
  * Business logic for template operations
  */
 
-import { db } from '../db/index.js';
-import { queueTemplates, queueTemplateStatuses } from '../db/schema.js';
+import { db } from '../../db/index.js';
+import { queueTemplates, queueTemplateStatuses } from '../../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueTemplate, NewQueueTemplateStatus } from '../db/schema.js';
-import type { CreateTemplateInput, UpdateTemplateInput, CreateTemplateStatusInput } from '../validators/template.validator.js';
+import type { NewQueueTemplate, NewQueueTemplateStatus } from '../../db/schema.js';
+import type { CreateTemplateInput, UpdateTemplateInput, CreateTemplateStatusInput } from './template.validator.js';
 
 export class TemplateService {
   /**

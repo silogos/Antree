@@ -6,22 +6,22 @@
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 // Imports for PATCH /session-statuses/{id}
-import { db } from "../db/index.js";
-import { queueSessionStatuses } from "../db/schema.js";
+import { db } from "../../db/index.js";
+import { queueSessionStatuses } from "../../db/schema.js";
 import {
 	internalErrorResponse,
 	notFoundResponse,
 	successResponse,
-} from "../middleware/response.js";
-import { validateBody } from "../middleware/validation.js";
-import { sessionService } from "../services/session.service.js";
-import { sseBroadcaster } from "../sse/broadcaster.js";
+} from "../../middleware/response.middleware.js";
+import { validateBody } from "../../middleware/validation.middleware.js";
+import { sessionService } from "./session.service.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
 import {
 	createSessionSchema,
 	lifecycleUpdateSchema,
 	updateSessionSchema,
-} from "../validators/session.validator.js";
-import { parsePaginationParams } from "../lib/pagination.js";
+} from "./session.validator.js";
+import { parsePaginationParams } from "../../lib/pagination.js";
 
 export const sessionRoutes = new Hono();
 

@@ -8,17 +8,17 @@ import {
 	internalErrorResponse,
 	notFoundResponse,
 	successResponse,
-} from "../middleware/response.js";
-import { validateBody } from "../middleware/validation.js";
-import { queueService } from "../services/queue.service.js";
-import { sessionService } from "../services/session.service.js";
-import { sseBroadcaster } from "../sse/broadcaster.js";
+} from "../../middleware/response.middleware.js";
+import { validateBody } from "../../middleware/validation.middleware.js";
+import { queueService } from "./queue.service.js";
+import { sessionService } from "../sessions/session.service.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
 import {
 	createQueueSchema,
 	updateQueueSchema,
-} from "../validators/queue.validator.js";
-import { createSessionViaQueueSchema } from "../validators/session.validator.js";
-import { parsePaginationParams, type PaginationParams } from "../lib/pagination.js";
+} from "./queue.validator.js";
+import { createSessionViaQueueSchema } from "../sessions/session.validator.js";
+import { parsePaginationParams, type PaginationParams } from "../../lib/pagination.js";
 
 export const queuesRoutes = new Hono();
 

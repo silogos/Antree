@@ -3,29 +3,29 @@
  * Business logic for session operations
  */
 
-import { db } from '../db/index.js';
+import { db } from '../../db/index.js';
 import {
   queueSessions,
   queues,
   queueTemplates,
   queueTemplateStatuses,
   queueSessionStatuses,
-} from '../db/schema.js';
+} from '../../db/schema.js';
 import { eq, and, desc, isNull, ne, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type {
   NewQueueSession,
   QueueSession,
   QueueSessionStatus,
-} from '../db/schema.js';
+} from '../../db/schema.js';
 import type {
   CreateSessionInput,
   UpdateSessionInput,
-} from '../validators/session.validator.js';
-import type { SessionLifecycleDTO } from '../types/session.dto.js';
-import { sseBroadcaster } from '../sse/broadcaster.js';
-import type { PaginatedResponse, PaginationParams } from '../lib/pagination.js';
-import { calculatePaginationMetadata, getPaginationOffset } from '../lib/pagination.js';
+} from './session.validator.js';
+import type { SessionLifecycleDTO } from '../../types/session.dto.js';
+import { sseBroadcaster } from '../../sse/broadcaster.js';
+import type { PaginatedResponse, PaginationParams } from '../../lib/pagination.js';
+import { calculatePaginationMetadata, getPaginationOffset } from '../../lib/pagination.js';
 
 export class SessionService {
   /**

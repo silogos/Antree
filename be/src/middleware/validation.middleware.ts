@@ -5,7 +5,7 @@
 import type { Context, Next } from 'hono';
 import type { ZodSchema } from 'zod';
 import { ZodError } from 'zod';
-import { validationErrorResponse } from './response.js';
+import { validationErrorResponse } from './response.middleware.js';
 
 // Extend Hono Context type to include validated data
 declare module 'hono' {
