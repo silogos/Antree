@@ -11,10 +11,12 @@ import { templateRoutes } from "./routes/templates.js";
 import { sseBroadcaster } from "./sse/broadcaster.js";
 import { sseRoutes } from "./sse/index.js";
 import { itemRoutes, sessionItemRoutes } from "./routes/items.js";
+import { errorHandler } from "./middleware/error.js";
 
 const app = new Hono();
 
 // Middleware
+app.use("*", errorHandler);
 app.use("*", logger());
 app.use(
 	"*",
