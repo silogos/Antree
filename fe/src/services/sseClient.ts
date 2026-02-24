@@ -1,9 +1,15 @@
 import type { SSEEventType } from "../types";
-import { API_BASE_URL } from "./board.service";
+import { API_BASE_URL } from "./api";
 
 /**
- * SSE Client Options
+ * SSE Event Structure
  */
+export interface SSEEvent<T = unknown> {
+  type: SSEEventType | "connected";
+  data: T;
+  timestamp: string;
+}
+
 interface SSEClientOptions {
   onMessage?: (event: SSEEvent) => void;
   onError?: (error: Event) => void;
@@ -11,143 +17,147 @@ interface SSEClientOptions {
   onClose?: () => void;
 }
 
-/**
- * SSE Event
- */
-export interface SSEEvent<T = unknown> {
-  type: SSEEventType;
-  data: T;
-  timestamp: string;
-}
-
-type EventCallback<T = unknown> = (event: SSEEvent<T>) => void;
-type ErrorHandler = (error: Event) => void;
-type ConnectionHandler = () => void;
-
-/**
- * SSE Client Options
- */
-interface SSEClientOptions {
-  onMessage?: EventCallback;
-  onError?: ErrorHandler;
-  onOpen?: ConnectionHandler;
-  onClose?: ConnectionHandler;
-}
-
-/**
- * SSE Client for real-time batch updates
- */
 export class SSEClient {
   private eventSource: EventSource | null = null;
   private batchId: string | null = null;
+  private sessionId: string | null = null;
   private options: SSEClientOptions = {};
+
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectDelay = 3000; // 3 seconds
+  private reconnectDelay = 3000;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
-   * Connect to SSE endpoint for a batch
+   * Universal internal connect method
    */
-  connect(batchId: string, options: SSEClientOptions = {}): void {
-    this.disconnect();
-    this.batchId = batchId;
-    this.options = options;
-    this.reconnectAttempts = 0;
+  private internalConnect(url: string, isSession: boolean, id: string): void {
+    this.cleanup(); // Stop any existing connections or pending reconnects
 
-    const url = `${API_BASE_URL.replace("/api", "")}/sse/batches/${batchId}/events`;
     console.log(`[SSE Client] Connecting to ${url}`);
-
     this.eventSource = new EventSource(url);
 
     this.eventSource.onopen = () => {
-      console.log(`[SSE Client] Connected to batch ${batchId}`);
+      console.log(
+        `[SSE Client] Connected to ${isSession ? "session" : "batch"} ${id}`,
+      );
       this.reconnectAttempts = 0;
-      options.onOpen?.();
+      this.options.onOpen?.();
     };
 
     this.eventSource.onmessage = (event) => {
       try {
         const data: SSEEvent = JSON.parse(event.data);
-        console.log(`[SSE Client] Received event:`, data.type);
-        options.onMessage?.(data);
+        this.options.onMessage?.(data);
       } catch (error) {
         console.error("[SSE Client] Failed to parse event:", error);
       }
     };
 
     this.eventSource.onerror = (error) => {
-      console.error("[SSE Client] Error:", error);
-      options.onError?.(error);
-
-      // Attempt to reconnect
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelay * this.reconnectAttempts;
-        console.log(
-          `[SSE Client] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
-        );
-
-        setTimeout(() => {
-          if (this.batchId) {
-            this.connect(this.batchId, this.options);
-          }
-        }, delay);
-      } else {
-        console.error("[SSE Client] Max reconnect attempts reached");
-        this.disconnect();
-        options.onClose?.();
-      }
+      console.error("[SSE Client] Connection Error:", error);
+      this.options.onError?.(error);
+      this.handleReconnect(isSession, id);
     };
   }
 
-  /**
-   * Disconnect from SSE endpoint
-   */
-  disconnect(): void {
-    if (this.eventSource) {
-      console.log(`[SSE Client] Disconnecting from batch ${this.batchId}`);
-      this.eventSource.close();
-      this.eventSource = null;
-      this.batchId = null;
+  private handleReconnect(isSession: boolean, id: string): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = this.reconnectDelay * this.reconnectAttempts;
+
+      console.log(
+        `[SSE Client] Reconnecting in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
+
+      this.reconnectTimeout = setTimeout(() => {
+        if (isSession && this.sessionId) {
+          this.connectSession(this.sessionId, this.options);
+        } else if (!isSession && this.batchId) {
+          this.connect(this.batchId, this.options);
+        }
+      }, delay);
+    } else {
+      console.error("[SSE Client] Max reconnect attempts reached");
+      this.disconnect();
+      this.options.onClose?.();
     }
   }
 
   /**
-   * Check if connected
+   * Connect via Batch ID
    */
-  isConnected(): boolean {
-    return (
-      this.eventSource !== null &&
-      this.eventSource.readyState === EventSource.OPEN
-    );
+  connect(batchId: string, options: SSEClientOptions = {}): void {
+    this.batchId = batchId;
+    this.sessionId = null;
+    this.options = options;
+    const baseUrl = API_BASE_URL.replace(/\/api$/, "");
+    const url = `${baseUrl}/sse/batches/${batchId}/events`;
+    this.internalConnect(url, false, batchId);
   }
 
   /**
-   * Get current batch ID
+   * Connect via Session ID
    */
-  getBatchId(): string | null {
+  connectSession(sessionId: string, options: SSEClientOptions = {}): void {
+    this.sessionId = sessionId;
+    this.batchId = null;
+    this.options = options;
+    const baseUrl = API_BASE_URL.replace(/\/api$/, "");
+    const url = `${baseUrl}/sessions/${sessionId}/stream`;
+    this.internalConnect(url, true, sessionId);
+  }
+
+  /**
+   * Stops active connection and clears any pending reconnection timers
+   */
+  private cleanup(): void {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+  }
+
+  disconnect(): void {
+    console.log(`[SSE Client] Manual disconnect triggered`);
+    this.cleanup();
+    this.batchId = null;
+    this.sessionId = null;
+    this.reconnectAttempts = 0;
+  }
+
+  isConnected(): boolean {
+    return this.eventSource?.readyState === EventSource.OPEN;
+  }
+
+  getBatchId() {
     return this.batchId;
+  }
+  getSessionId() {
+    return this.sessionId;
   }
 }
 
 /**
- * Singleton SSE Client instance
+ * Singleton instance management
  */
-let sseClientInstance: SSEClient | null = null;
-
-/**
- * Get or create SSE Client instance
- */
-export function getSSEClient(): SSEClient {
-  if (!sseClientInstance) {
-    sseClientInstance = new SSEClient();
+const getGlobalInstance = (): SSEClient => {
+  const key = "__sseClientInstance";
+  if (!(globalThis as any)[key]) {
+    (globalThis as any)[key] = new SSEClient();
   }
-  return sseClientInstance;
+  return (globalThis as any)[key];
+};
 
-  // Cleanup on page unload
-  if (typeof window !== "undefined") {
-    window.addEventListener("beforeunload", () => {
-      sseClientInstance?.disconnect();
-    });
-  }
+export const getSSEClient = () => getGlobalInstance();
+
+// Auto-cleanup on tab close
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    getGlobalInstance().disconnect();
+  });
 }

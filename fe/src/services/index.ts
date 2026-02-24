@@ -3,12 +3,11 @@
  * Central export point for all services
  */
 
-export { batchService } from "./batch.service";
 // API Types
-export type { ApiErrorResponse, ApiResponse } from "./board.service";
+export type { ApiErrorResponse, ApiResponse } from "./api";
 
 // API Services
-export { boardService } from "./board.service";
+export { boardService } from "./api";
 export type { HttpInstance, HttpRequestConfig } from "./http";
 // HTTP Client
 export { default as http } from "./http";

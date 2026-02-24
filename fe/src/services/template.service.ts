@@ -1,5 +1,5 @@
 import type { CreateTemplateInput, QueueTemplate } from "../types";
-import type { ApiResponse } from "./board.service";
+import type { ApiResponse } from "./api";
 import http from "./http";
 
 /**
