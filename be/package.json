@@ -18,7 +18,10 @@
     "db:seed:sample-items": "tsx --env-file=.env src/scripts/seed-sample-items.ts",
     "simulate": "tsx --env-file=.env scripts/simulate-banking-queue.ts",
     "simulate-http": "tsx --env-file=.env scripts/simulate-banking-queue-http.ts",
-    "simulate-simple": "tsx --env-file=.env scripts/simulate-queue-simple.ts"
+    "simulate-simple": "tsx --env-file=.env scripts/simulate-queue-simple.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
@@ -33,8 +36,11 @@
     "@types/node": "^20.11.17",
     "@types/pg": "^8.16.0",
     "@types/uuid": "^11.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "drizzle-kit": "^0.31.9",
     "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
   }
 }

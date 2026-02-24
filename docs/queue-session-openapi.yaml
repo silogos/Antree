@@ -1200,21 +1200,21 @@ components:
           type: string
           description: Queue display name
           example: "Customer Service"
-        template_id:
+        templateId:
           type: string
           format: uuid
           description: Reference to the template this queue uses
           example: "660e8400-e29b-41d4-a716-446655440001"
-        is_active:
+        isActive:
           type: boolean
           description: Whether the queue is active (soft delete sets to false)
           example: true
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Queue creation timestamp
           example: "2026-02-19T10:00:00.000Z"
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: Queue last update timestamp
@@ -1222,10 +1222,10 @@ components:
       required:
         - id
         - name
-        - template_id
-        - is_active
-        - created_at
-        - updated_at
+        - templateId
+        - isActive
+        - createdAt
+        - updatedAt
 
     CreateQueueRequest:
       type: object
@@ -1235,14 +1235,14 @@ components:
           type: string
           description: Queue display name
           example: "Customer Service"
-        template_id:
+        templateId:
           type: string
           format: uuid
           description: Reference to the template this queue should use
           example: "660e8400-e29b-41d4-a716-446655440001"
       required:
         - name
-        - template_id
+        - templateId
 
     UpdateQueueRequest:
       type: object
@@ -1252,7 +1252,7 @@ components:
           type: string
           description: Queue display name
           example: "Customer Service - Updated"
-        is_active:
+        isActive:
           type: boolean
           description: Whether the queue is active (soft delete)
           example: false
@@ -1266,7 +1266,7 @@ components:
           format: uuid
           description: Session unique identifier
           example: "770e8400-e29b-41d4-a716-446655440002"
-        queue_id:
+        queueId:
           type: string
           format: uuid
           description: Reference to the parent queue
@@ -1275,40 +1275,40 @@ components:
           type: string
           description: Session display name
           example: "Morning Shift"
-        lifecycle_status:
+        status:
           type: string
           enum: [active, paused, completed, archived]
           description: Session lifecycle state (runtime status)
           example: "active"
-        session_number:
+        sessionNumber:
           type: integer
           description: Sequential session number within the queue
           example: 12
-        started_at:
+        startedAt:
           type: string
           format: date-time
           nullable: true
           description: Session start timestamp
           example: "2026-02-19T08:00:00.000Z"
-        ended_at:
+        endedAt:
           type: string
           format: date-time
           nullable: true
           description: Session end timestamp (null if active)
           example: null
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Session creation timestamp
           example: "2026-02-19T08:00:00.000Z"
       required:
         - id
-        - queue_id
+        - queueId
         - name
-        - lifecycle_status
-        - session_number
-        - started_at
-        - created_at
+        - status
+        - sessionNumber
+        - startedAt
+        - createdAt
 
     CreateSessionRequest:
       type: object
@@ -1334,13 +1334,13 @@ components:
       type: object
       description: Request body for updating session lifecycle status
       properties:
-        lifecycle_status:
+        status:
           type: string
           enum: [active, paused, completed, archived]
           description: New lifecycle status for the session
           example: "paused"
       required:
-        - lifecycle_status
+        - status
 
     SessionStatus:
       type: object
@@ -1351,7 +1351,7 @@ components:
           format: uuid
           description: Session status unique identifier
           example: "880e8400-e29b-41d4-a716-446655440003"
-        session_id:
+        sessionId:
           type: string
           format: uuid
           description: Reference to the parent session
@@ -1370,7 +1370,7 @@ components:
           example: 2
       required:
         - id
-        - session_id
+        - sessionId
         - label
         - color
         - order
@@ -1401,26 +1401,26 @@ components:
           format: uuid
           description: Queue item unique identifier
           example: "990e8400-e29b-41d4-a716-446655440004"
-        queue_id:
+        queueId:
           type: string
           format: uuid
           description: Reference to the parent queue
           example: "550e8400-e29b-41d4-a716-446655440000"
-        session_id:
+        sessionId:
           type: string
           format: uuid
           description: Reference to the parent session (immutable)
           example: "770e8400-e29b-41d4-a716-446655440002"
-        status_id:
+        statusId:
           type: string
           format: uuid
           description: Reference to the session status
           example: "880e8400-e29b-41d4-a716-446655440003"
-        queue_number:
+        queueNumber:
           type: string
           description: Queue number within the session (resets per session)
           example: "A-12"
-        display_name:
+        displayName:
           type: string
           description: Display name for the queue item
           example: "Budi"
@@ -1429,35 +1429,35 @@ components:
           additionalProperties: true
           description: Additional metadata for the queue item
           example:
-            order_id: "ORD-99123"
+            orderId: "ORD-99123"
             channel: "grab"
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Queue item creation timestamp
           example: "2026-02-19T08:15:00.000Z"
       required:
         - id
-        - queue_id
-        - session_id
-        - status_id
-        - queue_number
-        - display_name
-        - created_at
+        - queueId
+        - sessionId
+        - statusId
+        - queueNumber
+        - displayName
+        - createdAt
 
     CreateQueueItemRequest:
       type: object
       description: Request body for creating a new queue item
       properties:
-        queue_number:
+        queueNumber:
           type: string
           description: Queue number within the session (auto-generated if not provided)
           example: "A-13"
-        display_name:
+        displayName:
           type: string
           description: Display name for the queue item
           example: "Siti"
-        status_id:
+        statusId:
           type: string
           format: uuid
           description: Initial status reference (defaults to first status if not provided)
@@ -1467,16 +1467,16 @@ components:
           additionalProperties: true
           description: Additional metadata for the queue item
           example:
-            order_id: "ORD-99124"
+            orderId: "ORD-99124"
             channel: "gojek"
       required:
-        - display_name
+        - displayName
 
     UpdateQueueItemRequest:
       type: object
       description: Request body for updating a queue item
       properties:
-        display_name:
+        displayName:
           type: string
           description: Display name for the queue item
           example: "Budi - Updated"
@@ -1485,7 +1485,7 @@ components:
           additionalProperties: true
           description: Additional metadata for the queue item (merged with existing)
           example:
-            order_id: "ORD-99123"
+            orderId: "ORD-99123"
             channel: "grab"
             notes: "VIP customer"
 
@@ -1493,13 +1493,13 @@ components:
       type: object
       description: Request body for updating a queue item's status
       properties:
-        status_id:
+        statusId:
           type: string
           format: uuid
           description: New status reference
           example: "880e8400-e29b-41d4-a716-446655440005"
       required:
-        - status_id
+        - statusId
 
     Template:
       type: object
@@ -1519,20 +1519,20 @@ components:
           nullable: true
           description: Template description
           example: "Standard queue flow for restaurants"
-        is_system_template:
+        isSystemTemplate:
           type: boolean
           description: Whether this is a system-provided template
           example: false
-        is_active:
+        isActive:
           type: boolean
           description: Whether the template is active
           example: true
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Template creation timestamp
           example: "2026-02-19T09:00:00.000Z"
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: Template last update timestamp
@@ -1540,10 +1540,10 @@ components:
       required:
         - id
         - name
-        - is_system_template
-        - is_active
-        - created_at
-        - updated_at
+        - isSystemTemplate
+        - isActive
+        - createdAt
+        - updatedAt
 
     CreateTemplateRequest:
       type: object
@@ -1567,7 +1567,7 @@ components:
           format: uuid
           description: Template status unique identifier
           example: "880e8400-e29b-41d4-a716-446655440003"
-        template_id:
+        templateId:
           type: string
           format: uuid
           description: Reference to the parent template
@@ -1586,7 +1586,7 @@ components:
           example: 1
       required:
         - id
-        - template_id
+        - templateId
         - label
         - color
         - order
