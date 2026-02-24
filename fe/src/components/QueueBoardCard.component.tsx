@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import type { Queue } from "../types";
-import { Card, CardContent } from "./ui/Card";
-import { Button } from "./ui/Button";
+import type { Queue } from "@/src/types/queue.types";
+import { Card, CardContent } from "./ui/Card.component";
+import { Button } from "./ui/Button.component";
 
 interface QueueBoardCardProps {
 	queue: Queue;

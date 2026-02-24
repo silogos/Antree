@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getSSEClient, type SSEEvent } from "../services/sseClient";
+import { getSSEClient, type SSEEvent } from "../services/sse.service";
 import type { QueueItem, QueueStatus } from "../types";
 
 /**

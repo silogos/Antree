@@ -7,7 +7,7 @@ import type { QueueSession, QueueTemplate, QueueTemplateStatus } from "../types"
 import { useToast } from "../hooks/use-toast";
 import { sessionService } from "../services/session.service";
 import { templateService } from "../services/template.service";
-import http from "../services/http";
+import http from "../services/http.service";
 import { Button } from "./ui/Button";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import {

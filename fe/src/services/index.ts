@@ -4,10 +4,10 @@
  */
 
 // API Types
-export type { ApiErrorResponse, ApiResponse } from "./api";
+export type { ApiErrorResponse, ApiResponse } from "../types/http.types";
 
 // API Services
-export { boardService } from "./api";
+export { boardService } from "../types/http.types";
 export type { HttpInstance, HttpRequestConfig } from "./http";
 // HTTP Client
 export { default as http } from "./http";

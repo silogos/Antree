@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Plus, Activity, LayoutGrid, CheckCircle, AlertCircle, Info, Loader2 } from "lucide-react";
-import { useQueueList } from "../hooks/useQueueList";
-import type { Queue } from "../types";
-import { useToast } from "../hooks/use-toast";
-import { Button } from "./ui/Button";
-import { Footer } from "./Footer";
-import { QueueBoardCard } from "./QueueBoardCard";
+import { useQueueList } from "../hooks/useQueueList.hook";
+import type { Queue } from "@/src/types/queue.types";
+import { useToast } from "../hooks/use-toast.hook";
+import { Button } from "./ui/Button.component";
+import { Footer } from "./Footer.component";
+import { QueueBoardCard } from "./QueueBoardCard.component";
 
 const renderContent = ({
   queues,

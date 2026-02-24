@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { getSSEClient, type SSEEvent } from "../services/sseClient";
+import { getSSEClient, type SSEEvent } from "../services/sse.service";
 import { SessionLifecycle } from "../types/queue";
-import type { QueueItem, QueueSession } from "../types";
+import type { Queue, QueueSession } from "../types";
 
 /**
- * Hook for real-time queue updates via SSE
+ * Hook for real-time queue list updates via SSE
  *
- * Connects to /sessions endpoint and handles:
+ * Connects to /queues endpoint and handles:
  * - Queue events: queue_created, queue_updated, queue_deleted
  * - Session lifecycle: session_created, session_updated, session_deleted, session_closed
  *
@@ -14,22 +14,22 @@ import type { QueueItem, QueueSession } from "../types";
  *
  * @example
  * ```tsx
- * const { isConnected, queues, connect, disconnect } = useQueueSSE({
+ * const { isConnected, queues, connect, disconnect } = useQueuesSSE({
  *   onQueueCreated: (queue) => console.log('New queue:', queue),
  *   onSessionCreated: (session) => console.log('New session:', session),
  *   onSessionClosed: (session) => console.log('Session closed:', session),
  * });
  * ```
  */
-export function useQueueSSE(options?: {
-  onQueueCreated?: (queue: QueueItem) => void;
-  onQueueUpdated?: (queue: QueueItem) => void;
+export function useQueuesSSE(options?: {
+  onQueueCreated?: (queue: Queue) => void;
+  onQueueUpdated?: (queue: Queue) => void;
   onQueueDeleted?: (data: { id: string }) => void;
   onSessionCreated?: (session: QueueSession) => void;
   onSessionUpdated?: (session: QueueSession) => void;
   onSessionDeleted?: (data: { id: string }) => void;
   onSessionClosed?: (session: QueueSession) => void;
-  initialQueues?: QueueItem[];
+  initialQueues?: Queue[];
   initialSessions?: QueueSession[];
 }) {
   const {
@@ -45,47 +45,47 @@ export function useQueueSSE(options?: {
   } = options || {};
 
   const [isConnected, setIsConnected] = useState(false);
-  const [queues, setQueues] = useState<QueueItem[]>(initialQueues);
+  const [queues, setQueues] = useState<Queue[]>(initialQueues);
   const [sessions, setSessions] = useState<QueueSession[]>(initialSessions);
   const sseClient = getSSEClient();
 
   const handleMessage = useCallback(
     (event: SSEEvent) => {
-      console.log("[useQueueSSE] Received event:", event.type, event.data);
+      console.log("[useQueuesSSE] Received event:", event.type, event.data);
 
       switch (event.type) {
         case "connected":
-          console.log("[useQueueSSE] SSE connected:", event.data);
+          console.log("[useQueuesSSE] SSE connected:", event.data);
           break;
 
         case "queue_created":
-          console.log("[useQueueSSE] Queue created:", event.data);
-          setQueues((prev) => [...prev, event.data as QueueItem]);
-          onQueueCreated?.(event.data as QueueItem);
+          console.log("[useQueuesSSE] Queue created:", event.data);
+          setQueues((prev) => [...prev, event.data as Queue]);
+          onQueueCreated?.(event.data as Queue);
           break;
 
         case "queue_updated":
-          console.log("[useQueueSSE] Queue updated:", event.data);
+          console.log("[useQueuesSSE] Queue updated:", event.data);
           setQueues((prev) =>
-            prev.map((q) => (q.id === (event.data as QueueItem).id ? (event.data as QueueItem) : q)),
+            prev.map((q) => (q.id === (event.data as Queue).id ? (event.data as Queue) : q)),
           );
-          onQueueUpdated?.(event.data as QueueItem);
+          onQueueUpdated?.(event.data as Queue);
           break;
 
         case "queue_deleted":
-          console.log("[useQueueSSE] Queue deleted:", event.data);
+          console.log("[useQueuesSSE] Queue deleted:", event.data);
           setQueues((prev) => prev.filter((q) => q.id !== (event.data as { id: string }).id));
           onQueueDeleted?.(event.data as { id: string });
           break;
 
         case "session_created":
-          console.log("[useQueueSSE] Session created:", event.data);
+          console.log("[useQueuesSSE] Session created:", event.data);
           setSessions((prev) => [...prev, event.data as QueueSession]);
           onSessionCreated?.(event.data as QueueSession);
           break;
 
         case "session_updated":
-          console.log("[useQueueSSE] Session updated:", event.data);
+          console.log("[useQueuesSSE] Session updated:", event.data);
           setSessions((prev) =>
             prev.map((s) => (s.id === (event.data as QueueSession).id ? (event.data as QueueSession) : s)),
           );
@@ -93,13 +93,13 @@ export function useQueueSSE(options?: {
           break;
 
         case "session_deleted":
-          console.log("[useQueueSSE] Session deleted:", event.data);
+          console.log("[useQueuesSSE] Session deleted:", event.data);
           setSessions((prev) => prev.filter((s) => s.id !== (event.data as { id: string }).id));
           onSessionDeleted?.(event.data as { id: string });
           break;
 
         case "session_closed":
-          console.log("[useQueueSSE] Session closed:", event.data);
+          console.log("[useQueuesSSE] Session closed:", event.data);
           setSessions((prev) =>
             prev.map((s) => {
               const closedSession = event.data as QueueSession;
@@ -112,7 +112,7 @@ export function useQueueSSE(options?: {
           break;
 
         default:
-          console.warn("[useQueueSSE] Unknown event type:", event.type);
+          console.warn("[useQueuesSSE] Unknown event type:", event.type);
       }
     },
     [
@@ -127,39 +127,39 @@ export function useQueueSSE(options?: {
   );
 
   useEffect(() => {
-    console.log("[useQueueSSE] Connecting to sessions SSE");
+    console.log("[useQueuesSSE] Connecting to queues SSE");
 
-    sseClient.connect("/sessions", {
+    sseClient.connect("/queues", {
       onMessage: handleMessage,
       onOpen: () => setIsConnected(true),
       onClose: () => setIsConnected(false),
       onError: (error) => {
-        console.error("[useQueueSSE] SSE error:", error);
+        console.error("[useQueuesSSE] SSE error:", error);
         setIsConnected(false);
       },
     });
 
     return () => {
-      console.log("[useQueueSSE] Disconnecting from sessions SSE");
+      console.log("[useQueuesSSE] Disconnecting from queues SSE");
       sseClient.disconnect();
     };
-  }, [handleMessage]);
+  }, [handleMessage, sseClient]);
 
   const connect = useCallback(() => {
-    console.log("[useQueueSSE] Reconnecting to sessions SSE");
-    sseClient.connect("/sessions", {
+    console.log("[useQueuesSSE] Reconnecting to queues SSE");
+    sseClient.connect("/queues", {
       onMessage: handleMessage,
       onOpen: () => setIsConnected(true),
       onClose: () => setIsConnected(false),
       onError: (error) => {
-        console.error("[useQueueSSE] SSE error:", error);
+        console.error("[useQueuesSSE] SSE error:", error);
         setIsConnected(false);
       },
     });
   }, [handleMessage, sseClient]);
 
   const disconnect = useCallback(() => {
-    console.log("[useQueueSSE] Disconnecting from sessions SSE");
+    console.log("[useQueuesSSE] Disconnecting from queues SSE");
     sseClient.disconnect();
     setIsConnected(false);
   }, [sseClient]);

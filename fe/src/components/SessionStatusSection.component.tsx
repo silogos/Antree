@@ -1,5 +1,5 @@
-import type { QueueItem, QueueSessionStatus } from "../types";
-import { QueueCard } from "./QueueCard";
+import type { QueueItem, QueueSessionStatus } from "@/src/types/queue.types";
+import { QueueItemCard } from "./QueueCard.component";
 
 interface SessionStatusSectionProps {
   status: QueueSessionStatus;
@@ -86,7 +86,7 @@ export function SessionStatusSection({
                 onClick={() => onQueueItemClick?.(queue)}
                 className="w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
               >
-                <QueueCard queue={queue} />
+                <QueueItemCard queue={queue} />
               </button>
             ))}
           </div>

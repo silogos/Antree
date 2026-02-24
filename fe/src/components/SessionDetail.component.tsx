@@ -3,24 +3,25 @@ import { Link, useParams } from "react-router-dom";
 import { Plus, ArrowLeft, Users, Activity, Play, Pause, CheckCircle2, Archive } from "lucide-react";
 import { sessionService } from "../services/session.service";
 import { queueItemService } from "../services/queue.service";
-import { useSound } from "../hooks/useSound";
-import { useSessionSSE } from "../hooks/useSessionSSE";
-import type { QueueSession, QueueSessionStatus, QueueItem } from "../types";
-import { SessionStatus } from "../types";
-import { Button } from "./ui/Button";
-import { Footer } from "./Footer";
-import { AddQueueModal } from "./AddQueueModal";
-import { QueueItemStatusModal } from "./QueueItemStatusModal";
-import { Topbar } from "./Topbar";
+import { useSound } from "../hooks/useSound.hook";
+import { useSessionSSE } from "../hooks/useSessionSSE.hook";
+
+
+import { Button } from "./ui/Button.component";
+import { Footer } from "./Footer.component";
+import { AddQueueModal } from "./AddQueueModal.component";
+import { QueueItemStatusModal } from "./QueueItemStatusModal.component";
+import { Topbar } from "./Topbar.component";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/Card";
-import { SessionStatusSection } from "./SessionStatusSection";
-import { useToast } from "../hooks/use-toast";
+} from "./ui/Card.component";
+import { SessionStatusSection } from "./SessionStatusSection.component";
+import { useToast } from "../hooks/use-toast.hook";
+import type { QueueSession, QueueSessionStatus, QueueItem, SessionStatus } from "../types/queue.types";
 
 /**
  * SessionDetail Component

@@ -3,8 +3,8 @@ import type {
   QueueStatus,
   UpdateStatusInput,
 } from "../types";
-import type { ApiResponse } from "./api";
-import http from "./http";
+import type { ApiResponse } from "../types/http.types";
+import http from "./http.service";
 
 /**
  * API Service - Statuses

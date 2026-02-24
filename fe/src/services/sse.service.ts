@@ -3,7 +3,7 @@
  */
 
 import type { SSEEventType } from "../types";
-import { API_BASE_URL } from "./api";
+import { API_BASE_URL } from "../types/http.types";
 
 /**
  * SSE Event Structure

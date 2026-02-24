@@ -11,21 +11,22 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useSound } from "../hooks/useSound";
+import { useSound } from "../hooks/useSound.hook";
 import { queueService } from "../services/queue-list.service";
 import { sessionService } from "../services/session.service";
-import type { Queue, QueueSession, SessionStatus } from "../types";
-import { Footer } from "./Footer";
-import { SessionModal } from "./SessionModal";
-import { Topbar } from "./Topbar";
-import { Button } from "./ui/Button";
+import type { Queue, QueueSession, SessionStatus } from "@/src/types/queue.types";
+
+import { Footer } from "./Footer.component";
+
+import { Topbar } from "./Topbar.component";
+import { Button } from "./ui/Button.component";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/Card";
+} from "./ui/Card.component";
 
 /**
  * QueueDetail Component

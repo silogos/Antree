@@ -2,10 +2,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useQueues } from "../hooks/useQueues";
-import type { QueueStatus } from "../types";
-import { useToast } from "../hooks/use-toast";
-import { Button } from "./ui/Button";
+import { useQueues } from "../hooks/useQueues.hook";
+import type { QueueStatus } from "@/src/types/queue.types";
+import { useToast } from "../hooks/use-toast.hook";
+import { Button } from "./ui/Button.component";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/Dialog";
-import { Input } from "./ui/Input";
-import { Label } from "./ui/Label";
+} from "./ui/Dialog.component";
+import { Input } from "./ui/Input.component";
+import { Label } from "./ui/Label.component";
 
 interface AddQueueModalProps {
   open: boolean;

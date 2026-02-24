@@ -1,6 +1,7 @@
+import { cn } from "../../lib/utils.util";
 import * as React from "react";
 import { Toaster as Sonner } from "sonner";
-import { cn } from "../../lib/utils";
+
 
 export { Toaster as Sonner };
 

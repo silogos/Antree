@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { QueueStatus } from "../lib/validations/schema";
-import { getSSEClient, type SSEEvent } from "../services/sseClient";
+import { getSSEClient, type SSEEvent } from "../services/sse.service";
 import type { QueueItem, QueueSession } from "../types";
 
 export function useSessionSSE(

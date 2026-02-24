@@ -1,40 +1,46 @@
+import { sleep } from "../lib/delay.util.js";
+
 /**
  * HTTP Client with Retry Logic and Error Handling
  */
 
-export interface HttpRequestConfig extends RequestInit {
+export interface HttpRequestConfig extends Omit<RequestInit, "body"> {
+	/** Whether to include authorization header */
 	withAuth?: boolean;
+	/** Query parameters to append to URL */
 	params?: Record<string, string | number | boolean>;
-	// Retry configuration
+	/** Maximum number of retry attempts */
 	retries?: number;
+	/** Base delay between retries in ms */
 	retryDelay?: number;
-	shouldRetry?: (error: Error, attempt: number) => boolean;
+	/** Custom predicate to determine if request should be retried */
+	shouldRetry?: (error: HttpError, attempt: number) => boolean;
+	/** Request body - handled separately for JSON serialization */
+	body?: unknown;
+}
+
+/** Extended error type with HTTP-specific metadata */
+export interface HttpError extends Error {
+	statusCode?: number;
+	errorCode?: string;
+	requestId?: string;
 }
 
 export interface HttpInstance {
 	setToken(token: string | null): void;
 	getToken(): string | null;
 	clearToken(): void;
-
-	get<T = any>(url: string, config?: HttpRequestConfig): Promise<T>;
-	post<T = any>(
-		url: string,
-		body?: any,
-		config?: HttpRequestConfig,
-	): Promise<T>;
-	put<T = any>(url: string, body?: any, config?: HttpRequestConfig): Promise<T>;
-	patch<T = any>(
-		url: string,
-		body?: any,
-		config?: HttpRequestConfig,
-	): Promise<T>;
-	delete<T = any>(url: string, config?: HttpRequestConfig): Promise<T>;
+	get<T = unknown>(url: string, config?: HttpRequestConfig): Promise<T>;
+	post<T = unknown>(url: string, body?: unknown, config?: HttpRequestConfig): Promise<T>;
+	put<T = unknown>(url: string, body?: unknown, config?: HttpRequestConfig): Promise<T>;
+	patch<T = unknown>(url: string, body?: unknown, config?: HttpRequestConfig): Promise<T>;
+	delete<T = unknown>(url: string, config?: HttpRequestConfig): Promise<T>;
 }
 
 /**
  * Default retry predicate - retry on network errors and 5xx errors
  */
-function defaultShouldRetry(error: Error, attempt: number): boolean {
+function defaultShouldRetry(error: HttpError, attempt: number): boolean {
 	// Don't retry if we've exceeded max attempts
 	if (attempt >= 3) return false;
 
@@ -56,7 +62,7 @@ function defaultShouldRetry(error: Error, attempt: number): boolean {
  */
 function calculateRetryDelay(attempt: number, baseDelay: number): number {
 	// Exponential backoff: baseDelay * (2 ^ attempt)
-	const exponentialDelay = baseDelay * Math.pow(2, attempt);
+	const exponentialDelay = baseDelay * 2 ** attempt;
 
 	// Add jitter: random value between 0-100ms
 	const jitter = Math.random() * 100;
@@ -64,45 +70,42 @@ function calculateRetryDelay(attempt: number, baseDelay: number): number {
 	return Math.min(exponentialDelay + jitter, 10000); // Cap at 10 seconds
 }
 
-/**
- * Sleep utility for retry delays
- */
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export const createHttp = (baseURL?: string): HttpInstance => {
 	const base = baseURL || "http://localhost:3001";
 
 	let accessToken: string | null = null;
 
-	const setToken = (token: string | null) => {
+	const setToken = (token: string | null): void => {
 		accessToken = token;
 	};
 
-	const getToken = () => accessToken;
+	const getToken = (): string | null => accessToken;
 
-	const clearToken = () => {
+	const clearToken = (): void => {
 		accessToken = null;
 	};
 
-	// Build query params
-	const buildURL = (url: string, params?: HttpRequestConfig["params"]) => {
+	/**
+	 * Build full URL with query parameters
+	 */
+	const buildURL = (url: string, params?: HttpRequestConfig["params"]): string => {
 		const full = `${base}${url}`;
 
 		if (!params) return full;
 
-		const qs = new URLSearchParams(
-			Object.entries(params).reduce(
-				(acc, [k, v]) => ({ ...acc, [k]: String(v) }),
-				{},
-			),
-		).toString();
+		const queryParams = new URLSearchParams();
+		for (const [key, value] of Object.entries(params)) {
+			queryParams.set(key, String(value));
+		}
 
-		return `${full}?${qs}`;
+		const queryString = queryParams.toString();
+		return queryString ? `${full}?${queryString}` : full;
 	};
 
-	// Core request with retry logic
+	/**
+	 * Core request handler with retry logic
+	 */
 	const request = async <T>(
 		url: string,
 		config: HttpRequestConfig = {},
@@ -118,7 +121,7 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 			...rest
 		} = config;
 
-		let lastError: Error | null = null;
+		let lastError: HttpError | null = null;
 
 		// Attempt request with retries
 		for (let attempt = 0; attempt <= retries; attempt++) {
@@ -130,11 +133,15 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 					finalHeaders.set("Authorization", `Bearer ${accessToken}`);
 				}
 
-				// Auto JSON body
-				let finalBody = body;
-				if (body && typeof body === "object" && !(body instanceof FormData)) {
-					finalHeaders.set("Content-Type", "application/json");
-					finalBody = JSON.stringify(body);
+				// Prepare body - serialize objects to JSON
+				let finalBody: BodyInit | undefined;
+				if (body != null) {
+					if (typeof body === "object" && !(body instanceof FormData)) {
+						finalHeaders.set("Content-Type", "application/json");
+						finalBody = JSON.stringify(body);
+					} else {
+						finalBody = body as BodyInit;
+					}
 				}
 
 				const res = await fetch(buildURL(url, params), {
@@ -153,7 +160,12 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 					try {
 						const contentType = res.headers.get("content-type");
 						if (contentType?.includes("application/json")) {
-							const errorData = await res.json();
+							const errorData = (await res.json()) as {
+								message?: string;
+								errorCode?: string;
+								error?: string;
+								requestId?: string;
+							};
 							errorMessage = errorData.message || errorMessage;
 							errorCode = errorData.errorCode || errorData.error;
 							requestId = errorData.requestId;
@@ -168,10 +180,10 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 					// Create detailed error
 					const error = new Error(
 						`HTTP ${res.status}: ${errorMessage}${errorCode ? ` (${errorCode})` : ""}${requestId ? ` [Request ID: ${requestId}]` : ""}`,
-					);
-					(error as any).statusCode = res.status;
-					(error as any).errorCode = errorCode;
-					(error as any).requestId = requestId;
+					) as HttpError;
+					error.statusCode = res.status;
+					error.errorCode = errorCode;
+					error.requestId = requestId;
 
 					throw error;
 				}
@@ -184,7 +196,7 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 
 				return res.text() as unknown as T;
 			} catch (error) {
-				lastError = error as Error;
+				lastError = error as HttpError;
 
 				// Check if we should retry
 				if (attempt < retries && shouldRetry(lastError, attempt)) {
@@ -210,19 +222,11 @@ export const createHttp = (baseURL?: string): HttpInstance => {
 		setToken,
 		getToken,
 		clearToken,
-
-		get: (url, config) => request(url, { ...config, method: "GET" }),
-
-		post: (url, body, config) =>
-			request(url, { ...config, method: "POST", body }),
-
-		put: (url, body, config) =>
-			request(url, { ...config, method: "PUT", body }),
-
-		patch: (url, body, config) =>
-			request(url, { ...config, method: "PATCH", body }),
-
-		delete: (url, config) => request(url, { ...config, method: "DELETE" }),
+		get: (url, config) => request(url, { ...config, method: "GET" } as HttpRequestConfig),
+		post: (url, body, config) => request(url, { ...config, method: "POST", body } as HttpRequestConfig),
+		put: (url, body, config) => request(url, { ...config, method: "PUT", body } as HttpRequestConfig),
+		patch: (url, body, config) => request(url, { ...config, method: "PATCH", body } as HttpRequestConfig),
+		delete: (url, config) => request(url, { ...config, method: "DELETE" } as HttpRequestConfig),
 	};
 };
 

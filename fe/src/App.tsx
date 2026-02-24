@@ -1,8 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { BoardList } from "./components/BoardList";
-import { QueueDetail } from "./components/QueueDetail";
-import { SessionDetail } from "./components/SessionDetail";
+import { ErrorBoundary } from "./components/ErrorBoundary.component";
+import { BoardList } from "./components/BoardList.component";
+import { QueueDetail } from "./components/QueueDetail.component";
+import { SessionDetail } from "./components/SessionDetail.component";
 
 /**
  * Main App Component
