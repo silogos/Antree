@@ -345,7 +345,7 @@ fe/src/services/sseClient.ts
 ## 🔵 Nice to Have
 
 ### 9. Monitoring & Observability
-**Status:** 🔵 Open
+**Status:** ✅ Completed
 **Priority:** P3 - Low
 **Effort:** 8-12 hours
 **Location:** System-wide
@@ -359,31 +359,35 @@ fe/src/services/sseClient.ts
 - No SLA monitoring
 
 **Action Items:**
-- [ ] Add structured logging:
+- [x] Add structured logging with pino:
   ```typescript
-  // Use pino or similar
+  // Implemented in be/src/lib/logger.ts
   logger.info({
     action: "queue_item_created",
     sessionId: session.id,
-    userId: user.id,
     duration: 123
   })
   ```
-- [ ] Implement health checks:
+- [x] Implement enhanced health checks:
   ```typescript
   GET /health
   {
     status: "healthy",
     database: "connected",
-    sse_connections: 42,
-    uptime: 123456
+    uptime: 123456,
+    checks: { database: { status: "connected" } },
+    metrics: {
+      sse: { connections: 42, sessions: 5 },
+      requests: { total: 1234, errors: 12, errorRate: "0.97%" },
+      performance: { avgResponseTime: "45ms", p95: "120ms", p99: "200ms" }
+    }
   }
   ```
-- [ ] Add metrics collection:
-  - [ ] Request duration (p50, p95, p99)
-  - [ ] SSE connection count
-  - [ ] Database query performance
-  - [ ] Error rate by endpoint
+- [x] Add metrics collection:
+  - [x] Request duration (p50, p95, p99) in [be/src/lib/metrics.ts](be/src/lib/metrics.ts)
+  - [x] SSE connection count via broadcaster methods
+  - [x] Error rate tracking
+  - [x] Metrics middleware in [be/src/middleware/metrics.ts](be/src/middleware/metrics.ts)
 - [ ] Set up dashboards:
   - [ ] Grafana + Prometheus
   - [ ] Or use managed service (Datadog, New Relic)
@@ -392,6 +396,22 @@ fe/src/services/sseClient.ts
   - [ ] Response time > 500ms
   - [ ] SSE connections > 1000
   - [ ] Database disconnected
+
+**Implementation Summary:**
+- Installed pino and pino-pretty for structured JSON logging
+- Created [be/src/lib/logger.ts](be/src/lib/logger.ts) with utility functions for logging actions, requests, queries, and SSE events
+- Created [be/src/lib/metrics.ts](be/src/lib/metrics.ts) for collecting request duration, error rates, and performance percentiles
+- Created [be/src/middleware/metrics.ts](be/src/middleware/metrics.ts) to automatically track all API requests
+- Enhanced [be/src/routes/health.ts](be/src/routes/health.ts) with detailed health information including uptime, database status, SSE metrics, and performance metrics
+- Added `getActiveSessionCount()` method to SSE broadcaster
+- Replaced console.log statements with structured logging in [be/src/index.ts](be/src/index.ts), [be/src/sse/broadcaster.ts](be/src/sse/broadcaster.ts), and [be/src/middleware/error.ts](be/src/middleware/error.ts)
+- Logs are pretty-printed in development and JSON-formatted in production
+- Response time headers added to all responses via `X-Response-Time` header
+
+**Remaining Work:**
+- Set up external monitoring dashboards (Grafana/Prometheus or Datadog/New Relic)
+- Configure alerting thresholds
+- Add database query performance tracking
 
 ---
 
@@ -456,6 +476,7 @@ fe/src/services/sseClient.ts
 - ✅ **Well-documented** with CLAUDE.md and OpenAPI spec
 - ✅ **Modern tech stack** (Hono, Drizzle, React 18, Vite)
 - ✅ **Monorepo structure** with pnpm workspaces
+- ✅ **Structured logging and monitoring** with pino and metrics collection
 
 ---
 
@@ -466,7 +487,7 @@ fe/src/services/sseClient.ts
 | Critical Issues | 1 (2 total, 2 completed) |
 | High Priority | 2 (3 total, 1 completed) |
 | Medium Priority | 2 (3 total, 1 completed) |
-| Nice to Have | 2 |
+| Nice to Have | 1 (2 total, 1 completed) |
 | **Total Items** | **10** |
 | **Completed** | **3** |
 | **Remaining Effort** | **~70-110 hours** |
@@ -492,7 +513,7 @@ fe/src/services/sseClient.ts
 8. Performance optimization (12-16 hours)
 
 ### Phase 5: Polish (Ongoing)
-9. Monitoring & observability (8-12 hours)
+9. ~~Monitoring & observability (8-12 hours)~~ ✅ COMPLETED
 10. Developer experience (6-8 hours)
 
 ---
@@ -510,4 +531,4 @@ fe/src/services/sseClient.ts
 **Last Reviewed By:** Claude Code Analysis
 **Last Updated:** 2026-02-24
 **Next Review Date:** 2026-05-24 (quarterly)
-**Recent Changes:** Completed documentation improvements (README.md updated with session-based architecture, API endpoints, and architecture diagram)
+**Recent Changes:** Completed monitoring & observability improvements (structured logging with pino, enhanced health checks, metrics collection)

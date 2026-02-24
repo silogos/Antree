@@ -11,7 +11,9 @@ import {
 	internalErrorResponse,
 	validationErrorResponse,
 	type ApiResponse,
+	ErrorCode,
 } from "./response.js";
+import { logger } from "../lib/logger.js";
 
 /**
  * Error types for better error classification
@@ -109,16 +111,20 @@ interface ErrorLogEntry {
 }
 
 function logError(entry: ErrorLogEntry): void {
-	const logEntry = {
-		...entry,
+	const logData = {
+		requestId: entry.requestId,
+		type: entry.type,
+		message: entry.message,
+		details: entry.details,
+		context: entry.context,
 		// Only include stack trace in development
 		...(process.env.NODE_ENV === "development" && entry.stackTrace && {
 			stackTrace: entry.stackTrace,
 		}),
 	};
 
-	// In production, you might want to send this to a logging service
-	console.error(JSON.stringify(logEntry));
+	// Use structured logger
+	logger.error(logData, entry.message);
 }
 
 /**
@@ -176,7 +182,7 @@ export const errorHandler = async (c: Context, next: Next) => {
 					break;
 				case ErrorType.NotFound:
 					response = errorResponse(
-						"NOT_FOUND",
+						ErrorCode.NOT_FOUND,
 						error.message,
 						requestId,
 						error.details,
@@ -184,7 +190,7 @@ export const errorHandler = async (c: Context, next: Next) => {
 					break;
 				case ErrorType.Conflict:
 					response = errorResponse(
-						"CONFLICT",
+						ErrorCode.CONFLICT,
 						error.message,
 						requestId,
 						error.details,
@@ -194,13 +200,13 @@ export const errorHandler = async (c: Context, next: Next) => {
 					response = databaseErrorResponse(error, requestId);
 					break;
 				case ErrorType.RateLimit:
-					response = errorResponse("RATE_LIMIT_EXCEEDED", error.message, requestId);
+					response = errorResponse(ErrorCode.RATE_LIMIT_EXCEEDED, error.message, requestId);
 					break;
 				default:
 					response = internalErrorResponse(error, requestId);
 			}
 
-			return c.json(response, error.statusCode);
+			return c.json(response, error.statusCode as 400 | 404 | 409 | 429 | 500);
 		}
 
 		// Handle unknown errors

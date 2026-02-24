@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { closeDb } from "./db/index.js";
+import { logger as structuredLogger } from "./lib/logger.js";
 
 import { healthCheckRoutes } from "./routes/health.js";
 import { queuesRoutes } from "./routes/queues.js";
@@ -12,11 +13,13 @@ import { sseBroadcaster } from "./sse/broadcaster.js";
 import { sseRoutes } from "./sse/index.js";
 import { itemRoutes, sessionItemRoutes } from "./routes/items.js";
 import { errorHandler } from "./middleware/error.js";
+import { metricsMiddleware } from "./middleware/metrics.js";
 
 const app = new Hono();
 
 // Middleware
 app.use("*", errorHandler);
+app.use("*", metricsMiddleware);
 app.use("*", logger());
 app.use(
 	"*",
@@ -44,7 +47,7 @@ app.route("/", sseRoutes);
 
 const port = parseInt(process.env.PORT || "3001", 10);
 
-console.log(`🚀 Server starting on port ${port}`);
+structuredLogger.info({ port }, "🚀 Server starting");
 
 const server = serve(
 	{
@@ -52,7 +55,7 @@ const server = serve(
 		port,
 	},
 	(info) => {
-		console.log(`✅ Server is running on http://localhost:${info.port}`);
+		structuredLogger.info({ port: info.port }, "✅ Server is running");
 	},
 );
 
@@ -69,34 +72,34 @@ const cleanupInterval = setInterval(() => {
  * Closes all SSE connections and database connections before exiting
  */
 async function gracefulShutdown(signal: string) {
-	console.log(`\n${signal} received. Starting graceful shutdown...`);
+	structuredLogger.info({ signal }, "Starting graceful shutdown");
 
 	// Clear cleanup interval
 	clearInterval(cleanupInterval);
 
 	// Close all SSE connections
-	console.log("Closing SSE connections...");
+	structuredLogger.info("Closing SSE connections");
 	sseBroadcaster.closeAllConnections();
 
 	// Close database connections
-	console.log("Closing database connections...");
+	structuredLogger.info("Closing database connections");
 	await closeDb();
 
 	// Close HTTP server
-	console.log("Closing HTTP server...");
+	structuredLogger.info("Closing HTTP server");
 	server.close((err) => {
 		if (err) {
-			console.error("Error closing server:", err);
+			structuredLogger.error({ err }, "Error closing server");
 			process.exit(1);
 		}
 
-		console.log("✅ Graceful shutdown completed");
+		structuredLogger.info("✅ Graceful shutdown completed");
 		process.exit(0);
 	});
 
 	// Force exit after 10 seconds if graceful shutdown fails
 	setTimeout(() => {
-		console.error("⚠️  Graceful shutdown timeout, forcing exit");
+		structuredLogger.error("⚠️  Graceful shutdown timeout, forcing exit");
 		process.exit(1);
 	}, 10000);
 }
@@ -107,11 +110,11 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Handle uncaught errors
 process.on("uncaughtException", (error) => {
-	console.error("Uncaught exception:", error);
+	structuredLogger.error({ error }, "Uncaught exception");
 	gracefulShutdown("UNCAUGHT_EXCEPTION");
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-	console.error("Unhandled rejection at:", promise, "reason:", reason);
+	structuredLogger.error({ reason, promise }, "Unhandled rejection");
 	gracefulShutdown("UNHANDLED_REJECTION");
 });

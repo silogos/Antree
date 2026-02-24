@@ -3,6 +3,8 @@
  * Manages real-time event streaming for board updates
  */
 
+import { logger } from "../lib/logger.js";
+
 interface SSEConnection {
 	sessionId: string; // Changed from boardId to sessionId for consistency
 	controller: ReadableStreamDefaultController;
@@ -71,8 +73,9 @@ class SSEBroadcaster {
       existingConnections &&
       existingConnections.length >= this.connectionLimit
     ) {
-      console.warn(
-        `[SSE] Connection limit reached for session ${sessionId} (${this.connectionLimit} max)`,
+      logger.warn(
+        { sessionId, limit: this.connectionLimit },
+        "[SSE] Connection limit reached",
       );
       return false;
     }
@@ -90,8 +93,9 @@ class SSEBroadcaster {
       connectedAt: now,
       lastActivity: now,
     });
-    console.log(
-      `[SSE] Client ${clientId} connected to session ${sessionId} (lastEventId: ${lastEventId || "none"})`,
+    logger.info(
+      { clientId, sessionId, lastEventId },
+      "[SSE] Client connected",
     );
 
     // If client has lastEventId, replay missed events
@@ -113,8 +117,9 @@ class SSEBroadcaster {
       );
       if (index !== -1) {
         boardConnections.splice(index, 1);
-        console.log(
-          `[SSE] Client ${clientId} disconnected from session ${sessionId}`,
+        logger.info(
+          { clientId, sessionId },
+          "[SSE] Client disconnected",
         );
       }
 
@@ -150,9 +155,7 @@ class SSEBroadcaster {
 		// Support sessionId (new), queueId (new), batchId (legacy), and boardId (legacy)
 		const targetId = event.sessionId || event.queueId || event.batchId || event.boardId;
 		if (!targetId) {
-			console.warn(
-				"[SSE] Broadcast called without queueId, batchId, or boardId",
-			);
+			logger.warn("[SSE] Broadcast called without target ID");
 			return;
 		}
 
@@ -184,15 +187,13 @@ class SSEBroadcaster {
 			try {
 				// Check rate limit
 				if (!this.checkRateLimit(conn.clientId)) {
-					console.warn(`[SSE] Rate limit exceeded for client ${conn.clientId}`);
+					logger.warn({ clientId: conn.clientId }, "[SSE] Rate limit exceeded");
 					return;
 				}
 
 				// Send with timeout (using setTimeout to detect hanging connections)
 				const sendTimeout = setTimeout(() => {
-					console.warn(
-						`[SSE] Send timeout for client ${conn.clientId}, removing connection`,
-					);
+					logger.warn({ clientId: conn.clientId }, "[SSE] Send timeout, removing connection");
 					this.removeConnection(targetId, conn.clientId);
 				}, 5000); // 5 second timeout
 
@@ -205,7 +206,7 @@ class SSEBroadcaster {
 					throw error;
 				}
 			} catch (error) {
-				console.error(`[SSE] Error sending to client ${conn.clientId}:`, error);
+				logger.error({ clientId: conn.clientId, error }, "[SSE] Error sending to client");
 				// Remove broken connection
 				this.removeConnection(targetId, conn.clientId);
 			}
@@ -286,7 +287,7 @@ class SSEBroadcaster {
 					controller.enqueue(message);
 					replayedCount++;
 				} catch (error) {
-					console.error("[SSE] Error replaying event:", error);
+					logger.error({ error }, "[SSE] Error replaying event");
 					break;
 				}
 			}
@@ -300,7 +301,7 @@ class SSEBroadcaster {
 			})}\n\n`,
 		);
 
-		console.log(`[SSE] Replayed ${replayedCount} events to client`);
+		logger.info({ replayedCount }, "[SSE] Replayed events to client");
 	}
 
 	/**
@@ -354,13 +355,25 @@ class SSEBroadcaster {
 		return total;
 	}
 
+	/**
+	 * Get the number of active sessions (sessions with at least one connection)
+	 */
+	getActiveSessionCount(): number {
+		let count = 0;
+		this.connections.forEach((conns) => {
+			if (conns.length > 0) {
+				count++;
+			}
+		});
+		return count;
+	}
+
   /**
    * Close all SSE connections gracefully (for shutdown)
    */
   closeAllConnections(): void {
-    console.log(
-      `[SSE] Closing all SSE connections (${this.getTotalConnectionCount()} total)`,
-    );
+    const totalConnections = this.getTotalConnectionCount();
+    logger.info({ totalConnections }, "[SSE] Closing all SSE connections");
 
     this.connections.forEach((conns, _sessionId) => {
       conns.forEach((conn) => {
@@ -381,9 +394,9 @@ class SSEBroadcaster {
             // Controller might already be closed
           }
         } catch (error) {
-          console.error(
-            `[SSE] Error closing connection for client ${conn.clientId}:`,
-            error,
+          logger.error(
+            { clientId: conn.clientId, error },
+            "[SSE] Error closing connection",
           );
         }
       });
@@ -394,7 +407,7 @@ class SSEBroadcaster {
     this.eventHistory.clear();
     this.clientMessageCounts.clear();
 
-    console.log("[SSE] All connections closed");
+    logger.info("[SSE] All connections closed");
   }
 
   /**
@@ -409,8 +422,10 @@ class SSEBroadcaster {
       for (let i = conns.length - 1; i >= 0; i--) {
         const conn = conns[i];
         if (now - conn.lastActivity > maxIdleTime) {
-          console.log(
-            `[SSE] Removing idle connection ${conn.clientId} (idle for ${Math.round((now - conn.lastActivity) / 1000)}s)`,
+          const idleTime = Math.round((now - conn.lastActivity) / 1000);
+          logger.debug(
+            { clientId: conn.clientId, sessionId, idleTime },
+            "[SSE] Removing idle connection",
           );
           try {
             conn.controller.close();
@@ -429,7 +444,7 @@ class SSEBroadcaster {
     });
 
     if (cleanedCount > 0) {
-      console.log(`[SSE] Cleaned up ${cleanedCount} idle connections`);
+      logger.info({ cleanedCount }, "[SSE] Cleaned up idle connections");
     }
   }
 }
