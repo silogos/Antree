@@ -12,13 +12,19 @@ import {
 } from "../middleware/response.js";
 import { validateBody } from "../middleware/validation.js";
 import { queueItemService } from "../services/queue-item.service.js";
+import { sessionService } from "../services/session.service.js";
 import { sseBroadcaster } from "../sse/broadcaster.js";
 import {
 	createQueueItemSchema,
+	createQueueItemViaSessionSchema,
 	updateQueueItemSchema,
 } from "../validators/queue-item.validator.js";
 
+// Routes for general items (/items/*)
 export const itemRoutes = new Hono();
+
+// Routes for session items (/sessions/:sessionId/items)
+export const sessionItemRoutes = new Hono();
 
 /**
  * GET /items
@@ -48,7 +54,7 @@ itemRoutes.get("/", async (c) => {
  * GET /sessions/{sessionId}/items
  * Get all items for a session
  */
-itemRoutes.get("/sessions/:sessionId/items", async (c) => {
+sessionItemRoutes.get("/:sessionId/items", async (c) => {
 	try {
 		const sessionId = c.req.param("sessionId");
 		const statusId = c.req.query("statusId");
@@ -70,9 +76,9 @@ itemRoutes.get("/sessions/:sessionId/items", async (c) => {
  * POST /sessions/{sessionId}/items
  * Create a new queue item within a session
  */
-itemRoutes.post(
-	"/sessions/:sessionId/items",
-	validateBody(createQueueItemSchema),
+sessionItemRoutes.post(
+	"/:sessionId/items",
+	validateBody(createQueueItemViaSessionSchema),
 	async (c) => {
 		try {
 			const sessionId = c.req.param("sessionId");
@@ -80,17 +86,34 @@ itemRoutes.post(
 				typeof queueItemService.createQueueItem
 			>[0];
 
-			// Override sessionId from path
+			// Get session to retrieve queueId and default status
+			const session = await sessionService.getSessionById(sessionId);
+			if (!session) {
+				return c.json(notFoundResponse("Session", sessionId), 404);
+			}
+
+			// Get session statuses to find default (first one)
+			const statuses = await sessionService.getSessionStatuses(sessionId);
+			const defaultStatusId = statuses[0]?.id;
+
+			// Generate queue number if not provided
+			const queueNumber = input.queueNumber || `Q${Math.floor(Math.random() * 10000)}`;
+
+			// Override sessionId and queueId from path/session
 			const itemInput = {
-				...input,
+				queueId: session.queueId || "",
 				sessionId,
+				queueNumber,
+				name: input.name,
+				statusId: input.statusId || defaultStatusId || "",
+				metadata: input.metadata,
 			};
 
 			const item = await queueItemService.createQueueItem(itemInput);
 
 			// Broadcast SSE event
 			sseBroadcaster.broadcast({
-				type: "item_created",
+				type: "queue_item_created",
 				data: item,
 				sessionId: sessionId,
 			});
@@ -154,7 +177,7 @@ itemRoutes.patch("/:id", validateBody(updateQueueItemSchema), async (c) => {
 
 		// Broadcast SSE event
 		sseBroadcaster.broadcast({
-			type: "item_updated",
+			type: "queue_item_updated",
 			data: item,
 			sessionId: existing.sessionId,
 		});
@@ -195,7 +218,7 @@ itemRoutes.patch("/:id/status", async (c) => {
 
 		// Broadcast item_status_changed event
 		sseBroadcaster.broadcast({
-			type: "item_status_changed",
+			type: "queue_item_status_changed",
 			data: item,
 			sessionId: existing.sessionId,
 		});
@@ -229,7 +252,7 @@ itemRoutes.delete("/:id", async (c) => {
 
 		// Broadcast SSE event
 		sseBroadcaster.broadcast({
-			type: "item_deleted",
+			type: "queue_item_deleted",
 			data: { id },
 			sessionId: existing.sessionId,
 		});

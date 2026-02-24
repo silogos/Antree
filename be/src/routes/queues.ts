@@ -17,7 +17,7 @@ import {
 	createQueueSchema,
 	updateQueueSchema,
 } from "../validators/queue.validator.js";
-import { createSessionSchema } from "../validators/session.validator.js";
+import { createSessionViaQueueSchema } from "../validators/session.validator.js";
 
 export const queuesRoutes = new Hono();
 
@@ -157,7 +157,7 @@ queuesRoutes.get("/:queueId/sessions", async (c) => {
  */
 queuesRoutes.post(
 	"/:queueId/sessions",
-	validateBody(createSessionSchema),
+	validateBody(createSessionViaQueueSchema),
 	async (c) => {
 		try {
 			const queueId = c.req.param("queueId");
@@ -180,9 +180,9 @@ queuesRoutes.post(
 
 			const session = await sessionService.createSession(sessionInput);
 
-			if (!session) {
-				return c.json(notFoundResponse("Template", queue.template_id), 404);
-			}
+		if (!session) {
+			return c.json(notFoundResponse("Template", queue.templateId), 404);
+		}
 
 			// Broadcast SSE event
 			sseBroadcaster.broadcast({

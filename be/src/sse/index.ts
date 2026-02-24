@@ -194,7 +194,7 @@ sseRoutes.get("/items/:itemId/stream", async (c) => {
 		return c.json({ success: false, error: "Queue item not found" }, 404);
 	}
 
-	const sessionId = item[0].session_id;
+	const sessionId = item[0].sessionId;
 	const clientId = generateClientId();
 	const lastEventId = c.req.header("Last-Event-ID"); // Support client reconnection
 	const signal = c.req.raw.signal; // Get request signal for disconnect detection

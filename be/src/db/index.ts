@@ -1,7 +1,15 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-const connectionString = process.env.DATABASE_URL || 'postgres://antree_user:antree_password@localhost:5432/antree_db';
+// Validate required environment variables
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    'DATABASE_URL environment variable is not set. ' +
+    'Please set it in your .env file or environment.'
+  );
+}
 
 // Initialize database connection
 const client = postgres(connectionString);

@@ -133,11 +133,11 @@ export class QueueItemService {
   }
 
   /**
-   * Broadcast item_created event
+   * Broadcast queue_item_created event
    */
   broadcastItemCreated(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'item_created',
+      type: 'queue_item_created',
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -154,11 +154,11 @@ export class QueueItemService {
   }
 
   /**
-   * Broadcast item_updated event
+   * Broadcast queue_item_updated event
    */
   broadcastItemUpdated(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'item_updated',
+      type: 'queue_item_updated',
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -175,11 +175,11 @@ export class QueueItemService {
   }
 
   /**
-   * Broadcast item_status_changed event
+   * Broadcast queue_item_status_changed event
    */
   broadcastItemStatusChanged(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'item_status_changed',
+      type: 'queue_item_status_changed',
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -196,11 +196,11 @@ export class QueueItemService {
   }
 
   /**
-   * Broadcast item_deleted event
+   * Broadcast queue_item_deleted event
    */
   broadcastItemDeleted(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'item_deleted',
+      type: 'queue_item_deleted',
       data: {
         id: item.id,
         queue_id: item.queueId,

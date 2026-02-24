@@ -10,7 +10,7 @@ import { sessionRoutes } from "./routes/sessions.js";
 import { templateRoutes } from "./routes/templates.js";
 import { sseBroadcaster } from "./sse/broadcaster.js";
 import { sseRoutes } from "./sse/index.js";
-import { itemRoutes } from "./routes/items.js";
+import { itemRoutes, sessionItemRoutes } from "./routes/items.js";
 
 const app = new Hono();
 
@@ -34,10 +34,11 @@ app.use(
 // Routes
 app.route("/", healthCheckRoutes);
 app.route("/queues", queuesRoutes);
-app.route("/items", itemRoutes);
 app.route("/sessions", sessionRoutes);
+app.route("/sessions", sessionItemRoutes);
 app.route("/templates", templateRoutes);
-app.route("/sessions/:sessionId/stream", sseRoutes);
+app.route("/items", itemRoutes);
+app.route("/", sseRoutes);
 
 const port = parseInt(process.env.PORT || "3001", 10);
 

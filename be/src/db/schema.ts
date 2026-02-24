@@ -76,7 +76,7 @@ export const queueSessions = pgTable('queue_sessions', {
   templateId: uuid('template_id').notNull().references(() => queueTemplates.id, { onDelete: 'cascade' }),
   queueId: uuid('queue_id').references(() => queues.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  status: text('status').notNull().default('draft'), // draft | active | closed
+  status: text('status').notNull().default('draft'), // draft | active | paused | completed | archived
   sessionNumber: integer('session_number'),
   startedAt: timestamp('started_at'),
   endedAt: timestamp('ended_at'),

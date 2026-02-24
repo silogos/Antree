@@ -5,8 +5,13 @@
 import { z } from 'zod';
 
 export const createSessionSchema = z.object({
-  queue_id: z.string().uuid(),
-  template_id: z.string().uuid(),
+  queueId: z.string().uuid(),
+  templateId: z.string().uuid(),
+  name: z.string().min(1).max(255).optional(),
+  status: z.enum(['active', 'paused', 'completed', 'archived']).optional(),
+});
+
+export const createSessionViaQueueSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   status: z.enum(['active', 'paused', 'completed', 'archived']).optional(),
 });
@@ -23,4 +28,5 @@ export const lifecycleUpdateSchema = z.object({
 });
 
 export type CreateSessionInput = z.infer<typeof createSessionSchema>;
+export type CreateSessionViaQueueInput = z.infer<typeof createSessionViaQueueSchema>;
 export type UpdateSessionInput = z.infer<typeof updateSessionSchema>;

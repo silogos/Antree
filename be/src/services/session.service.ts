@@ -11,7 +11,7 @@ import {
   queueTemplateStatuses,
   queueSessionStatuses,
 } from '../db/schema.js';
-import { eq, and, desc, isNull } from 'drizzle-orm';
+import { eq, and, desc, isNull, ne } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type {
   NewQueueSession,
@@ -143,19 +143,31 @@ export class SessionService {
   }
 
   /**
-   * Check if queue already has an active session
+   * Check if queue already has an active session (excluding a specific session)
    */
-  private async hasActiveSession(queueId: string): Promise<boolean> {
+  private async hasActiveSession(
+    queueId: string,
+    excludeSessionId?: string,
+  ): Promise<boolean> {
+    const conditions = and(
+      eq(queueSessions.queueId, queueId),
+      eq(queueSessions.status, 'active'),
+      isNull(queueSessions.deletedAt),
+    );
+
+    // If excluding a session, add the condition
+    let whereClause = conditions;
+    if (excludeSessionId) {
+      whereClause = and(
+        conditions,
+        ne(queueSessions.id, excludeSessionId),
+      );
+    }
+
     const activeSessions = await db
       .select()
       .from(queueSessions)
-      .where(
-        and(
-          eq(queueSessions.queueId, queueId),
-          eq(queueSessions.status, 'active'),
-          isNull(queueSessions.deletedAt),
-        ),
-      )
+      .where(whereClause)
       .limit(1);
 
     return activeSessions.length > 0;
@@ -279,11 +291,12 @@ export class SessionService {
       }
 
       // If transitioning to 'active', check for existing active session
-      if (input.status === 'active') {
+      // Only block if this is a NEW activation (from draft/completed), not a resume from paused
+      if (input.status === 'active' && session.status !== 'paused') {
         if (!session.queueId) {
           return null;
         }
-        const hasActive = await this.hasActiveSession(session.queueId);
+        const hasActive = await this.hasActiveSession(session.queueId, id);
         if (hasActive) {
           return null;
         }
@@ -307,8 +320,8 @@ export class SessionService {
       updateData.endedAt = new Date();
     }
 
-    if (input.status === 'closed' && !session.endedAt) {
-      // Closing the session
+    if (input.status === 'archived' && !session.endedAt) {
+      // Archiving the session
       updateData.endedAt = new Date();
     }
 
@@ -369,7 +382,7 @@ export class SessionService {
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: session.status as 'draft' | 'active' | 'closed',
+        status: session.status as 'draft' | 'active' | 'paused' | 'completed' | 'archived',
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
@@ -391,7 +404,7 @@ export class SessionService {
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: session.status as 'draft' | 'active' | 'closed',
+        status: session.status as 'draft' | 'active' | 'paused' | 'completed' | 'archived',
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
@@ -403,17 +416,17 @@ export class SessionService {
   }
 
   /**
-   * Broadcast session_closed event (when status changes to 'closed')
+   * Broadcast session_completed event (when status changes to 'completed')
    */
-  broadcastSessionClosed(session: QueueSession): void {
+  broadcastSessionCompleted(session: QueueSession): void {
     sseBroadcaster.broadcast({
-      type: 'session_closed',
+      type: 'session_completed',
       data: {
         id: session.id,
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: 'closed' as const,
+        status: 'completed' as const,
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,

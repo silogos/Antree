@@ -13,18 +13,21 @@ interface SSEConnection {
 }
 
 interface SSEEvent {
-	type:
+  type:
 		| "session_created"
 		| "session_updated"
 		| "session_closed"
-		| "session_deleted" // Session events
+		| "session_deleted"
+		| "session_paused"
+		| "session_resumed"
+		| "session_completed" // Session events
 		| "session_status_created"
 		| "session_status_updated"
 		| "session_status_deleted" // Session status events
-		| "item_created"
-		| "item_updated"
-		| "item_status_changed"
-		| "item_deleted" // Queue item events
+		| "queue_item_created"
+		| "queue_item_updated"
+		| "queue_item_status_changed"
+		| "queue_item_deleted" // Queue item events
 		| "queue_created"
 		| "queue_updated"
 		| "queue_deleted" // Queue events
