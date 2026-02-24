@@ -2,6 +2,8 @@
  * Standard API Response Format
  */
 
+import type { PaginationMeta } from "../lib/pagination.js";
+
 export interface ApiResponse<T = unknown> {
 	success: boolean;
 	data?: T;
@@ -9,6 +11,7 @@ export interface ApiResponse<T = unknown> {
 	errorCode?: string;
 	message?: string;
 	total?: number;
+	meta?: PaginationMeta;
 	requestId?: string;
 	details?: Record<string, unknown>;
 }
@@ -61,12 +64,20 @@ export function generateRequestId(): string {
 export function successResponse<T>(
 	data: T,
 	message?: string,
-	total?: number,
+	totalOrMeta?: number | PaginationMeta,
 	requestId?: string,
 ): ApiResponse<T> {
 	const response: ApiResponse<T> = { success: true, data: data };
 	if (message) response.message = message;
-	if (total !== undefined) response.total = total;
+
+	// Handle both legacy total number and new metadata object
+	if (typeof totalOrMeta === 'number') {
+		response.total = totalOrMeta;
+	} else if (totalOrMeta && typeof totalOrMeta === 'object') {
+		response.meta = totalOrMeta;
+		response.total = totalOrMeta.total;
+	}
+
 	if (requestId) response.requestId = requestId;
 	return response;
 }

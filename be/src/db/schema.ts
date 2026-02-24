@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, jsonb, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, jsonb, uuid, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
@@ -83,7 +83,14 @@ export const queueSessions = pgTable('queue_sessions', {
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  // Index for filtering active sessions by queue (most common query)
+  queueStatusIdx: uniqueIndex('queue_sessions_queue_id_status_deleted_at_idx').on(table.queueId, table.status, table.deletedAt),
+  // Index for status-based queries
+  statusIdx: uniqueIndex('queue_sessions_status_idx').on(table.status),
+  // Index for session number ordering within a queue
+  sessionNumberIdx: uniqueIndex('queue_sessions_queue_id_session_number_idx').on(table.queueId, table.sessionNumber),
+}));
 
 export type QueueSession = typeof queueSessions.$inferSelect;
 export type NewQueueSession = typeof queueSessions.$inferInsert;
@@ -97,7 +104,10 @@ export const queueSessionStatuses = pgTable('queue_session_statuses', {
   order: integer('status_order').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  // Index for fetching statuses by session (most common query)
+  sessionIdIdx: uniqueIndex('queue_session_statuses_session_id_idx').on(table.sessionId),
+}));
 
 export type QueueSessionStatus = typeof queueSessionStatuses.$inferSelect;
 export type NewQueueSessionStatus = typeof queueSessionStatuses.$inferInsert;
@@ -112,7 +122,14 @@ export const queueItems = pgTable('queue_items', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   metadata: jsonb('metadata'),
-});
+}, (table) => ({
+  // Composite index for fetching items by session and status (most common query)
+  sessionIdStatusIdIdx: uniqueIndex('queue_items_session_id_status_id_idx').on(table.sessionId, table.statusId),
+  // Index for queue-based filtering
+  queueIdIdx: uniqueIndex('queue_items_queue_id_idx').on(table.queueId),
+  // Index for time-based queries (sorting by creation time)
+  createdAtIdx: uniqueIndex('queue_items_created_at_idx').on(table.createdAt),
+}));
 
 export type QueueItem = typeof queueItems.$inferSelect;
 export type NewQueueItem = typeof queueItems.$inferInsert;

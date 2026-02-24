@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { QueueItem, QueueStatus } from "../types";
 import { StatusSection } from "./StatusColumn";
 
@@ -10,8 +10,9 @@ interface DashboardBoardProps {
 /**
  * DashboardBoard Component
  * Clean, minimalist layout with Zed-style design
+ * Memoized to prevent unnecessary re-renders when unrelated data changes
  */
-export function DashboardBoard({ queues, statuses }: DashboardBoardProps) {
+export const DashboardBoard = memo<DashboardBoardProps>(({ queues, statuses }) => {
   /**
    * Sort queues by queue number
    */
@@ -56,4 +57,6 @@ export function DashboardBoard({ queues, statuses }: DashboardBoardProps) {
       </div>
     </div>
   );
-}
+});
+
+DashboardBoard.displayName = "DashboardBoard";

@@ -5,18 +5,22 @@
 
 import { db } from '../db/index.js';
 import { queueItems } from '../db/schema.js';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type { NewQueueItem, QueueItem } from '../db/schema.js';
 import type { CreateQueueItemInput, UpdateQueueItemInput } from '../validators/queue-item.validator.js';
 import { sseBroadcaster } from '../sse/broadcaster.js';
+import type { PaginatedResponse, PaginationParams } from '../lib/pagination.js';
+import { calculatePaginationMetadata, getPaginationOffset } from '../lib/pagination.js';
 
 export class QueueItemService {
   /**
-   * Get all queue items with optional filtering
+   * Get all queue items with optional filtering and pagination
    */
-  async getAllQueueItems(filters?: { queueId?: string; sessionId?: string; statusId?: string }): Promise<QueueItem[]> {
-
+  async getAllQueueItems(
+    filters?: { queueId?: string; sessionId?: string; statusId?: string },
+    pagination?: PaginationParams
+  ): Promise<PaginatedResponse<QueueItem> | QueueItem[]> {
     const conditions: (ReturnType<typeof eq>)[] = [];
     if (filters?.queueId) {
       conditions.push(eq(queueItems.queueId, filters.queueId));
@@ -28,6 +32,38 @@ export class QueueItemService {
       conditions.push(eq(queueItems.statusId, filters.statusId));
     }
 
+    // If pagination is requested, return paginated response
+    if (pagination) {
+      const page = pagination.page || 1;
+      const limit = pagination.limit || 50; // Higher default for items
+      const offset = getPaginationOffset(page, limit);
+
+      const whereClause = conditions.length > 0
+        ? (conditions.length === 1 ? conditions[0] : and(...conditions))
+        : undefined;
+
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(queueItems)
+        .where(whereClause);
+
+      // Get paginated data
+      const data = await db
+        .select()
+        .from(queueItems)
+        .where(whereClause)
+        .orderBy(queueItems.createdAt)
+        .limit(limit)
+        .offset(offset);
+
+      return {
+        data,
+        meta: calculatePaginationMetadata(count, page, limit),
+      };
+    }
+
+    // Otherwise, return all items (backward compatibility)
     let items: QueueItem[];
     if (conditions.length > 0) {
       items = await db

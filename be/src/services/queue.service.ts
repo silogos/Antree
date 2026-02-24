@@ -3,7 +3,7 @@
  * Business logic for queue operations (template-based queues)
  */
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { db } from "../db/index.js";
 import type { NewQueue, Queue, QueueItem, QueueSession } from "../db/schema.js";
@@ -21,12 +21,41 @@ import type {
 	ResetQueueInput,
 	UpdateQueueInput,
 } from "../validators/queue.validator.js";
+import type { PaginatedResponse, PaginationParams } from "../lib/pagination.js";
+import { calculatePaginationMetadata, getPaginationOffset } from "../lib/pagination.js";
 
 export class QueueService {
 	/**
-	 * Get all queues
+	 * Get all queues with pagination
 	 */
-	async getAllQueues(): Promise<Queue[]> {
+	async getAllQueues(pagination?: PaginationParams): Promise<PaginatedResponse<Queue>> {
+		const page = pagination?.page || 1;
+		const limit = pagination?.limit || 20;
+		const offset = getPaginationOffset(page, limit);
+
+		// Get total count
+		const [{ count }] = await db
+			.select({ count: sql<number>`count(*)::int` })
+			.from(queues);
+
+		// Get paginated data
+		const data = await db
+			.select()
+			.from(queues)
+			.orderBy(desc(queues.createdAt))
+			.limit(limit)
+			.offset(offset);
+
+		return {
+			data,
+			meta: calculatePaginationMetadata(count, page, limit),
+		};
+	}
+
+	/**
+	 * Get all queues (non-paginated, for backward compatibility)
+	 */
+	async getAllQueuesList(): Promise<Queue[]> {
 		return db.select().from(queues).orderBy(desc(queues.createdAt));
 	}
 
@@ -48,21 +77,39 @@ export class QueueService {
 	}
 
 	/**
-	 * Get queue items for a queue (from active session)
+	 * Get queue items for a queue (from active session) with pagination
 	 */
-	async getQueueItems(sessionId: string): Promise<QueueItem[]> {
-		// Get active session for this queue
+	async getQueueItems(
+		sessionId: string,
+		pagination?: PaginationParams
+	): Promise<PaginatedResponse<QueueItem>> {
+		const page = pagination?.page || 1;
+		const limit = pagination?.limit || 50; // Higher default for items
+		const offset = getPaginationOffset(page, limit);
+
 		const conditions: ReturnType<typeof eq>[] = [
 			eq(queueItems.sessionId, sessionId),
 		];
 
-		const items = await db
+		// Get total count
+		const [{ count }] = await db
+			.select({ count: sql<number>`count(*)::int` })
+			.from(queueItems)
+			.where(conditions.length === 1 ? conditions[0] : and(...conditions));
+
+		// Get paginated data
+		const data = await db
 			.select()
 			.from(queueItems)
 			.where(conditions.length === 1 ? conditions[0] : and(...conditions))
-			.orderBy(queueItems.createdAt);
+			.orderBy(queueItems.createdAt)
+			.limit(limit)
+			.offset(offset);
 
-		return items;
+		return {
+			data,
+			meta: calculatePaginationMetadata(count, page, limit),
+		};
 	}
 
 	/**

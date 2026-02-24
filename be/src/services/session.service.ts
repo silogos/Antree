@@ -11,7 +11,7 @@ import {
   queueTemplateStatuses,
   queueSessionStatuses,
 } from '../db/schema.js';
-import { eq, and, desc, isNull, ne } from 'drizzle-orm';
+import { eq, and, desc, isNull, ne, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type {
   NewQueueSession,
@@ -24,65 +24,125 @@ import type {
 } from '../validators/session.validator.js';
 import type { SessionLifecycleDTO } from '../types/session.dto.js';
 import { sseBroadcaster } from '../sse/broadcaster.js';
+import type { PaginatedResponse, PaginationParams } from '../lib/pagination.js';
+import { calculatePaginationMetadata, getPaginationOffset } from '../lib/pagination.js';
 
 export class SessionService {
   /**
-   * Get all sessions with optional filtering
+   * Get all sessions with optional filtering and pagination
    */
-  async getAllSessions(filters?: {
-    queueId?: string;
-    status?: 'active' | 'paused' | 'completed' | 'archived';
-    isDeleted?: boolean;
-  }): Promise<typeof queueSessions.$inferSelect[]> {
-    let sessions: typeof queueSessions.$inferSelect[];
-
+  async getAllSessions(
+    filters?: {
+      queueId?: string;
+      status?: 'active' | 'paused' | 'completed' | 'archived';
+      isDeleted?: boolean;
+    },
+    pagination?: PaginationParams
+  ): Promise<PaginatedResponse<typeof queueSessions.$inferSelect> | typeof queueSessions.$inferSelect[]> {
     // Default: exclude soft-deleted sessions
     const deletedCondition = isNull(queueSessions.deletedAt);
 
+    const conditions: ReturnType<typeof eq | typeof and>[] = [deletedCondition];
+
     if (filters?.queueId) {
-      // Filter by queue
-      const conditions = [
-        eq(queueSessions.queueId, filters.queueId),
-        deletedCondition,
-      ];
-
-      // Filter by status if provided
-      if (filters.status) {
-        conditions.push(eq(queueSessions.status, filters.status));
-      }
-
-      sessions = await db
-        .select()
-        .from(queueSessions)
-        .where(and(...conditions))
-        .orderBy(desc(queueSessions.createdAt));
-    } else {
-      // Get all sessions
-      const conditions = [deletedCondition];
-
-      if (filters?.status) {
-        conditions.push(eq(queueSessions.status, filters.status));
-      }
-
-      sessions = await db
-        .select()
-        .from(queueSessions)
-        .where(and(...conditions))
-        .orderBy(desc(queueSessions.createdAt));
+      conditions.push(eq(queueSessions.queueId, filters.queueId));
     }
+
+    if (filters?.status) {
+      conditions.push(eq(queueSessions.status, filters.status));
+    }
+
+    const whereClause = and(...conditions);
+
+    // If pagination is requested, return paginated response
+    if (pagination) {
+      const page = pagination.page || 1;
+      const limit = pagination.limit || 20;
+      const offset = getPaginationOffset(page, limit);
+
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(queueSessions)
+        .where(whereClause);
+
+      // Get paginated data
+      const data = await db
+        .select()
+        .from(queueSessions)
+        .where(whereClause)
+        .orderBy(desc(queueSessions.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return {
+        data,
+        meta: calculatePaginationMetadata(count, page, limit),
+      };
+    }
+
+    // Otherwise, return all sessions (backward compatibility)
+    const sessions = await db
+      .select()
+      .from(queueSessions)
+      .where(whereClause)
+      .orderBy(desc(queueSessions.createdAt));
 
     return sessions;
   }
 
   /**
-   * Get statuses for a specific session
+   * Get statuses for a specific session with optional pagination
    */
-  async getSessionStatuses(sessionId: string): Promise<Array<{
+  async getSessionStatuses(
+    sessionId: string,
+    pagination?: PaginationParams
+  ): Promise<PaginatedResponse<{
+    id: string;
+    label: string;
+    color: string;
+    order: number;
+  }> | Array<{
     id: string;
     label: string;
     color: string;
     order: number;
   }>> {
+    const whereClause = eq(queueSessionStatuses.sessionId, sessionId);
+
+    // If pagination is requested, return paginated response
+    if (pagination) {
+      const page = pagination.page || 1;
+      const limit = pagination.limit || 20;
+      const offset = getPaginationOffset(page, limit);
+
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(queueSessionStatuses)
+        .where(whereClause);
+
+      // Get paginated data
+      const data = await db
+        .select({
+          id: queueSessionStatuses.id,
+          label: queueSessionStatuses.label,
+          color: queueSessionStatuses.color,
+          order: queueSessionStatuses.order,
+        })
+        .from(queueSessionStatuses)
+        .where(whereClause)
+        .orderBy(queueSessionStatuses.order)
+        .limit(limit)
+        .offset(offset);
+
+      return {
+        data,
+        meta: calculatePaginationMetadata(count, page, limit),
+      };
+    }
+
+    // Otherwise, return all statuses (backward compatibility)
     const statuses = await db
       .select({
         id: queueSessionStatuses.id,
@@ -91,7 +151,7 @@ export class SessionService {
         order: queueSessionStatuses.order,
       })
       .from(queueSessionStatuses)
-      .where(eq(queueSessionStatuses.sessionId, sessionId))
+      .where(whereClause)
       .orderBy(queueSessionStatuses.order);
 
     return statuses;

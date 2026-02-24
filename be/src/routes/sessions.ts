@@ -21,12 +21,13 @@ import {
 	lifecycleUpdateSchema,
 	updateSessionSchema,
 } from "../validators/session.validator.js";
+import { parsePaginationParams } from "../lib/pagination.js";
 
 export const sessionRoutes = new Hono();
 
 /**
  * GET /sessions
- * Get all sessions
+ * Get all sessions with optional pagination
  */
 sessionRoutes.get("/", async (c) => {
 	try {
@@ -43,8 +44,18 @@ sessionRoutes.get("/", async (c) => {
 			status,
 		};
 
-		const sessions = await sessionService.getAllSessions(filters);
-		return c.json(successResponse(sessions, undefined, sessions.length));
+		// Parse pagination params if provided
+		const pagination = parsePaginationParams(c.req.query());
+		const result = await sessionService.getAllSessions(filters, pagination);
+
+		// Check if result is paginated or array
+		if ("data" in result) {
+			const { data, meta } = result;
+			return c.json(successResponse(data, undefined, meta));
+		}
+
+		// Backward compatibility: return array response
+		return c.json(successResponse(result, undefined, result.length));
 	} catch (error) {
 		console.error("[SessionRoutes] GET /sessions error:", error);
 		return c.json(internalErrorResponse(error), 500);
@@ -73,18 +84,28 @@ sessionRoutes.get("/:id", async (c) => {
 
 /**
  * GET /sessions/:id/statuses
- * Get all statuses for a session
+ * Get all statuses for a session with optional pagination
  */
 sessionRoutes.get("/:id/statuses", async (c) => {
 	try {
 		const id = c.req.param("id");
-		const statuses = await sessionService.getSessionStatuses(id);
 
-		if (!statuses || statuses.length === 0) {
+		// Parse pagination params if provided
+		const pagination = parsePaginationParams(c.req.query());
+		const result = await sessionService.getSessionStatuses(id, pagination);
+
+		// Check if result is paginated or array
+		if ("data" in result) {
+			const { data, meta } = result;
+			return c.json(successResponse(data, undefined, meta));
+		}
+
+		// Backward compatibility: return array response
+		if (!result || result.length === 0) {
 			return c.json(successResponse([], "No statuses found for this session"));
 		}
 
-		return c.json(successResponse(statuses));
+		return c.json(successResponse(result));
 	} catch (error) {
 		console.error("[SessionRoutes] GET /sessions/:id/statuses error:", error);
 		return c.json(internalErrorResponse(error), 500);

@@ -18,17 +18,20 @@ import {
 	updateQueueSchema,
 } from "../validators/queue.validator.js";
 import { createSessionViaQueueSchema } from "../validators/session.validator.js";
+import { parsePaginationParams, type PaginationParams } from "../lib/pagination.js";
 
 export const queuesRoutes = new Hono();
 
 /**
  * GET /queues
- * Get all queues
+ * Get all queues with pagination
+ * Query params: page, limit, sort, order
  */
 queuesRoutes.get("/", async (c) => {
 	try {
-		const queues = await queueService.getAllQueues();
-		return c.json(successResponse(queues, undefined, queues.length));
+		const pagination = parsePaginationParams(c.req.query());
+		const result = await queueService.getAllQueues(pagination);
+		return c.json(successResponse(result.data, undefined, result.meta));
 	} catch (error) {
 		console.error("[QueuesRoutes] GET /queues error:", error);
 		return c.json(internalErrorResponse(error), 500);
@@ -144,6 +147,14 @@ queuesRoutes.get("/:queueId/sessions", async (c) => {
 			queueId,
 			status: status as any,
 		});
+
+		// Check if result is paginated or array
+		if ('data' in sessions) {
+			const { data, meta } = sessions;
+			return c.json(successResponse(data, undefined, meta));
+		}
+
+		// Backward compatibility: return array response
 		return c.json(successResponse(sessions, undefined, sessions.length));
 	} catch (error) {
 		console.error("[QueuesRoutes] GET /queues/:queueId/sessions error:", error);

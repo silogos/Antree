@@ -19,6 +19,7 @@ import {
 	createQueueItemViaSessionSchema,
 	updateQueueItemSchema,
 } from "../validators/queue-item.validator.js";
+import { parsePaginationParams } from "../lib/pagination.js";
 
 // Routes for general items (/items/*)
 export const itemRoutes = new Hono();
@@ -28,7 +29,7 @@ export const sessionItemRoutes = new Hono();
 
 /**
  * GET /items
- * Get all queue items
+ * Get all queue items with optional pagination
  */
 itemRoutes.get("/", async (c) => {
 	try {
@@ -42,8 +43,18 @@ itemRoutes.get("/", async (c) => {
 			statusId,
 		};
 
-		const items = await queueItemService.getAllQueueItems(filters);
-		return c.json(successResponse(items, undefined, items.length));
+		// Parse pagination params if provided
+		const pagination = parsePaginationParams(c.req.query());
+		const result = await queueItemService.getAllQueueItems(filters, pagination);
+
+		// Check if result is paginated or array
+		if ("data" in result) {
+			const { data, meta } = result;
+			return c.json(successResponse(data, undefined, meta));
+		}
+
+		// Backward compatibility: return array response
+		return c.json(successResponse(result, undefined, result.length));
 	} catch (error) {
 		console.error("[ItemRoutes] GET /items error:", error);
 		return c.json(internalErrorResponse(error), 500);
@@ -52,7 +63,7 @@ itemRoutes.get("/", async (c) => {
 
 /**
  * GET /sessions/{sessionId}/items
- * Get all items for a session
+ * Get all items for a session with optional pagination
  */
 sessionItemRoutes.get("/:sessionId/items", async (c) => {
 	try {
@@ -64,8 +75,18 @@ sessionItemRoutes.get("/:sessionId/items", async (c) => {
 			statusId,
 		};
 
-		const items = await queueItemService.getAllQueueItems(filters);
-		return c.json(successResponse(items, undefined, items.length));
+		// Parse pagination params if provided
+		const pagination = parsePaginationParams(c.req.query());
+		const result = await queueItemService.getAllQueueItems(filters, pagination);
+
+		// Check if result is paginated or array
+		if ("data" in result) {
+			const { data, meta } = result;
+			return c.json(successResponse(data, undefined, meta));
+		}
+
+		// Backward compatibility: return array response
+		return c.json(successResponse(result, undefined, result.length));
 	} catch (error) {
 		console.error("[ItemRoutes] GET /sessions/:sessionId/items error:", error);
 		return c.json(internalErrorResponse(error), 500);
@@ -94,7 +115,8 @@ sessionItemRoutes.post(
 
 			// Get session statuses to find default (first one)
 			const statuses = await sessionService.getSessionStatuses(sessionId);
-			const defaultStatusId = statuses[0]?.id;
+			const statusesArray = Array.isArray(statuses) ? statuses : statuses.data;
+			const defaultStatusId = statusesArray[0]?.id;
 
 			// Generate queue number if not provided
 			const queueNumber = input.queueNumber || `Q${Math.floor(Math.random() * 10000)}`;

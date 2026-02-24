@@ -1,14 +1,16 @@
+import { memo } from "react";
 import type { QueueItem } from "../types";
 
-interface QueueCardProps {
+interface QueueItemCardProps {
   queue: QueueItem;
 }
 
 /**
- * QueueCard Component
+ * QueueItemCard Component
  * Clean, minimalist customer card with Zed-style design
+ * Memoized to prevent unnecessary re-renders during drag-and-drop
  */
-export function QueueCard({ queue }: QueueCardProps) {
+export const QueueItemCard = memo<QueueItemCardProps>(({ queue }) => {
   const customerName = queue.metadata?.customerName || queue.name;
 
   return (
@@ -24,4 +26,6 @@ export function QueueCard({ queue }: QueueCardProps) {
       </div>
     </div>
   );
-}
+});
+
+QueueItemCard.displayName = "QueueItemCard";

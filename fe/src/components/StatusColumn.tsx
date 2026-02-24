@@ -1,5 +1,6 @@
+import { memo } from "react";
 import type { QueueItem, QueueStatus } from "../types";
-import { QueueCard } from "./QueueCard";
+import { QueueItemCard } from "./QueueCard";
 
 interface StatusSectionProps {
   status: QueueStatus;
@@ -9,8 +10,9 @@ interface StatusSectionProps {
 /**
  * StatusSection Component
  * Clean, minimalist status section with Zed-style design
+ * Memoized to prevent unnecessary re-renders during drag-and-drop
  */
-export function StatusSection({ status, queues }: StatusSectionProps) {
+export const StatusSection = memo<StatusSectionProps>(({ status, queues }) => {
   return (
     <div className="bg-gray-800 border border-gray-700 p-6">
       {/* Status Header */}
@@ -59,9 +61,11 @@ export function StatusSection({ status, queues }: StatusSectionProps) {
             </p>
           </div>
         ) : (
-          queues.map((queue) => <QueueCard key={queue.id} queue={queue} />)
+          queues.map((queue) => <QueueItemCard key={queue.id} queue={queue} />)
         )}
       </div>
     </div>
   );
-}
+});
+
+StatusSection.displayName = "StatusSection";

@@ -18,12 +18,13 @@ import {
   updateQueueItemSchema,
 } from '../validators/queue-item.validator.js';
 import type { QueueItemDTO } from '../types/session.dto.js';
+import { parsePaginationParams } from '../lib/pagination.js';
 
 export const queueItemRoutes = new Hono();
 
 /**
  * GET /queue-items
- * Get all queue items. Optionally filter by session or status.
+ * Get all queue items with optional pagination. Optionally filter by session or status.
  */
 queueItemRoutes.get('/', async (c) => {
   try {
@@ -37,8 +38,18 @@ queueItemRoutes.get('/', async (c) => {
       statusId,
     };
 
-    const items = await queueItemService.getAllQueueItems(filters);
-    return c.json(successResponse(items, undefined, items.length));
+    // Parse pagination params if provided
+    const pagination = parsePaginationParams(c.req.query());
+    const result = await queueItemService.getAllQueueItems(filters, pagination);
+
+    // Check if result is paginated or array
+    if ('data' in result) {
+      const { data, meta } = result;
+      return c.json(successResponse(data, undefined, meta));
+    }
+
+    // Backward compatibility: return array response
+    return c.json(successResponse(result, undefined, result.length));
   } catch (error) {
     console.error('[QueueItemRoutes] GET /queue-items error:', error);
     return c.json(internalErrorResponse(error), 500);
