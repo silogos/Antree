@@ -27,9 +27,7 @@ export const templateService = {
   /**
    * Create a new template
    */
-  async createTemplate(
-    data: CreateTemplateInput,
-  ): Promise<ApiResponse<QueueTemplate>> {
+  async createTemplate(data: CreateTemplateInput): Promise<ApiResponse<QueueTemplate>> {
     return http.post<ApiResponse<QueueTemplate>>("/templates", data, {
       withAuth: false,
     });
@@ -40,7 +38,7 @@ export const templateService = {
    */
   async updateTemplate(
     id: string,
-    data: Partial<CreateTemplateInput>,
+    data: Partial<CreateTemplateInput>
   ): Promise<ApiResponse<QueueTemplate>> {
     return http.put<ApiResponse<QueueTemplate>>(`/templates/${id}`, data, {
       withAuth: false,

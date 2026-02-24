@@ -6,8 +6,8 @@ import type { QueueItem, QueueSession } from "../types";
 export function useSessionSSE(
   sessionId: string | null,
   callbacks?: {
-    onQueueCreated?: (queue: any) => void;
-    onQueueUpdated?: (queue: any) => void;
+    onQueueCreated?: (queue: unknown) => void;
+    onQueueUpdated?: (queue: unknown) => void;
     onQueueDeleted?: (data: { id: string }) => void;
     onQueueItemCreated?: (queue: QueueItem) => void;
     onQueueItemUpdated?: (queue: QueueItem) => void;
@@ -24,7 +24,7 @@ export function useSessionSSE(
     onSessionCompleted?: (session: QueueSession) => void;
     onSessionArchived?: (session: QueueSession) => void;
     onSessionClosed?: (session: QueueSession) => void;
-  },
+  }
 ) {
   const [isConnected, setIsConnected] = useState(false);
 
@@ -50,10 +50,10 @@ export function useSessionSSE(
         console.log("[useSessionSSE] SSE connected:", event.data);
         break;
       case "queue_created":
-        currentCallbacks?.onQueueCreated?.(event.data as any);
+        currentCallbacks?.onQueueCreated?.(event.data);
         break;
       case "queue_updated":
-        currentCallbacks?.onQueueUpdated?.(event.data as any);
+        currentCallbacks?.onQueueUpdated?.(event.data);
         break;
       case "queue_deleted":
         currentCallbacks?.onQueueDeleted?.(event.data as { id: string });

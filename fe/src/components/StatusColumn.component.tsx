@@ -26,9 +26,7 @@ export const StatusSection = memo<StatusSectionProps>(({ status, queues }) => {
           <h3 className="text-lg font-medium text-gray-200">{status.label}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-semibold text-gray-100">
-            {queues.length}
-          </span>
+          <span className="text-2xl font-semibold text-gray-100">{queues.length}</span>
           <span className="text-sm text-gray-400">items</span>
         </div>
       </div>
@@ -56,9 +54,7 @@ export const StatusSection = memo<StatusSectionProps>(({ status, queues }) => {
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             </div>
-            <p className="text-sm text-gray-500 text-center">
-              No queues in this status
-            </p>
+            <p className="text-sm text-gray-500 text-center">No queues in this status</p>
           </div>
         ) : (
           queues.map((queue) => <QueueItemCard key={queue.id} queue={queue} />)

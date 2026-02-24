@@ -1,12 +1,6 @@
 import { AlertTriangle } from "lucide-react";
 import { Button } from "./Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from "./Dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "./Dialog";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -51,20 +45,10 @@ export function ConfirmDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={loading}
-          >
+          <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            type="button"
-            variant={variant}
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button type="button" variant={variant} onClick={onConfirm} disabled={loading}>
             {loading ? "Processing..." : confirmLabel}
           </Button>
         </DialogFooter>

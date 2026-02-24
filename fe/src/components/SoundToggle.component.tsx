@@ -8,12 +8,7 @@ interface SoundToggleProps {
   label?: "on" | "off";
 }
 
-export function SoundToggle({
-  soundEnabled,
-  onChange,
-  disabled = false,
-  label,
-}: SoundToggleProps) {
+export function SoundToggle({ soundEnabled, onChange, disabled = false, label }: SoundToggleProps) {
   const getLabel = () => {
     if (label === "on" || label === "off") return label;
     return soundEnabled ? "on" : "off";
@@ -26,7 +21,7 @@ export function SoundToggle({
       <span
         className={cn(
           "text-sm font-medium transition-colors",
-          soundEnabled ? "text-blue-600" : "text-gray-500",
+          soundEnabled ? "text-blue-600" : "text-gray-500"
         )}
       >
         {labelText}

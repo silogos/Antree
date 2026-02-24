@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { client } from "../../db/index.js";
-import { sseBroadcaster } from "../../sse/broadcaster.js";
 import { metricsCollector } from "../../lib/metrics.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
 
 // Track server start time for uptime calculation
 const SERVER_START_TIME = Date.now();
@@ -63,15 +63,16 @@ healthCheckRoutes.get("/health", async (c) => {
 					total: apiMetrics.totalRequests,
 					recent: apiMetrics.recentRequests,
 					errors: apiMetrics.errorCount,
-					errorRate: apiMetrics.totalRequests > 0
-						? ((apiMetrics.errorCount / apiMetrics.totalRequests) * 100).toFixed(2) + "%"
-						: "0%",
+					errorRate:
+						apiMetrics.totalRequests > 0
+							? `${((apiMetrics.errorCount / apiMetrics.totalRequests) * 100).toFixed(2)}%`
+							: "0%",
 				},
 				performance: {
-					avgResponseTime: apiMetrics.avgResponseTime + "ms",
-					p50ResponseTime: apiMetrics.p50ResponseTime + "ms",
-					p95ResponseTime: apiMetrics.p95ResponseTime + "ms",
-					p99ResponseTime: apiMetrics.p99ResponseTime + "ms",
+					avgResponseTime: `${apiMetrics.avgResponseTime}ms`,
+					p50ResponseTime: `${apiMetrics.p50ResponseTime}ms`,
+					p95ResponseTime: `${apiMetrics.p95ResponseTime}ms`,
+					p99ResponseTime: `${apiMetrics.p99ResponseTime}ms`,
 				},
 			},
 		},

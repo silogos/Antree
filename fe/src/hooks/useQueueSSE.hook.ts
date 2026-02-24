@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSSEClient, type SSEEvent } from "../services/sse.service";
-import { SessionLifecycle } from "../types/queue";
 import type { QueueItem, QueueSession } from "../types";
+import { SessionLifecycle } from "../types/queue";
 
 /**
  * Hook for real-time queue updates via SSE
@@ -67,7 +67,7 @@ export function useQueueSSE(options?: {
         case "queue_updated":
           console.log("[useQueueSSE] Queue updated:", event.data);
           setQueues((prev) =>
-            prev.map((q) => (q.id === (event.data as QueueItem).id ? (event.data as QueueItem) : q)),
+            prev.map((q) => (q.id === (event.data as QueueItem).id ? (event.data as QueueItem) : q))
           );
           onQueueUpdated?.(event.data as QueueItem);
           break;
@@ -87,7 +87,9 @@ export function useQueueSSE(options?: {
         case "session_updated":
           console.log("[useQueueSSE] Session updated:", event.data);
           setSessions((prev) =>
-            prev.map((s) => (s.id === (event.data as QueueSession).id ? (event.data as QueueSession) : s)),
+            prev.map((s) =>
+              s.id === (event.data as QueueSession).id ? (event.data as QueueSession) : s
+            )
           );
           onSessionUpdated?.(event.data as QueueSession);
           break;
@@ -103,10 +105,8 @@ export function useQueueSSE(options?: {
           setSessions((prev) =>
             prev.map((s) => {
               const closedSession = event.data as QueueSession;
-              return s.id === closedSession.id
-                ? { ...s, status: SessionLifecycle.CLOSED }
-                : s;
-            }),
+              return s.id === closedSession.id ? { ...s, status: SessionLifecycle.CLOSED } : s;
+            })
           );
           onSessionClosed?.(event.data as QueueSession);
           break;
@@ -123,7 +123,7 @@ export function useQueueSSE(options?: {
       onSessionUpdated,
       onSessionDeleted,
       onSessionClosed,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export function useQueueSSE(options?: {
       console.log("[useQueueSSE] Disconnecting from sessions SSE");
       sseClient.disconnect();
     };
-  }, [handleMessage]);
+  }, [handleMessage, sseClient.connect, sseClient.disconnect]);
 
   const connect = useCallback(() => {
     console.log("[useQueueSSE] Reconnecting to sessions SSE");

@@ -43,8 +43,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
       }
       return data;
     } catch (err: any) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create status";
+      const errorMessage = err instanceof Error ? err.message : "Failed to create status";
       setError(errorMessage);
       throw err;
     } finally {
@@ -52,32 +51,28 @@ export function useStatuses(options: UseStatusesOptions = {}) {
     }
   }, []);
 
-  const updateStatus = useCallback(
-    async (id: string, statusData: Partial<QueueStatus>) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data } = await statusService.updateStatus(id, {
-          label: statusData.label,
-          color: statusData.color,
-          order: statusData.order,
-          templateStatusId: statusData.templateStatusId,
-        });
-        if (data) {
-          setStatuses((prev) => prev.map((s) => (s.id === id ? data : s)));
-        }
-        return data;
-      } catch (err: any) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to update status";
-        setError(errorMessage);
-        throw err;
-      } finally {
-        setLoading(false);
+  const updateStatus = useCallback(async (id: string, statusData: Partial<QueueStatus>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await statusService.updateStatus(id, {
+        label: statusData.label,
+        color: statusData.color,
+        order: statusData.order,
+        templateStatusId: statusData.templateStatusId,
+      });
+      if (data) {
+        setStatuses((prev) => prev.map((s) => (s.id === id ? data : s)));
       }
-    },
-    [],
-  );
+      return data;
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update status";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const deleteStatus = useCallback(async (id: string) => {
     setLoading(true);
@@ -86,8 +81,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
       await statusService.deleteStatus(id);
       setStatuses((prev) => prev.filter((s) => s.id !== id));
     } catch (err: any) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete status";
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete status";
       setError(errorMessage);
       throw err;
     } finally {

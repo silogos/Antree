@@ -1,5 +1,10 @@
 {
   "recommendations": [
-    "fronterior.biome-monorepo"
+    "biomejs.biome"
+  ],
+  "unwantedRecommendations": [
+    "fronterior.biome-monorepo",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
   ]
 }

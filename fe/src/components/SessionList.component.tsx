@@ -46,16 +46,14 @@ export function SessionList({ sessions }: SessionListProps) {
               className="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-300">
-                  #{session.sessionNumber}
-                </span>
+                <span className="text-sm font-medium text-gray-300">#{session.sessionNumber}</span>
                 <span className="text-sm text-gray-400">{session.name}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <span
                   className={`px-2 py-1 text-xs font-medium text-white rounded-full ${getSessionBadgeColor(
-                    session.status || session.status || "draft",
+                    session.status || session.status || "draft"
                   )}`}
                 >
                   {(session.status || session.status || "draft").toUpperCase()}

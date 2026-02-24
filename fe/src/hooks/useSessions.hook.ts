@@ -12,10 +12,7 @@ export function useSessions() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSessions = useCallback(async (params?: {
-    queueId?: string;
-    status?: string;
-  }) => {
+  const fetchSessions = useCallback(async (params?: { queueId?: string; status?: string }) => {
     setLoading(true);
     setError(null);
     try {
@@ -32,17 +29,15 @@ export function useSessions() {
     }
   }, []);
 
-  const createSession = useCallback(async (data: {
-    queueId: string;
-    name?: string;
-  }) => {
+  const createSession = useCallback(async (data: { queueId: string; name?: string }) => {
     setLoading(true);
     setError(null);
     try {
       const response = await sessionService.createSession(data);
       if (response.success && response.data) {
-        setSessions(prev => [...prev, response.data!]);
-        return response.data;
+        const sessionData = response.data;
+        setSessions((prev) => [...prev, sessionData]);
+        return sessionData;
       } else {
         setError(response.error || "Failed to create session");
         return null;
@@ -61,10 +56,9 @@ export function useSessions() {
     try {
       const response = await sessionService.updateSession(id, data);
       if (response.success && response.data) {
-        setSessions(prev =>
-          prev.map(session => (session.id === id ? response.data! : session))
-        );
-        return response.data;
+        const sessionData = response.data;
+        setSessions((prev) => prev.map((session) => (session.id === id ? sessionData : session)));
+        return sessionData;
       } else {
         setError(response.error || "Failed to update session");
         return null;
@@ -83,8 +77,8 @@ export function useSessions() {
     try {
       const response = await sessionService.updateSessionLifecycle(id, status);
       if (response.success && response.data) {
-        setSessions(prev =>
-          prev.map(session => (session.id === id ? response.data! : session))
+        setSessions((prev) =>
+          prev.map((session) => (session.id === id ? response.data! : session))
         );
         return response.data;
       } else {
@@ -105,7 +99,7 @@ export function useSessions() {
     try {
       const response = await sessionService.deleteSession(id);
       if (response.success && response.data) {
-        setSessions(prev => prev.filter(session => session.id !== id));
+        setSessions((prev) => prev.filter((session) => session.id !== id));
         return response.data;
       } else {
         setError(response.error || "Failed to delete session");

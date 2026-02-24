@@ -2,9 +2,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useQueues } from "../hooks/useQueues.hook";
 import type { QueueStatus } from "@/src/types/queue.types";
 import { useToast } from "../hooks/use-toast.hook";
+import { useQueues } from "../hooks/useQueues.hook";
 import { Button } from "./ui/Button.component";
 import {
   Dialog,
@@ -17,13 +17,24 @@ import {
 import { Input } from "./ui/Input.component";
 import { Label } from "./ui/Label.component";
 
+interface CreateQueueData {
+  sessionId: string;
+  queueNumber: string;
+  name: string;
+  statusId: string;
+  metadata: {
+    customerName: string;
+    duration: string;
+  };
+}
+
 interface AddQueueModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   statuses?: QueueStatus[];
   sessionId: string;
-  onCreate?: (data: any) => Promise<any>;
+  onCreate?: (data: CreateQueueData) => Promise<void>;
 }
 
 const createQueueSchema = z.object({
@@ -105,9 +116,7 @@ export function AddQueueModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Queue Item</DialogTitle>
-          <DialogDescription>
-            Fill in the details below to add a new queue item.
-          </DialogDescription>
+          <DialogDescription>Fill in the details below to add a new queue item.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -121,9 +130,7 @@ export function AddQueueModal({
                 disabled={loading}
               />
               {form.formState.errors.queueNumber && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.queueNumber.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.queueNumber.message}</p>
               )}
             </div>
 
@@ -136,9 +143,7 @@ export function AddQueueModal({
                 disabled={loading}
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.name.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.name.message}</p>
               )}
             </div>
 
@@ -151,9 +156,7 @@ export function AddQueueModal({
                 disabled={loading}
               />
               {form.formState.errors.customerName && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.customerName.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.customerName.message}</p>
               )}
             </div>
 
@@ -166,9 +169,7 @@ export function AddQueueModal({
                 disabled={loading}
               />
               {form.formState.errors.duration && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.duration.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.duration.message}</p>
               )}
             </div>
 
@@ -187,20 +188,13 @@ export function AddQueueModal({
                 ))}
               </select>
               {form.formState.errors.statusId && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.statusId.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.statusId.message}</p>
               )}
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

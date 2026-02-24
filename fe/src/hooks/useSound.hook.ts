@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
+// Extend Window interface for webkitAudioContext
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 /**
  * Custom hook for sound management
  * Handles sound toggle and announcement playback
@@ -19,9 +26,7 @@ export function useSound() {
       // Initialize AudioContext when enabling (user gesture)
       if (newEnabled && !audioContextRef.current) {
         try {
-          audioContextRef.current = new (
-            window.AudioContext || (window as any).webkitAudioContext
-          )();
+          audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
 
           // Resume AudioContext if suspended (required by browser policy)
           if (audioContextRef.current.state === "suspended") {
@@ -46,9 +51,7 @@ export function useSound() {
     try {
       // Initialize AudioContext if not already created
       if (!audioContextRef.current) {
-        audioContextRef.current = new (
-          window.AudioContext || (window as any).webkitAudioContext
-        )();
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
 
       const audioContext = audioContextRef.current;
@@ -70,10 +73,7 @@ export function useSound() {
 
       // Beep envelope
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.01,
-        audioContext.currentTime + 0.1,
-      );
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
 
       // Play the beep
       oscillator.start(audioContext.currentTime);
@@ -108,9 +108,7 @@ export function useSound() {
       console.log({ voices });
 
       // Try to find Indonesian voice (priority order: Indonesia, then English, then default)
-      const indonesianVoice = voices.find((voice) =>
-        voice.lang.startsWith("id"),
-      );
+      const indonesianVoice = voices.find((voice) => voice.lang.startsWith("id"));
       const englishVoice = voices.find((voice) => voice.lang.startsWith("en"));
 
       // Use Indonesian voice if available, otherwise fallback to English, then default
@@ -123,10 +121,7 @@ export function useSound() {
         utterance.voice = englishVoice;
         utterance.lang = "en-US";
         utterance.text = `Number ${queueNumber}, for ${customerName}.`;
-        console.log(
-          "Using English voice (Indonesian not available):",
-          englishVoice.name,
-        );
+        console.log("Using English voice (Indonesian not available):", englishVoice.name);
       } else {
         // Fallback: use default voice with Indonesian text
         utterance.lang = "id-ID";

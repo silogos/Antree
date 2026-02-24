@@ -26,9 +26,9 @@ export function useBoardSSE(
     onStatusCreated?: (status: QueueStatus) => void;
     onStatusUpdated?: (status: QueueStatus) => void;
     onStatusDeleted?: (data: { id: string }) => void;
-    onBoardUpdated?: (board: any) => void;
+    onBoardUpdated?: (board: unknown) => void;
     onBoardDeleted?: (data: { id: string }) => void;
-  },
+  }
 ) {
   const [isConnected, setIsConnected] = useState(false);
   const sseClient = getSSEClient();
@@ -78,7 +78,7 @@ export function useBoardSSE(
           console.warn("[useBoardSSE] Unknown event type:", event.type);
       }
     },
-    [callbacks],
+    [callbacks]
   );
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export function useBoardSSE(
       console.log("[useBoardSSE] Disconnecting from board:", boardId);
       sseClient.disconnect();
     };
-  }, [boardId, handleMessage]);
+  }, [boardId, handleMessage, sseClient.connect, sseClient.disconnect]);
 
   const connect = useCallback(() => {
     if (boardId) {
@@ -116,12 +116,12 @@ export function useBoardSSE(
         },
       });
     }
-  }, [boardId, handleMessage]);
+  }, [boardId, handleMessage, sseClient.connect]);
 
   const disconnect = useCallback(() => {
     sseClient.disconnect();
     setIsConnected(false);
-  }, []);
+  }, [sseClient.disconnect]);
 
   return {
     isConnected,

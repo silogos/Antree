@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSSEClient, type SSEEvent } from "../services/sse.service";
-import { SessionLifecycle } from "../types/queue";
 import type { Queue, QueueSession } from "../types";
+import { SessionLifecycle } from "../types/queue";
 
 /**
  * Hook for real-time queue list updates via SSE
@@ -67,7 +67,7 @@ export function useQueuesSSE(options?: {
         case "queue_updated":
           console.log("[useQueuesSSE] Queue updated:", event.data);
           setQueues((prev) =>
-            prev.map((q) => (q.id === (event.data as Queue).id ? (event.data as Queue) : q)),
+            prev.map((q) => (q.id === (event.data as Queue).id ? (event.data as Queue) : q))
           );
           onQueueUpdated?.(event.data as Queue);
           break;
@@ -87,7 +87,9 @@ export function useQueuesSSE(options?: {
         case "session_updated":
           console.log("[useQueuesSSE] Session updated:", event.data);
           setSessions((prev) =>
-            prev.map((s) => (s.id === (event.data as QueueSession).id ? (event.data as QueueSession) : s)),
+            prev.map((s) =>
+              s.id === (event.data as QueueSession).id ? (event.data as QueueSession) : s
+            )
           );
           onSessionUpdated?.(event.data as QueueSession);
           break;
@@ -103,10 +105,8 @@ export function useQueuesSSE(options?: {
           setSessions((prev) =>
             prev.map((s) => {
               const closedSession = event.data as QueueSession;
-              return s.id === closedSession.id
-                ? { ...s, status: SessionLifecycle.CLOSED }
-                : s;
-            }),
+              return s.id === closedSession.id ? { ...s, status: SessionLifecycle.CLOSED } : s;
+            })
           );
           onSessionClosed?.(event.data as QueueSession);
           break;
@@ -123,7 +123,7 @@ export function useQueuesSSE(options?: {
       onSessionUpdated,
       onSessionDeleted,
       onSessionClosed,
-    ],
+    ]
   );
 
   useEffect(() => {

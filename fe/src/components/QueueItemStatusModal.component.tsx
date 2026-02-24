@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import type { QueueItem, QueueStatus } from "@/src/types/queue.types";
-import { queueItemService } from "../services/queue.service";
 import { useToast } from "../hooks/use-toast.hook";
+import { queueItemService } from "../services/queue.service";
 import { Button } from "./ui/Button.component";
 import {
   Dialog,
@@ -44,8 +44,7 @@ export function QueueItemStatusModal({
   const nextStatusIndex = currentStatus
     ? statuses.findIndex((s) => s.id === currentStatus.id) + 1
     : 0;
-  const nextStatus =
-    nextStatusIndex < statuses.length ? statuses[nextStatusIndex] : null;
+  const nextStatus = nextStatusIndex < statuses.length ? statuses[nextStatusIndex] : null;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(updateStatusSchema),
@@ -102,9 +101,7 @@ export function QueueItemStatusModal({
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: currentStatus.color }}
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    {currentStatus.label}
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">{currentStatus.label}</span>
                 </div>
               )}
             </div>
@@ -125,9 +122,7 @@ export function QueueItemStatusModal({
                 ))}
               </select>
               {form.formState.errors.statusId && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.statusId.message}
-                </p>
+                <p className="text-sm text-red-600">{form.formState.errors.statusId.message}</p>
               )}
             </div>
 
@@ -158,12 +153,7 @@ export function QueueItemStatusModal({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

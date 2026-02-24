@@ -10,15 +10,10 @@ export const sessionStatusService = {
   /**
    * Get all statuses for a session
    */
-  async getSessionStatuses(
-    sessionId: string,
-  ): Promise<ApiResponse<QueueStatus[]>> {
-    return http.get<ApiResponse<QueueStatus[]>>(
-      `/sessions/${sessionId}/statuses`,
-      {
-        withAuth: false,
-      },
-    );
+  async getSessionStatuses(sessionId: string): Promise<ApiResponse<QueueStatus[]>> {
+    return http.get<ApiResponse<QueueStatus[]>>(`/sessions/${sessionId}/statuses`, {
+      withAuth: false,
+    });
   },
 
   /**
@@ -40,7 +35,7 @@ export const sessionStatusService = {
       label?: string;
       color?: string;
       order?: number;
-    },
+    }
   ): Promise<ApiResponse<QueueStatus>> {
     return http.patch<ApiResponse<QueueStatus>>(`/session-statuses/${id}`, data, {
       withAuth: false,

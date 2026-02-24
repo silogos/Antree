@@ -62,7 +62,9 @@ export function useStatusesSSE(options?: {
         case "status_updated":
           console.log("[useStatusesSSE] Status updated:", event.data);
           setStatuses((prev) =>
-            prev.map((s) => (s.id === (event.data as QueueStatus).id ? (event.data as QueueStatus) : s)),
+            prev.map((s) =>
+              s.id === (event.data as QueueStatus).id ? (event.data as QueueStatus) : s
+            )
           );
           onStatusUpdated?.(event.data as QueueStatus);
           break;
@@ -82,7 +84,9 @@ export function useStatusesSSE(options?: {
         case "session_status_updated":
           console.log("[useStatusesSSE] Session status updated:", event.data);
           setStatuses((prev) =>
-            prev.map((s) => (s.id === (event.data as QueueStatus).id ? (event.data as QueueStatus) : s)),
+            prev.map((s) =>
+              s.id === (event.data as QueueStatus).id ? (event.data as QueueStatus) : s
+            )
           );
           onSessionStatusUpdated?.(event.data as QueueStatus);
           break;
@@ -104,7 +108,7 @@ export function useStatusesSSE(options?: {
       onSessionStatusCreated,
       onSessionStatusUpdated,
       onSessionStatusDeleted,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -125,7 +129,7 @@ export function useStatusesSSE(options?: {
       console.log("[useStatusesSSE] Disconnecting from status SSE");
       sseClient.disconnect();
     };
-  }, [handleMessage, sessionId]);
+  }, [handleMessage, sessionId, sseClient.connect, sseClient.disconnect]);
 
   const connect = useCallback(() => {
     const endpoint = sessionId ? `/sessions/${sessionId}/statuses` : "/statuses";

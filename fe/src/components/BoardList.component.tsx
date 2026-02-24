@@ -1,11 +1,11 @@
+import { Activity, AlertCircle, CheckCircle, Info, LayoutGrid, Loader2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Plus, Activity, LayoutGrid, CheckCircle, AlertCircle, Info, Loader2 } from "lucide-react";
-import { useQueueList } from "../hooks/useQueueList.hook";
 import type { Queue } from "@/src/types/queue.types";
 import { useToast } from "../hooks/use-toast.hook";
-import { Button } from "./ui/Button.component";
+import { useQueueList } from "../hooks/useQueueList.hook";
 import { Footer } from "./Footer.component";
 import { QueueBoardCard } from "./QueueBoardCard.component";
+import { Button } from "./ui/Button.component";
 
 const renderContent = ({
   queues,
@@ -121,10 +121,7 @@ export function BoardList() {
             </div>
 
             {/* Right side - New Queue Button */}
-            <Button
-              size="sm"
-              className="shadow-sm hover:shadow transition-shadow hidden sm:flex"
-            >
+            <Button size="sm" className="shadow-sm hover:shadow transition-shadow hidden sm:flex">
               <Plus size={16} className="mr-2" />
               New Queue
             </Button>
@@ -143,7 +140,9 @@ export function BoardList() {
               <Button
                 size="sm"
                 variant="default"
-                onClick={() => success("Success!", { description: "This is a success toast notification." })}
+                onClick={() =>
+                  success("Success!", { description: "This is a success toast notification." })
+                }
               >
                 <CheckCircle size={14} className="mr-1" />
                 Success
@@ -151,7 +150,9 @@ export function BoardList() {
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => error("Error!", { description: "This is an error toast notification." })}
+                onClick={() =>
+                  error("Error!", { description: "This is an error toast notification." })
+                }
               >
                 <AlertCircle size={14} className="mr-1" />
                 Error
@@ -167,7 +168,9 @@ export function BoardList() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => warning("Warning!", { description: "This is a warning toast notification." })}
+                onClick={() =>
+                  warning("Warning!", { description: "This is a warning toast notification." })
+                }
               >
                 <AlertCircle size={14} className="mr-1" />
                 Warning
@@ -178,7 +181,10 @@ export function BoardList() {
                 onClick={() => {
                   loading("Loading...", { id: "loading-demo", description: "Please wait..." });
                   setTimeout(() => {
-                    success("Completed!", { id: "loading-demo", description: "Operation finished successfully." });
+                    success("Completed!", {
+                      id: "loading-demo",
+                      description: "Operation finished successfully.",
+                    });
                   }, 2000);
                 }}
               >

@@ -30,22 +30,19 @@ export const queueService = {
    * Get active batch for a queue
    */
   async getActiveBatch(
-    queueId: string,
-  ): Promise<ApiResponse<{ batch: any; statuses: any[] } | null>> {
-    return http.get<ApiResponse<{ batch: any; statuses: any[] } | null>>(
+    queueId: string
+  ): Promise<ApiResponse<{ batch: unknown; statuses: unknown[] } | null>> {
+    return http.get<ApiResponse<{ batch: unknown; statuses: unknown[] } | null>>(
       `/queues/${queueId}/active-batch`,
-      { withAuth: false },
+      { withAuth: false }
     );
   },
 
   /**
    * Reset queue (close current active batch, create new batch)
    */
-  async resetQueue(
-    queueId: string,
-    data?: { name?: string },
-  ): Promise<ApiResponse<any>> {
-    return http.post<ApiResponse<any>>(`/queues/${queueId}/reset`, data || {}, {
+  async resetQueue(queueId: string, data?: { name?: string }): Promise<ApiResponse<unknown>> {
+    return http.post<ApiResponse<unknown>>(`/queues/${queueId}/reset`, data || {}, {
       withAuth: false,
     });
   },
@@ -68,7 +65,7 @@ export const queueService = {
    */
   async updateQueue(
     id: string,
-    data: { name?: string; isActive?: boolean; updatedBy?: string },
+    data: { name?: string; isActive?: boolean; updatedBy?: string }
   ): Promise<ApiResponse<Queue>> {
     return http.put<ApiResponse<Queue>>(`/queues/${id}`, data, {
       withAuth: false,

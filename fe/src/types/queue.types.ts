@@ -30,7 +30,7 @@ export interface QueueItem {
   createdAt: string;
   updatedAt: string;
   /** Optional custom data (JSONB) stored with queue item */
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 /**
@@ -203,7 +203,7 @@ export interface CreateQueueItemInput {
   queueNumber: string;
   name: string;
   statusId: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 /**
@@ -213,7 +213,7 @@ export interface UpdateQueueItemInput {
   id: string;
   name?: string;
   statusId?: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   ArrowLeft,
@@ -11,22 +12,16 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import type { Queue, QueueSession, SessionStatus } from "@/src/types/queue.types";
 import { useSound } from "../hooks/useSound.hook";
 import { queueService } from "../services/queue-list.service";
 import { sessionService } from "../services/session.service";
-import type { Queue, QueueSession, SessionStatus } from "@/src/types/queue.types";
 
 import { Footer } from "./Footer.component";
 
 import { Topbar } from "./Topbar.component";
 import { Button } from "./ui/Button.component";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/Card.component";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/Card.component";
 
 /**
  * QueueDetail Component
@@ -39,10 +34,8 @@ export function QueueDetail() {
   const [sessions, setSessions] = useState<QueueSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<QueueSession | null>(
-    null,
-  );
+  const [_isModalOpen, setIsModalOpen] = useState(false);
+  const [_editingSession, setEditingSession] = useState<QueueSession | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   // Sound hook
@@ -97,15 +90,12 @@ export function QueueDetail() {
             };
 
             const statusDiff =
-              statusOrder[a.status as SessionStatus] -
-              statusOrder[b.status as SessionStatus];
+              statusOrder[a.status as SessionStatus] - statusOrder[b.status as SessionStatus];
 
             if (statusDiff !== 0) return statusDiff;
 
             // Same status, sort by created time (newest first)
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
           });
 
           setSessions(sortedSessions);
@@ -139,14 +129,11 @@ export function QueueDetail() {
           };
 
           const statusDiff =
-            statusOrder[a.status as SessionStatus] -
-            statusOrder[b.status as SessionStatus];
+            statusOrder[a.status as SessionStatus] - statusOrder[b.status as SessionStatus];
 
           if (statusDiff !== 0) return statusDiff;
 
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
 
         setSessions(sortedSessions);
@@ -169,13 +156,13 @@ export function QueueDetail() {
   };
 
   // Handle modal close
-  const handleModalClose = () => {
+  const _handleModalClose = () => {
     setIsModalOpen(false);
     setEditingSession(null);
   };
 
   // Handle successful session operation
-  const handleSessionSuccess = () => {
+  const _handleSessionSuccess = () => {
     refreshSessions();
     setLastRefresh(new Date());
   };
@@ -226,10 +213,7 @@ export function QueueDetail() {
 
   // Get status icon and color
   const getStatusInfo = (status: SessionStatus) => {
-    const info: Record<
-      SessionStatus,
-      { icon: any; color: string; bg: string }
-    > = {
+    const info: Record<SessionStatus, { icon: LucideIcon; color: string; bg: string }> = {
       draft: { icon: Clock, color: "text-slate-500", bg: "bg-slate-100" },
       active: { icon: Play, color: "text-emerald-600", bg: "bg-emerald-100" },
       paused: { icon: Pause, color: "text-amber-600", bg: "bg-amber-100" },
@@ -267,9 +251,7 @@ export function QueueDetail() {
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Activity className="w-8 h-8 text-slate-400" />
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-slate-800">
-            Invalid Queue
-          </h2>
+          <h2 className="text-2xl font-bold mb-2 text-slate-800">Invalid Queue</h2>
           <p className="text-slate-500 mb-6">No queue ID provided.</p>
           <Link
             to="/"
@@ -348,12 +330,8 @@ export function QueueDetail() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 mb-1">
-                      Total Sessions
-                    </p>
-                    <p className="text-3xl font-bold text-slate-900">
-                      {stats.total}
-                    </p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Total Sessions</p>
+                    <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Users className="w-6 h-6 text-blue-600" />
@@ -366,12 +344,8 @@ export function QueueDetail() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 mb-1">
-                      Active
-                    </p>
-                    <p className="text-3xl font-bold text-emerald-600">
-                      {stats.active}
-                    </p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Active</p>
+                    <p className="text-3xl font-bold text-emerald-600">{stats.active}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <Play className="w-6 h-6 text-emerald-600 fill-current" />
@@ -384,12 +358,8 @@ export function QueueDetail() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 mb-1">
-                      Completed
-                    </p>
-                    <p className="text-3xl font-bold text-blue-600">
-                      {stats.completed}
-                    </p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Completed</p>
+                    <p className="text-3xl font-bold text-blue-600">{stats.completed}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Calendar className="w-6 h-6 text-blue-600" />
@@ -402,12 +372,8 @@ export function QueueDetail() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500 mb-1">
-                      Paused
-                    </p>
-                    <p className="text-3xl font-bold text-amber-600">
-                      {stats.paused}
-                    </p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Paused</p>
+                    <p className="text-3xl font-bold text-amber-600">{stats.paused}</p>
                   </div>
                   <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
                     <Pause className="w-6 h-6 text-amber-600 fill-current" />
@@ -446,20 +412,13 @@ export function QueueDetail() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-xs font-medium text-slate-500 mb-1">
-                    Queue ID
-                  </p>
-                  <p
-                    className="text-sm font-mono text-slate-700 truncate"
-                    title={queue?.id}
-                  >
+                  <p className="text-xs font-medium text-slate-500 mb-1">Queue ID</p>
+                  <p className="text-sm font-mono text-slate-700 truncate" title={queue?.id}>
                     {queue?.id}
                   </p>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-xs font-medium text-slate-500 mb-1">
-                    Template ID
-                  </p>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Template ID</p>
                   <p
                     className="text-sm font-mono text-slate-700 truncate"
                     title={queue?.templateId}
@@ -468,9 +427,7 @@ export function QueueDetail() {
                   </p>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-xs font-medium text-slate-500 mb-1">
-                    Last Updated
-                  </p>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Last Updated</p>
                   <p className="text-sm text-slate-700">
                     {queue ? formatRelativeTime(queue.updatedAt) : "-"}
                   </p>
@@ -484,9 +441,7 @@ export function QueueDetail() {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl font-semibold text-slate-900">
-                    Sessions
-                  </CardTitle>
+                  <CardTitle className="text-xl font-semibold text-slate-900">Sessions</CardTitle>
                   <CardDescription className="text-slate-500">
                     Manage your queue sessions
                   </CardDescription>
@@ -508,9 +463,7 @@ export function QueueDetail() {
                   <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-10 h-10 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                    No sessions yet
-                  </h3>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">No sessions yet</h3>
                   <p className="text-slate-500 mb-6 max-w-sm mx-auto">
                     Create your first session to start managing queues
                   </p>
@@ -525,9 +478,7 @@ export function QueueDetail() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {sessions.map((session) => {
-                    const statusInfo = getStatusInfo(
-                      session.status as SessionStatus,
-                    );
+                    const statusInfo = getStatusInfo(session.status as SessionStatus);
                     const StatusIcon = statusInfo.icon;
 
                     return (
@@ -541,9 +492,7 @@ export function QueueDetail() {
                               <div
                                 className={`w-10 h-10 rounded-lg flex items-center justify-center ${statusInfo.bg} shrink-0`}
                               >
-                                <StatusIcon
-                                  className={`w-5 h-5 ${statusInfo.color}`}
-                                />
+                                <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-lg font-semibold text-slate-900 truncate mb-1">
@@ -552,12 +501,10 @@ export function QueueDetail() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span
                                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeColor(
-                                      session.status as SessionStatus,
+                                      session.status as SessionStatus
                                     )}`}
                                   >
-                                    {getStatusLabel(
-                                      session.status as SessionStatus,
-                                    )}
+                                    {getStatusLabel(session.status as SessionStatus)}
                                   </span>
                                   {session.sessionNumber && (
                                     <span className="inline-flex items-center px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
@@ -582,17 +529,13 @@ export function QueueDetail() {
 
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="p-2.5 bg-slate-50 rounded-lg">
-                              <p className="text-xs font-medium text-slate-500 mb-1">
-                                Created
-                              </p>
+                              <p className="text-xs font-medium text-slate-500 mb-1">Created</p>
                               <p className="font-medium text-slate-700">
                                 {formatRelativeTime(session.createdAt)}
                               </p>
                             </div>
                             <div className="p-2.5 bg-slate-50 rounded-lg">
-                              <p className="text-xs font-medium text-slate-500 mb-1">
-                                Session ID
-                              </p>
+                              <p className="text-xs font-medium text-slate-500 mb-1">Session ID</p>
                               <p
                                 className="font-medium text-slate-700 font-mono text-xs truncate"
                                 title={session.id}

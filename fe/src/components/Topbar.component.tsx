@@ -57,9 +57,7 @@ export function Topbar({
             <div className="hidden sm:block text-sm text-gray-400 font-mono">
               {formatTime(currentTime)}
             </div>
-            {boardSelector && (
-              <div className="hidden sm:block">{boardSelector}</div>
-            )}
+            {boardSelector && <div className="hidden sm:block">{boardSelector}</div>}
           </div>
 
           {/* Right side - Controls and Status */}
@@ -93,15 +91,14 @@ export function Topbar({
                   />
                 </svg>
                 <span className="text-xs">Last refresh:</span>
-                <span className="text-xs text-gray-500">
-                  {formatDate(lastRefresh)}
-                </span>
+                <span className="text-xs text-gray-500">{formatDate(lastRefresh)}</span>
               </div>
             )}
 
             {/* Sound Toggle */}
             {onToggleSound && (
               <button
+                type="button"
                 onClick={onToggleSound}
                 className="flex items-center gap-2 px-3 py-1.5 rounded text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
               >
@@ -113,14 +110,12 @@ export function Topbar({
                   stroke="currentColor"
                 >
                   {soundEnabled ? (
-                    <>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                      />
-                    </>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
                   ) : (
                     <>
                       <path
@@ -138,23 +133,20 @@ export function Topbar({
                     </>
                   )}
                 </svg>
-                <span className="text-xs">
-                  {soundEnabled ? "Sound On" : "Sound Off"}
-                </span>
+                <span className="text-xs">{soundEnabled ? "Sound On" : "Sound Off"}</span>
               </button>
             )}
 
             {/* Auto Movement Toggle */}
             {onToggleAutoMovement && (
               <button
+                type="button"
                 onClick={onToggleAutoMovement}
                 className="flex items-center gap-2 px-3 py-1.5 rounded text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
               >
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    autoMovementEnabled
-                      ? "bg-green-400 animate-pulse"
-                      : "bg-gray-600"
+                    autoMovementEnabled ? "bg-green-400 animate-pulse" : "bg-gray-600"
                   }`}
                 />
                 <span

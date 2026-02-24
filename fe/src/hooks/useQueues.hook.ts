@@ -27,7 +27,7 @@ export function useQueues(options: UseQueuesOptions = {}) {
 
       const { data } = await queueService.getQueueItems(params);
       setQueues(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch queues");
     } finally {
       setLoading(false);
@@ -43,9 +43,8 @@ export function useQueues(options: UseQueuesOptions = {}) {
         setQueues((prev) => [...prev, data]);
       }
       return data;
-    } catch (err: any) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create queue";
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create queue";
       setError(errorMessage);
       throw err;
     } finally {
@@ -53,27 +52,23 @@ export function useQueues(options: UseQueuesOptions = {}) {
     }
   }, []);
 
-  const updateQueue = useCallback(
-    async (id: string, queueData: Partial<UpdateQueueInput>) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data } = await queueService.updateQueueItem(id, queueData);
-        if (data) {
-          setQueues((prev) => prev.map((q) => (q.id === id ? data : q)));
-        }
-        return data;
-      } catch (err: any) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to update queue";
-        setError(errorMessage);
-        throw err;
-      } finally {
-        setLoading(false);
+  const updateQueue = useCallback(async (id: string, queueData: Partial<UpdateQueueInput>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await queueService.updateQueueItem(id, queueData);
+      if (data) {
+        setQueues((prev) => prev.map((q) => (q.id === id ? data : q)));
       }
-    },
-    [],
-  );
+      return data;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update queue";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const deleteQueue = useCallback(async (id: string) => {
     setLoading(true);
@@ -81,9 +76,8 @@ export function useQueues(options: UseQueuesOptions = {}) {
     try {
       await queueService.deleteQueueItem(id);
       setQueues((prev) => prev.filter((q) => q.id !== id));
-    } catch (err: any) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete queue";
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete queue";
       setError(errorMessage);
       throw err;
     } finally {

@@ -1,27 +1,24 @@
+import { Activity, Archive, ArrowLeft, CheckCircle2, Pause, Play, Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Plus, ArrowLeft, Users, Activity, Play, Pause, CheckCircle2, Archive } from "lucide-react";
-import { sessionService } from "../services/session.service";
-import { queueItemService } from "../services/queue.service";
-import { useSound } from "../hooks/useSound.hook";
-import { useSessionSSE } from "../hooks/useSessionSSE.hook";
-
-
-import { Button } from "./ui/Button.component";
-import { Footer } from "./Footer.component";
-import { AddQueueModal } from "./AddQueueModal.component";
-import { QueueItemStatusModal } from "./QueueItemStatusModal.component";
-import { Topbar } from "./Topbar.component";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/Card.component";
-import { SessionStatusSection } from "./SessionStatusSection.component";
 import { useToast } from "../hooks/use-toast.hook";
-import type { QueueSession, QueueSessionStatus, QueueItem, SessionStatus } from "../types/queue.types";
+import { useSessionSSE } from "../hooks/useSessionSSE.hook";
+import { useSound } from "../hooks/useSound.hook";
+import { queueItemService } from "../services/queue.service";
+import { sessionService } from "../services/session.service";
+import type {
+  QueueItem,
+  QueueSession,
+  QueueSessionStatus,
+  SessionStatus,
+} from "../types/queue.types";
+import { AddQueueModal } from "./AddQueueModal.component";
+import { Footer } from "./Footer.component";
+import { QueueItemStatusModal } from "./QueueItemStatusModal.component";
+import { SessionStatusSection } from "./SessionStatusSection.component";
+import { Topbar } from "./Topbar.component";
+import { Button } from "./ui/Button.component";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/Card.component";
 
 /**
  * SessionDetail Component
@@ -47,43 +44,34 @@ export function SessionDetail() {
   const { success, error: showError } = useToast();
 
   // SSE integration for real-time updates
-  const { isConnected: sseConnected } = useSessionSSE(
-    sessionId || null,
-    {
-      onQueueItemCreated: (item) => {
-        setQueueItems((prev) => [...prev, item]);
-        playNotificationSound();
-      },
-      onQueueItemUpdated: (item) => {
-        setQueueItems((prev) =>
-          prev.map((q) => (q.id === item.id ? item : q)),
-        );
-      },
-      onQueueItemStatusChanged: (item) => {
-        setQueueItems((prev) =>
-          prev.map((q) => (q.id === item.id ? item : q)),
-        );
-        playNotificationSound();
-      },
-      onQueueItemDeleted: (data) => {
-        setQueueItems((prev) => prev.filter((q) => q.id !== data.id));
-      },
-      onSessionUpdated: (updatedSession) => {
-        setSession(updatedSession);
-      },
-      onStatusCreated: (status: any) => {
-        setStatuses((prev) => [...prev, status]);
-      },
-      onStatusUpdated: (status: any) => {
-        setStatuses((prev) =>
-          prev.map((s) => (s.id === status.id ? status : s)),
-        );
-      },
-      onStatusDeleted: (data: any) => {
-        setStatuses((prev) => prev.filter((s) => s.id !== data.id));
-      },
+  const { isConnected: sseConnected } = useSessionSSE(sessionId || null, {
+    onQueueItemCreated: (item) => {
+      setQueueItems((prev) => [...prev, item]);
+      playNotificationSound();
     },
-  );
+    onQueueItemUpdated: (item) => {
+      setQueueItems((prev) => prev.map((q) => (q.id === item.id ? item : q)));
+    },
+    onQueueItemStatusChanged: (item) => {
+      setQueueItems((prev) => prev.map((q) => (q.id === item.id ? item : q)));
+      playNotificationSound();
+    },
+    onQueueItemDeleted: (data) => {
+      setQueueItems((prev) => prev.filter((q) => q.id !== data.id));
+    },
+    onSessionUpdated: (updatedSession) => {
+      setSession(updatedSession);
+    },
+    onStatusCreated: (status: QueueSessionStatus) => {
+      setStatuses((prev) => [...prev, status]);
+    },
+    onStatusUpdated: (status: QueueSessionStatus) => {
+      setStatuses((prev) => prev.map((s) => (s.id === status.id ? status : s)));
+    },
+    onStatusDeleted: (data: { id: string }) => {
+      setStatuses((prev) => prev.filter((s) => s.id !== data.id));
+    },
+  });
 
   // Play notification sound
   const playNotificationSound = () => {
@@ -161,12 +149,18 @@ export function SessionDetail() {
   };
 
   // Handle queue item creation
-  const handleCreateQueueItem = async (data: any) => {
+  const handleCreateQueueItem = async (data: {
+    sessionId: string;
+    queueNumber: string;
+    name: string;
+    statusId: string;
+    metadata: {
+      customerName: string;
+      duration: string;
+    };
+  }) => {
     if (!sessionId) return;
-    const response = await queueItemService.createQueueItemViaSession(
-      sessionId,
-      data,
-    );
+    const response = await queueItemService.createQueueItemViaSession(sessionId, data);
     if (!response.success) {
       throw new Error(response.error || "Failed to create queue item");
     }
@@ -423,7 +417,7 @@ export function SessionDetail() {
                     <>
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeColor(
-                          session.status as SessionStatus,
+                          session.status as SessionStatus
                         )}`}
                       >
                         {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
@@ -479,16 +473,16 @@ export function SessionDetail() {
                         )}
                         {(session.status === SessionStatus.ACTIVE ||
                           session.status === SessionStatus.PAUSED) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleLifecycleChange(SessionStatus.ARCHIVED)}
-                              disabled={lifecycleLoading}
-                              className="shadow-sm hover:shadow transition-shadow"
-                            >
-                              <Archive size={16} className="mr-1" />
-                              Archive
-                            </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleLifecycleChange(SessionStatus.ARCHIVED)}
+                            disabled={lifecycleLoading}
+                            className="shadow-sm hover:shadow transition-shadow"
+                          >
+                            <Archive size={16} className="mr-1" />
+                            Archive
+                          </Button>
                         )}
                       </div>
                     </>
@@ -549,7 +543,9 @@ export function SessionDetail() {
                   <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Activity className="w-10 h-10 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">No statuses configured</h3>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                    No statuses configured
+                  </h3>
                   <p className="text-slate-500 mb-6 max-w-sm mx-auto">
                     This session doesn't have any statuses configured yet.
                   </p>

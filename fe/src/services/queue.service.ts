@@ -60,9 +60,7 @@ export const queueItemService = {
   /**
    * Create a new queue item
    */
-  async createQueueItem(
-    data: CreateQueueItemInput,
-  ): Promise<ApiResponse<QueueItem>> {
+  async createQueueItem(data: CreateQueueItemInput): Promise<ApiResponse<QueueItem>> {
     return http.post<ApiResponse<QueueItem>>("/items", data, {
       withAuth: false,
     });
@@ -74,7 +72,12 @@ export const queueItemService = {
    */
   async createQueueItemViaSession(
     sessionId: string,
-    data: { name?: string; statusId?: string; queueNumber?: string; metadata?: Record<string, any> | null },
+    data: {
+      name?: string;
+      statusId?: string;
+      queueNumber?: string;
+      metadata?: Record<string, unknown> | null;
+    }
   ): Promise<ApiResponse<QueueItem>> {
     return http.post<ApiResponse<QueueItem>>(`/sessions/${sessionId}/items`, data, {
       withAuth: false,
@@ -86,7 +89,7 @@ export const queueItemService = {
    */
   async updateQueueItem(
     id: string,
-    data: Partial<UpdateQueueItemInput>,
+    data: Partial<UpdateQueueItemInput>
   ): Promise<ApiResponse<QueueItem>> {
     return http.put<ApiResponse<QueueItem>>(`/items/${id}`, data, {
       withAuth: false,

@@ -1,8 +1,4 @@
-import type {
-  CreateStatusInput,
-  QueueStatus,
-  UpdateStatusInput,
-} from "../types";
+import type { CreateStatusInput, QueueStatus, UpdateStatusInput } from "../types";
 import type { ApiResponse } from "../types/http.types";
 import http from "./http.service";
 
@@ -32,9 +28,7 @@ export const statusService = {
   /**
    * Create a new status
    */
-  async createStatus(
-    data: CreateStatusInput,
-  ): Promise<ApiResponse<QueueStatus>> {
+  async createStatus(data: CreateStatusInput): Promise<ApiResponse<QueueStatus>> {
     return http.post<ApiResponse<QueueStatus>>("/statuses", data, {
       withAuth: false,
     });
@@ -45,7 +39,7 @@ export const statusService = {
    */
   async updateStatus(
     id: string,
-    data: Omit<UpdateStatusInput, "id">,
+    data: Omit<UpdateStatusInput, "id">
   ): Promise<ApiResponse<QueueStatus>> {
     return http.put<ApiResponse<QueueStatus>>(`/statuses/${id}`, data, {
       withAuth: false,

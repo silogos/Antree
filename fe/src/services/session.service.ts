@@ -36,12 +36,9 @@ export const sessionService = {
    * GET /sessions/:sessionId/statuses
    */
   async getSessionStatuses(sessionId: string): Promise<ApiResponse<QueueSessionStatus[]>> {
-    return http.get<ApiResponse<QueueSessionStatus[]>>(
-      `/sessions/${sessionId}/statuses`,
-      {
-        withAuth: false,
-      },
-    );
+    return http.get<ApiResponse<QueueSessionStatus[]>>(`/sessions/${sessionId}/statuses`, {
+      withAuth: false,
+    });
   },
 
   /**
@@ -54,15 +51,11 @@ export const sessionService = {
     data: {
       name?: string;
       status?: "active" | "paused" | "completed" | "archived";
-    },
+    }
   ): Promise<ApiResponse<QueueSession>> {
-    return http.post<ApiResponse<QueueSession>>(
-      `/queues/${queueId}/sessions`,
-      data,
-      {
-        withAuth: false,
-      },
-    );
+    return http.post<ApiResponse<QueueSession>>(`/queues/${queueId}/sessions`, data, {
+      withAuth: false,
+    });
   },
 
   /**
@@ -86,10 +79,7 @@ export const sessionService = {
    * PATCH /sessions/:id
    * Backend expects: { name?: string }
    */
-  async updateSession(
-    id: string,
-    data: { name?: string },
-  ): Promise<ApiResponse<QueueSession>> {
+  async updateSession(id: string, data: { name?: string }): Promise<ApiResponse<QueueSession>> {
     return http.patch<ApiResponse<QueueSession>>(`/sessions/${id}`, data, {
       withAuth: false,
     });
@@ -102,14 +92,14 @@ export const sessionService = {
    */
   async updateSessionLifecycle(
     id: string,
-    status: SessionLifecycleDTO,
+    status: SessionLifecycleDTO
   ): Promise<ApiResponse<QueueSession>> {
     return http.patch<ApiResponse<QueueSession>>(
       `/sessions/${id}/lifecycle`,
       { status: status.status },
       {
         withAuth: false,
-      },
+      }
     );
   },
 

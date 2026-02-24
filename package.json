@@ -12,6 +12,7 @@
     "start": "pnpm --filter @antree/backend start"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
     "@tailwindcss/postcss": "^4.1.18",
     "concurrently": "^9.1.2"
   }

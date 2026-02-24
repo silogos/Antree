@@ -3,8 +3,8 @@ import { Edit, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useStatuses } from "../hooks/useStatuses";
 import { useToast } from "../hooks/use-toast";
+import { useStatuses } from "../hooks/useStatuses";
 import type { QueueStatus } from "../types";
 import { Button } from "./ui/Button";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
@@ -43,7 +43,7 @@ export function StatusManagerModal({
   const { statuses, createStatus, updateStatus, deleteStatus } = useStatuses({
     sessionId,
   });
-  const { error, success } = useToast();
+  const { success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingStatus, setEditingStatus] = useState<QueueStatus | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; statusId: string | null }>({
@@ -71,28 +71,26 @@ export function StatusManagerModal({
           color: values.color,
           order: values.order,
         });
-       } else {
-         await createStatus({
-           sessionId,
-           label: values.label,
-           color: values.color,
-           order: values.order,
-         });
-       }
+      } else {
+        await createStatus({
+          sessionId,
+          label: values.label,
+          color: values.color,
+          order: values.order,
+        });
+      }
 
       form.reset();
       setEditingStatus(null);
       onSuccess?.();
-      success(
-        isEditing ? "Status updated successfully!" : "Status created successfully!",
-        { description: values.label }
-      );
-    } catch (error) {
-      console.error("Failed to save status:", error);
-      error(
-        isEditing ? "Failed to update status" : "Failed to create status",
-        { description: "Please try again later." }
-      );
+      success(isEditing ? "Status updated successfully!" : "Status created successfully!", {
+        description: values.label,
+      });
+    } catch (err) {
+      console.error("Failed to save status:", err);
+      error(isEditing ? "Failed to update status" : "Failed to create status", {
+        description: "Please try again later.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,8 +111,8 @@ export function StatusManagerModal({
       }
       onSuccess?.();
       success("Status deleted successfully!");
-    } catch (error) {
-      console.error("Failed to delete status:", error);
+    } catch (err) {
+      console.error("Failed to delete status:", err);
       error("Failed to delete status", { description: "Please try again later." });
     } finally {
       setIsSubmitting(false);
@@ -139,179 +137,158 @@ export function StatusManagerModal({
 
   return (
     <>
-    <Dialog open={open} onClose={handleCancel}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Status Manager</DialogTitle>
-          <DialogDescription>
-            Manage queue statuses for this board. Add, edit, and delete statuses
-            as needed.
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onClose={handleCancel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Status Manager</DialogTitle>
+            <DialogDescription>
+              Manage queue statuses for this board. Add, edit, and delete statuses as needed.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex gap-4">
-          {/* Form Side */}
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1">
-            <div className="space-y-4 max-h-96 overflow-y-auto py-4">
-              <div className="space-y-2">
-                <Label htmlFor="label">
-                  {isEditing ? "Edit Status Label" : "Status Label"}
-                </Label>
-                <Input
-                  id="label"
-                  placeholder="e.g., Waiting"
-                  {...form.register("label")}
-                  disabled={isSubmitting}
-                />
-                {form.formState.errors.label && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.label.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="color">Color *</Label>
-                <Input
-                  id="color"
-                  type="color"
-                  {...form.register("color")}
-                  disabled={isSubmitting}
-                  className="h-10"
-                />
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    "#ef4444",
-                    "#f97316",
-                    "#f59e0b",
-                    "#eab308",
-                    "#84cc16",
-                    "#22c55e",
-                    "#06b6d4",
-                    "#3b82f6",
-                    "#8b5cf6",
-                    "#ec4899",
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => form.setValue("color", color)}
-                      className="w-8 h-8 rounded-full border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+          <div className="flex gap-4">
+            {/* Form Side */}
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1">
+              <div className="space-y-4 max-h-96 overflow-y-auto py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="label">{isEditing ? "Edit Status Label" : "Status Label"}</Label>
+                  <Input
+                    id="label"
+                    placeholder="e.g., Waiting"
+                    {...form.register("label")}
+                    disabled={isSubmitting}
+                  />
+                  {form.formState.errors.label && (
+                    <p className="text-sm text-red-600">{form.formState.errors.label.message}</p>
+                  )}
                 </div>
-                {form.formState.errors.color && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.color.message}
-                  </p>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="order">Order *</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  min="1"
-                  {...form.register("order", { valueAsNumber: true })}
-                  disabled={isSubmitting}
-                />
-                {form.formState.errors.order && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.order.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <DialogFooter>
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setEditingStatus(null);
-                    form.reset();
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Cancel Edit
-                </Button>
-              )}
-              <Button type="submit" disabled={isSubmitting}>
-                {isEditing ? "Update Status" : "Add Status"}
-              </Button>
-            </DialogFooter>
-          </form>
-
-          {/* List Side */}
-          <div className="flex-1 border-l border-gray-200 pl-4">
-            <h4 className="text-sm font-semibold mb-2">
-              Existing Statuses ({statuses.length})
-            </h4>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {statuses.length === 0 && (
-                <p className="text-sm text-gray-500">
-                  No statuses yet. Create one to get started.
-                </p>
-              )}
-              {statuses.map((status) => (
-                <div
-                  key={status.id}
-                  className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
-                >
-                  <GripVertical
-                    className="text-gray-400 cursor-move"
-                    size={16}
+                <div className="space-y-2">
+                  <Label htmlFor="color">Color *</Label>
+                  <Input
+                    id="color"
+                    type="color"
+                    {...form.register("color")}
+                    disabled={isSubmitting}
+                    className="h-10"
                   />
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: status.color }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {status.label}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Order: {status.order}
-                    </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      "#ef4444",
+                      "#f97316",
+                      "#f59e0b",
+                      "#eab308",
+                      "#84cc16",
+                      "#22c55e",
+                      "#06b6d4",
+                      "#3b82f6",
+                      "#8b5cf6",
+                      "#ec4899",
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => form.setValue("color", color)}
+                        className="w-8 h-8 rounded-full border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
                   </div>
+                  {form.formState.errors.color && (
+                    <p className="text-sm text-red-600">{form.formState.errors.color.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="order">Order *</Label>
+                  <Input
+                    id="order"
+                    type="number"
+                    min="1"
+                    {...form.register("order", { valueAsNumber: true })}
+                    disabled={isSubmitting}
+                  />
+                  {form.formState.errors.order && (
+                    <p className="text-sm text-red-600">{form.formState.errors.order.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter>
+                {isEditing && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(status)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(status.id)}
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingStatus(null);
+                      form.reset();
+                    }}
                     disabled={isSubmitting}
                   >
-                    <Trash2 size={16} />
+                    Cancel Edit
                   </Button>
-                </div>
-              ))}
+                )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isEditing ? "Update Status" : "Add Status"}
+                </Button>
+              </DialogFooter>
+            </form>
+
+            {/* List Side */}
+            <div className="flex-1 border-l border-gray-200 pl-4">
+              <h4 className="text-sm font-semibold mb-2">Existing Statuses ({statuses.length})</h4>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {statuses.length === 0 && (
+                  <p className="text-sm text-gray-500">
+                    No statuses yet. Create one to get started.
+                  </p>
+                )}
+                {statuses.map((status) => (
+                  <div
+                    key={status.id}
+                    className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <GripVertical className="text-gray-400 cursor-move" size={16} />
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: status.color }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{status.label}</p>
+                      <p className="text-xs text-gray-500">Order: {status.order}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(status)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(status.id)}
+                      disabled={isSubmitting}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
 
-    <ConfirmDialog
-      open={deleteConfirm.open}
-      onClose={() => setDeleteConfirm({ open: false, statusId: null })}
-      onConfirm={handleConfirmDelete}
-      title="Delete Status"
-      description="Are you sure you want to delete this status? This action cannot be undone."
-      confirmLabel="Delete"
-      variant="destructive"
-      loading={isSubmitting}
-    />
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, statusId: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Status"
+        description="Are you sure you want to delete this status? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={isSubmitting}
+      />
     </>
   );
 }

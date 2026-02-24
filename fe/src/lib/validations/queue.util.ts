@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  createQueueSchema,
-  queueItemSchema,
-  updateQueueSchema,
-} from "./schema";
+import { createQueueSchema, queueItemSchema, updateQueueSchema } from "./schema";
 
 // ============================================================================
 // Queue Item Validation
@@ -82,7 +78,7 @@ export const queueDurationValidation = z
     },
     {
       message: "Duration must be in HH:MM:SS or MM:SS format",
-    },
+    }
   );
 
 export type QueueDuration = z.infer<typeof queueDurationValidation>;

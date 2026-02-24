@@ -9,17 +9,13 @@ interface ViewModeToggleProps {
   disabled?: boolean;
 }
 
-export function ViewModeToggle({
-  currentMode,
-  onChange,
-  disabled = false,
-}: ViewModeToggleProps) {
+export function ViewModeToggle({ currentMode, onChange, disabled = false }: ViewModeToggleProps) {
   return (
     <div className="flex items-center gap-4">
       <span
         className={cn(
           "text-sm font-medium transition-colors",
-          currentMode === "display" ? "text-blue-600" : "text-gray-500",
+          currentMode === "display" ? "text-blue-600" : "text-gray-500"
         )}
       >
         Display Mode
@@ -32,7 +28,7 @@ export function ViewModeToggle({
       <span
         className={cn(
           "text-sm font-medium transition-colors",
-          currentMode === "operator" ? "text-blue-600" : "text-gray-500",
+          currentMode === "operator" ? "text-blue-600" : "text-gray-500"
         )}
       >
         Operator Mode

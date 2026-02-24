@@ -42,9 +42,7 @@ export function SessionStatusSection({
           <h3 className="text-lg font-semibold text-gray-200">{status.label}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-gray-100">
-            {sortedQueueItems.length}
-          </span>
+          <span className="text-2xl font-bold text-gray-100">{sortedQueueItems.length}</span>
           <span className="text-sm text-gray-400">items</span>
         </div>
       </div>
@@ -73,9 +71,7 @@ export function SessionStatusSection({
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             </div>
-            <p className="text-sm text-gray-500 text-center">
-              No queue items in this status
-            </p>
+            <p className="text-sm text-gray-500 text-center">No queue items in this status</p>
           </div>
         ) : (
           <div className="space-y-3">

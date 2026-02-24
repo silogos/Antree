@@ -50,13 +50,9 @@ export function useAutoMovement({
       const currentPlayAnnouncement = playAnnouncementRef.current;
 
       // Find the "Done" status (usually the highest order)
-      const sortedStatuses = [...currentStatuses].sort(
-        (a, b) => a.order - b.order,
-      );
+      const sortedStatuses = [...currentStatuses].sort((a, b) => a.order - b.order);
       const doneStatusId =
-        sortedStatuses.length > 0
-          ? sortedStatuses[sortedStatuses.length - 1].id
-          : null;
+        sortedStatuses.length > 0 ? sortedStatuses[sortedStatuses.length - 1].id : null;
 
       // Filter queues that are NOT in the "Done" status
       const activeQueues = doneStatusId
@@ -68,23 +64,19 @@ export function useAutoMovement({
         return;
       }
 
-      const randomQueue =
-        activeQueues[Math.floor(Math.random() * activeQueues.length)];
-      const currentStatusIndex = sortedStatuses.findIndex(
-        (s) => s.id === randomQueue.statusId,
-      );
+      const randomQueue = activeQueues[Math.floor(Math.random() * activeQueues.length)];
+      const currentStatusIndex = sortedStatuses.findIndex((s) => s.id === randomQueue.statusId);
 
       if (currentStatusIndex < sortedStatuses.length - 1) {
         const nextStatusId = sortedStatuses[currentStatusIndex + 1].id;
         const updatedQueues = currentQueues.map((q) =>
-          q.id === randomQueue.id ? { ...q, statusId: nextStatusId } : q,
+          q.id === randomQueue.id ? { ...q, statusId: nextStatusId } : q
         );
         currentOnQueuesUpdate(updatedQueues);
 
         // Play announcement
         if (currentPlayAnnouncement) {
-          const customerName =
-            randomQueue.metadata?.customerName || randomQueue.name;
+          const customerName = randomQueue.metadata?.customerName || randomQueue.name;
           currentPlayAnnouncement(randomQueue.queueNumber, customerName);
         }
       }
