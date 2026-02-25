@@ -1,12 +1,12 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
-	"extends": ["../common.json"],
-	"files": {
-		"includes": ["src/**/*", "scripts/**/*"]
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+  "extends": ["../common.json"],
+  "files": {
+    "includes": ["src/**/*"]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  }
 }

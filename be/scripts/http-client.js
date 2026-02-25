@@ -2,20 +2,20 @@
  * Simple HTTP Client for API calls
  */
 
-const API_BASE_URL = process.env.API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.API_URL || "http://localhost:3001";
 
 /**
  * Make API request using fetch
  */
 export async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultOptions = {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   };
-  
+
   const requestOptions = {
     ...defaultOptions,
     ...options,
@@ -24,11 +24,11 @@ export async function fetchAPI(endpoint, options = {}) {
       ...options.headers,
     },
   };
-  
+
   try {
     const response = await fetch(url, requestOptions);
     const data = await response.json();
-    
+
     return {
       ok: response.ok,
       status: response.status,

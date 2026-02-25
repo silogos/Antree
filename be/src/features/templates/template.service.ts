@@ -3,18 +3,22 @@
  * Business logic for template operations
  */
 
-import { db } from '../../db/index.js';
-import { queueTemplates, queueTemplateStatuses } from '../../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueTemplate, NewQueueTemplateStatus } from '../../db/schema.js';
-import type { CreateTemplateInput, UpdateTemplateInput, CreateTemplateStatusInput } from './template.validator.js';
+import { desc, eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { db } from "../../db/index.js";
+import type { NewQueueTemplate, NewQueueTemplateStatus } from "../../db/schema.js";
+import { queueTemplateStatuses, queueTemplates } from "../../db/schema.js";
+import type {
+  CreateTemplateInput,
+  CreateTemplateStatusInput,
+  UpdateTemplateInput,
+} from "./template.validator.js";
 
 export class TemplateService {
   /**
    * Get all templates
    */
-  async getAllTemplates(): Promise<typeof queueTemplates.$inferSelect[]> {
+  async getAllTemplates(): Promise<(typeof queueTemplates.$inferSelect)[]> {
     return db.select().from(queueTemplates).orderBy(desc(queueTemplates.createdAt));
   }
 
@@ -22,7 +26,11 @@ export class TemplateService {
    * Get a single template by ID
    */
   async getTemplateById(id: string): Promise<typeof queueTemplates.$inferSelect | null> {
-    const templates = await db.select().from(queueTemplates).where(eq(queueTemplates.id, id)).limit(1);
+    const templates = await db
+      .select()
+      .from(queueTemplates)
+      .where(eq(queueTemplates.id, id))
+      .limit(1);
     return templates[0] || null;
   }
 
@@ -44,8 +52,10 @@ export class TemplateService {
   /**
    * Update a template
    */
-  async updateTemplate(id: string, input: UpdateTemplateInput): Promise<typeof queueTemplates.$inferSelect | null> {
-
+  async updateTemplate(
+    id: string,
+    input: UpdateTemplateInput
+  ): Promise<typeof queueTemplates.$inferSelect | null> {
     // Check if template exists
     const existing = await this.getTemplateById(id);
     if (!existing) {
@@ -84,7 +94,9 @@ export class TemplateService {
   /**
    * Get statuses for a template
    */
-  async getTemplateStatuses(templateId: string): Promise<typeof queueTemplateStatuses.$inferSelect[] | null> {
+  async getTemplateStatuses(
+    templateId: string
+  ): Promise<(typeof queueTemplateStatuses.$inferSelect)[] | null> {
     // Verify template exists
     const template = await this.getTemplateById(templateId);
     if (!template) {
@@ -101,7 +113,10 @@ export class TemplateService {
   /**
    * Add status to a template
    */
-  async addTemplateStatus(templateId: string, input: CreateTemplateStatusInput): Promise<typeof queueTemplateStatuses.$inferSelect | null> {
+  async addTemplateStatus(
+    templateId: string,
+    input: CreateTemplateStatusInput
+  ): Promise<typeof queueTemplateStatuses.$inferSelect | null> {
     // Verify template exists
     const template = await this.getTemplateById(templateId);
     if (!template) {

@@ -16,6 +16,7 @@ export function Dialog({
 
   return (
     <>
+      {/** biome-ignore lint/a11y/noStaticElementInteractions: <ignore> */}
       <div
         role="presentation"
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"

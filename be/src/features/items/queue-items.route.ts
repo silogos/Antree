@@ -3,22 +3,17 @@
  * API endpoints for queue item management
  */
 
-import { Hono } from 'hono';
-import { queueItemService } from './queue-item.service.js';
-import { sseBroadcaster } from '../../sse/broadcaster.js';
+import { Hono } from "hono";
+import { parsePaginationParams } from "../../lib/pagination.js";
 import {
-  successResponse,
-  notFoundResponse,
-  validationErrorResponse,
   internalErrorResponse,
-} from '../../middleware/response.middleware.js';
-import { validateBody } from '../../middleware/validation.middleware.js';
-import {
-  createQueueItemSchema,
-  updateQueueItemSchema,
-} from './queue-item.validator.js';
-import type { QueueItemDTO } from '../../types/session.dto.js';
-import { parsePaginationParams } from '../../lib/pagination.js';
+  notFoundResponse,
+  successResponse,
+} from "../../middleware/response.middleware.js";
+import { validateBody } from "../../middleware/validation.middleware.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
+import { queueItemService } from "./queue-item.service.js";
+import { createQueueItemSchema, updateQueueItemSchema } from "./queue-item.validator.js";
 
 export const queueItemRoutes = new Hono();
 
@@ -26,11 +21,11 @@ export const queueItemRoutes = new Hono();
  * GET /queue-items
  * Get all queue items with optional pagination. Optionally filter by session or status.
  */
-queueItemRoutes.get('/', async (c) => {
+queueItemRoutes.get("/", async (c) => {
   try {
-    const queueId = c.req.query('queueId');
-    const sessionId = c.req.query('sessionId');
-    const statusId = c.req.query('statusId');
+    const queueId = c.req.query("queueId");
+    const sessionId = c.req.query("sessionId");
+    const statusId = c.req.query("statusId");
 
     const filters = {
       queueId,
@@ -43,7 +38,7 @@ queueItemRoutes.get('/', async (c) => {
     const result = await queueItemService.getAllQueueItems(filters, pagination);
 
     // Check if result is paginated or array
-    if ('data' in result) {
+    if ("data" in result) {
       const { data, meta } = result;
       return c.json(successResponse(data, undefined, meta));
     }
@@ -51,7 +46,7 @@ queueItemRoutes.get('/', async (c) => {
     // Backward compatibility: return array response
     return c.json(successResponse(result, undefined, result.length));
   } catch (error) {
-    console.error('[QueueItemRoutes] GET /queue-items error:', error);
+    console.error("[QueueItemRoutes] GET /queue-items error:", error);
     return c.json(internalErrorResponse(error), 500);
   }
 });
@@ -60,18 +55,18 @@ queueItemRoutes.get('/', async (c) => {
  * GET /queue-items/:id
  * Get a single queue item by ID
  */
-queueItemRoutes.get('/:id', async (c) => {
+queueItemRoutes.get("/:id", async (c) => {
   try {
-    const id = c.req.param('id');
+    const id = c.req.param("id");
     const item = await queueItemService.getQueueItemById(id);
 
     if (!item) {
-      return c.json(notFoundResponse('Queue item', id), 404);
+      return c.json(notFoundResponse("Queue item", id), 404);
     }
 
     return c.json(successResponse(item));
   } catch (error) {
-    console.error('[QueueItemRoutes] GET /queue-items/:id error:', error);
+    console.error("[QueueItemRoutes] GET /queue-items/:id error:", error);
     return c.json(internalErrorResponse(error), 500);
   }
 });
@@ -80,21 +75,21 @@ queueItemRoutes.get('/:id', async (c) => {
  * POST /queue-items
  * Create a new queue item
  */
-queueItemRoutes.post('/', validateBody(createQueueItemSchema), async (c) => {
+queueItemRoutes.post("/", validateBody(createQueueItemSchema), async (c) => {
   try {
-    const input = c.get('validatedBody') as Parameters<typeof queueItemService.createQueueItem>[0];
+    const input = c.get("validatedBody") as Parameters<typeof queueItemService.createQueueItem>[0];
     const item = await queueItemService.createQueueItem(input);
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_created',
+      type: "queue_item_created",
       data: item,
       queueId: item.queueId,
     });
 
-    return c.json(successResponse(item, 'Queue item created successfully'), 201);
+    return c.json(successResponse(item, "Queue item created successfully"), 201);
   } catch (error) {
-    console.error('[QueueItemRoutes] POST /queue-items error:', error);
+    console.error("[QueueItemRoutes] POST /queue-items error:", error);
     return c.json(internalErrorResponse(error), 500);
   }
 });
@@ -103,33 +98,33 @@ queueItemRoutes.post('/', validateBody(createQueueItemSchema), async (c) => {
  * PUT /queue-items/:id
  * Update an existing queue item
  */
-queueItemRoutes.put('/:id', validateBody(updateQueueItemSchema), async (c) => {
+queueItemRoutes.put("/:id", validateBody(updateQueueItemSchema), async (c) => {
   try {
-    const id = c.req.param('id');
-    const input = c.get('validatedBody') as Parameters<typeof queueItemService.updateQueueItem>[1];
+    const id = c.req.param("id");
+    const input = c.get("validatedBody") as Parameters<typeof queueItemService.updateQueueItem>[1];
 
     // Get existing item for SSE broadcast
     const existing = await queueItemService.getQueueItemById(id);
     if (!existing) {
-      return c.json(notFoundResponse('Queue item', id), 404);
+      return c.json(notFoundResponse("Queue item", id), 404);
     }
 
     const item = await queueItemService.updateQueueItem(id, input);
 
     if (!item) {
-      return c.json(notFoundResponse('Queue item', id), 404);
+      return c.json(notFoundResponse("Queue item", id), 404);
     }
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_updated',
+      type: "queue_item_updated",
       data: item,
       queueId: existing.queueId,
     });
 
-    return c.json(successResponse(item, 'Queue item updated successfully'));
+    return c.json(successResponse(item, "Queue item updated successfully"));
   } catch (error) {
-    console.error('[QueueItemRoutes] PUT /queue-items/:id error:', error);
+    console.error("[QueueItemRoutes] PUT /queue-items/:id error:", error);
     return c.json(internalErrorResponse(error), 500);
   }
 });
@@ -138,32 +133,32 @@ queueItemRoutes.put('/:id', validateBody(updateQueueItemSchema), async (c) => {
  * DELETE /queue-items/:id
  * Delete a queue item
  */
-queueItemRoutes.delete('/:id', async (c) => {
+queueItemRoutes.delete("/:id", async (c) => {
   try {
-    const id = c.req.param('id');
+    const id = c.req.param("id");
 
     // Get existing item for SSE broadcast
     const existing = await queueItemService.getQueueItemById(id);
     if (!existing) {
-      return c.json(notFoundResponse('Queue item', id), 404);
+      return c.json(notFoundResponse("Queue item", id), 404);
     }
 
     const deleted = await queueItemService.deleteQueueItem(id);
 
     if (!deleted) {
-      return c.json(notFoundResponse('Queue item', id), 404);
+      return c.json(notFoundResponse("Queue item", id), 404);
     }
 
     // Broadcast SSE event
     sseBroadcaster.broadcast({
-      type: 'queue_item_deleted',
+      type: "queue_item_deleted",
       data: { id },
       queueId: existing.queueId,
     });
 
-    return c.json(successResponse({ id }, 'Queue item deleted successfully'));
+    return c.json(successResponse({ id }, "Queue item deleted successfully"));
   } catch (error) {
-    console.error('[QueueItemRoutes] DELETE /queue-items/:id error:', error);
+    console.error("[QueueItemRoutes] DELETE /queue-items/:id error:", error);
     return c.json(internalErrorResponse(error), 500);
   }
 });

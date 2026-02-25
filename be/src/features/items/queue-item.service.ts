@@ -3,15 +3,15 @@
  * Business logic for queue item operations
  */
 
-import { db } from '../../db/index.js';
-import { queueItems } from '../../db/schema.js';
-import { eq, and, desc, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueItem, QueueItem } from '../../db/schema.js';
-import type { CreateQueueItemInput, UpdateQueueItemInput } from './queue-item.validator.js';
-import { sseBroadcaster } from '../../sse/broadcaster.js';
-import type { PaginatedResponse, PaginationParams } from '../../lib/pagination.js';
-import { calculatePaginationMetadata, getPaginationOffset } from '../../lib/pagination.js';
+import { and, eq, sql } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { db } from "../../db/index.js";
+import type { NewQueueItem, QueueItem } from "../../db/schema.js";
+import { queueItems } from "../../db/schema.js";
+import type { PaginatedResponse, PaginationParams } from "../../lib/pagination.js";
+import { calculatePaginationMetadata, getPaginationOffset } from "../../lib/pagination.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
+import type { CreateQueueItemInput, UpdateQueueItemInput } from "./queue-item.validator.js";
 
 export class QueueItemService {
   /**
@@ -21,7 +21,7 @@ export class QueueItemService {
     filters?: { queueId?: string; sessionId?: string; statusId?: string },
     pagination?: PaginationParams
   ): Promise<PaginatedResponse<QueueItem> | QueueItem[]> {
-    const conditions: (ReturnType<typeof eq>)[] = [];
+    const conditions: ReturnType<typeof eq>[] = [];
     if (filters?.queueId) {
       conditions.push(eq(queueItems.queueId, filters.queueId));
     }
@@ -38,9 +38,12 @@ export class QueueItemService {
       const limit = pagination.limit || 50; // Higher default for items
       const offset = getPaginationOffset(page, limit);
 
-      const whereClause = conditions.length > 0
-        ? (conditions.length === 1 ? conditions[0] : and(...conditions))
-        : undefined;
+      const whereClause =
+        conditions.length > 0
+          ? conditions.length === 1
+            ? conditions[0]
+            : and(...conditions)
+          : undefined;
 
       // Get total count
       const [{ count }] = await db
@@ -112,7 +115,6 @@ export class QueueItemService {
    * Update a queue item
    */
   async updateQueueItem(id: string, input: UpdateQueueItemInput): Promise<QueueItem | null> {
-
     // Check if item exists
     const existing = await db.select().from(queueItems).where(eq(queueItems.id, id)).limit(1);
     if (!existing || existing.length === 0) {
@@ -151,7 +153,6 @@ export class QueueItemService {
    * Delete a queue item
    */
   async deleteQueueItem(id: string): Promise<boolean> {
-
     // Check if item exists
     const existing = await db.select().from(queueItems).where(eq(queueItems.id, id)).limit(1);
     if (!existing || existing.length === 0) {
@@ -173,7 +174,7 @@ export class QueueItemService {
    */
   broadcastItemCreated(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'queue_item_created',
+      type: "queue_item_created",
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -194,7 +195,7 @@ export class QueueItemService {
    */
   broadcastItemUpdated(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'queue_item_updated',
+      type: "queue_item_updated",
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -215,7 +216,7 @@ export class QueueItemService {
    */
   broadcastItemStatusChanged(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'queue_item_status_changed',
+      type: "queue_item_status_changed",
       data: {
         id: item.id,
         queue_id: item.queueId,
@@ -236,7 +237,7 @@ export class QueueItemService {
    */
   broadcastItemDeleted(item: QueueItem): void {
     sseBroadcaster.broadcast({
-      type: 'queue_item_deleted',
+      type: "queue_item_deleted",
       data: {
         id: item.id,
         queue_id: item.queueId,

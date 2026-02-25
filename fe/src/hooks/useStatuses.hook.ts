@@ -26,7 +26,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
     try {
       const { data } = await statusService.getStatuses(options.queueId);
       setStatuses(data || []);
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch statuses");
     } finally {
       setLoading(false);
@@ -42,7 +42,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
         setStatuses((prev) => [...prev, data]);
       }
       return data;
-    } catch (err: any) {
+    } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create status";
       setError(errorMessage);
       throw err;
@@ -65,7 +65,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
         setStatuses((prev) => prev.map((s) => (s.id === id ? data : s)));
       }
       return data;
-    } catch (err: any) {
+    } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update status";
       setError(errorMessage);
       throw err;
@@ -80,7 +80,7 @@ export function useStatuses(options: UseStatusesOptions = {}) {
     try {
       await statusService.deleteStatus(id);
       setStatuses((prev) => prev.filter((s) => s.id !== id));
-    } catch (err: any) {
+    } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to delete status";
       setError(errorMessage);
       throw err;

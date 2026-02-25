@@ -67,6 +67,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
+                <title>error</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -132,6 +133,7 @@ export function ErrorFallback({ error, resetError, className = "", ...props }: E
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
+          <title>error</title>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -145,6 +147,7 @@ export function ErrorFallback({ error, resetError, className = "", ...props }: E
         </p>
         {resetError && (
           <button
+            type="button"
             onClick={resetError}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700"
           >

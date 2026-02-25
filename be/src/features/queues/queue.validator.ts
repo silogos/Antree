@@ -2,7 +2,7 @@
  * Validation Schemas for Queue (template-based queues)
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createQueueSchema = z.object({
   name: z.string().min(1).max(255),
@@ -12,13 +12,15 @@ export const createQueueSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const updateQueueSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  isActive: z.boolean().optional(),
-  updatedBy: z.string().optional(),
-}).refine((data) => Object.keys(data).length > 0, {
-  message: 'At least one field must be provided',
-});
+export const updateQueueSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional(),
+    isActive: z.boolean().optional(),
+    updatedBy: z.string().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 export const resetQueueSchema = z.object({
   name: z.string().optional(),

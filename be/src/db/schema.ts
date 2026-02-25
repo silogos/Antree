@@ -1,27 +1,36 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, uuid, uniqueIndex } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey(),
-  username: text('username').notNull().unique(),
-  email: text('email').notNull().unique(),
-  password: text('password').notNull(),
-  fullName: text('full_name'),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
-export const queueBoards = pgTable('queue_boards', {
-  id: uuid('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const queueBoards = pgTable("queue_boards", {
+  id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type QueueBoard = typeof queueBoards.$inferSelect;
@@ -31,110 +40,152 @@ export type NewQueueBoard = typeof queueBoards.$inferInsert;
 // NEW: Template-based queue system
 // ============================================================================
 
-export const queueTemplates = pgTable('queue_templates', {
-  id: uuid('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  isSystemTemplate: boolean('is_system_template').notNull().default(false),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const queueTemplates = pgTable("queue_templates", {
+  id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isSystemTemplate: boolean("is_system_template").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type QueueTemplate = typeof queueTemplates.$inferSelect;
 export type NewQueueTemplate = typeof queueTemplates.$inferInsert;
 
-export const queueTemplateStatuses = pgTable('queue_template_statuses', {
-  id: uuid('id').primaryKey(),
-  templateId: uuid('template_id').notNull().references(() => queueTemplates.id, { onDelete: 'cascade' }),
-  label: text('label').notNull(),
-  color: text('color').notNull(),
-  order: integer('order').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const queueTemplateStatuses = pgTable("queue_template_statuses", {
+  id: uuid("id").primaryKey(),
+  templateId: uuid("template_id")
+    .notNull()
+    .references(() => queueTemplates.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  color: text("color").notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type QueueTemplateStatus = typeof queueTemplateStatuses.$inferSelect;
 export type NewQueueTemplateStatus = typeof queueTemplateStatuses.$inferInsert;
 
-export const queues = pgTable('queues', {
-  id: uuid('id').primaryKey(),
-  name: text('name').notNull(),
-  templateId: uuid('template_id').notNull().references(() => queueTemplates.id, { onDelete: 'cascade' }),
-  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
-  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const queues = pgTable("queues", {
+  id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
+  templateId: uuid("template_id")
+    .notNull()
+    .references(() => queueTemplates.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  updatedBy: uuid("updated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export type Queue = typeof queues.$inferSelect;
 export type NewQueue = typeof queues.$inferInsert;
 
-export const queueSessions = pgTable('queue_sessions', {
-  id: uuid('id').primaryKey(),
-  templateId: uuid('template_id').notNull().references(() => queueTemplates.id, { onDelete: 'cascade' }),
-  queueId: uuid('queue_id').references(() => queues.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  status: text('status').notNull().default('draft'), // draft | active | paused | completed | archived
-  sessionNumber: integer('session_number'),
-  startedAt: timestamp('started_at'),
-  endedAt: timestamp('ended_at'),
-  deletedAt: timestamp('deleted_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  // Index for filtering active sessions by queue (most common query)
-  queueStatusIdx: uniqueIndex('queue_sessions_queue_id_status_deleted_at_idx').on(table.queueId, table.status, table.deletedAt),
-  // Index for status-based queries
-  statusIdx: uniqueIndex('queue_sessions_status_idx').on(table.status),
-  // Index for session number ordering within a queue
-  sessionNumberIdx: uniqueIndex('queue_sessions_queue_id_session_number_idx').on(table.queueId, table.sessionNumber),
-}));
+export const queueSessions = pgTable(
+  "queue_sessions",
+  {
+    id: uuid("id").primaryKey(),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => queueTemplates.id, { onDelete: "cascade" }),
+    queueId: uuid("queue_id").references(() => queues.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    status: text("status").notNull().default("draft"), // draft | active | paused | completed | archived
+    sessionNumber: integer("session_number"),
+    startedAt: timestamp("started_at"),
+    endedAt: timestamp("ended_at"),
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    // Index for filtering active sessions by queue (most common query)
+    queueStatusIdx: uniqueIndex("queue_sessions_queue_id_status_deleted_at_idx").on(
+      table.queueId,
+      table.status,
+      table.deletedAt
+    ),
+    // Index for status-based queries
+    statusIdx: uniqueIndex("queue_sessions_status_idx").on(table.status),
+    // Index for session number ordering within a queue
+    sessionNumberIdx: uniqueIndex("queue_sessions_queue_id_session_number_idx").on(
+      table.queueId,
+      table.sessionNumber
+    ),
+  })
+);
 
 export type QueueSession = typeof queueSessions.$inferSelect;
 export type NewQueueSession = typeof queueSessions.$inferInsert;
 
-export const queueSessionStatuses = pgTable('queue_session_statuses', {
-  id: uuid('id').primaryKey(),
-  sessionId: uuid('session_id').notNull().references(() => queueSessions.id, { onDelete: 'cascade' }),
-  templateStatusId: uuid('template_status_id').references(() => queueTemplateStatuses.id), // Track origin from template
-  label: text('label').notNull(),
-  color: text('color').notNull(),
-  order: integer('status_order').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  // Index for fetching statuses by session (most common query)
-  sessionIdIdx: uniqueIndex('queue_session_statuses_session_id_idx').on(table.sessionId),
-}));
+export const queueSessionStatuses = pgTable(
+  "queue_session_statuses",
+  {
+    id: uuid("id").primaryKey(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => queueSessions.id, { onDelete: "cascade" }),
+    templateStatusId: uuid("template_status_id").references(() => queueTemplateStatuses.id), // Track origin from template
+    label: text("label").notNull(),
+    color: text("color").notNull(),
+    order: integer("status_order").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    // Index for fetching statuses by session (most common query)
+    sessionIdIdx: uniqueIndex("queue_session_statuses_session_id_idx").on(table.sessionId),
+  })
+);
 
 export type QueueSessionStatus = typeof queueSessionStatuses.$inferSelect;
 export type NewQueueSessionStatus = typeof queueSessionStatuses.$inferInsert;
 
-export const queueItems = pgTable('queue_items', {
-  id: uuid('id').primaryKey(),
-  queueId: uuid('queue_id').notNull().references(() => queues.id, { onDelete: 'cascade' }),
-  sessionId: uuid('session_id').notNull().references(() => queueSessions.id, { onDelete: 'cascade' }),
-  queueNumber: text('queue_number').notNull(),
-  name: text('name').notNull(),
-  statusId: uuid('status_id').notNull().references(() => queueSessionStatuses.id, { onDelete: 'restrict' }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  metadata: jsonb('metadata'),
-}, (table) => ({
-  // Composite index for fetching items by session and status (most common query)
-  sessionIdStatusIdIdx: uniqueIndex('queue_items_session_id_status_id_idx').on(table.sessionId, table.statusId),
-  // Index for queue-based filtering
-  queueIdIdx: uniqueIndex('queue_items_queue_id_idx').on(table.queueId),
-  // Index for time-based queries (sorting by creation time)
-  createdAtIdx: uniqueIndex('queue_items_created_at_idx').on(table.createdAt),
-}));
+export const queueItems = pgTable(
+  "queue_items",
+  {
+    id: uuid("id").primaryKey(),
+    queueId: uuid("queue_id")
+      .notNull()
+      .references(() => queues.id, { onDelete: "cascade" }),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => queueSessions.id, { onDelete: "cascade" }),
+    queueNumber: text("queue_number").notNull(),
+    name: text("name").notNull(),
+    statusId: uuid("status_id")
+      .notNull()
+      .references(() => queueSessionStatuses.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    metadata: jsonb("metadata"),
+  },
+  (table) => ({
+    // Composite index for fetching items by session and status (most common query)
+    sessionIdStatusIdIdx: uniqueIndex("queue_items_session_id_status_id_idx").on(
+      table.sessionId,
+      table.statusId
+    ),
+    // Index for queue-based filtering
+    queueIdIdx: uniqueIndex("queue_items_queue_id_idx").on(table.queueId),
+    // Index for time-based queries (sorting by creation time)
+    createdAtIdx: uniqueIndex("queue_items_created_at_idx").on(table.createdAt),
+  })
+);
 
 export type QueueItem = typeof queueItems.$inferSelect;
 export type NewQueueItem = typeof queueItems.$inferInsert;
 
-export const queueBoardsRelations = relations(queueBoards, ({ many }) => ({
+export const queueBoardsRelations = relations(queueBoards, () => ({
   // Legacy: queue_boards is deprecated, keeping for backward compatibility
   // New flow uses queue_templates → queue_sessions → queue_session_statuses
 }));

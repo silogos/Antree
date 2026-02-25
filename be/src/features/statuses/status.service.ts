@@ -3,20 +3,22 @@
  * Business logic for status operations
  */
 
-import { db } from '../../db/index.js';
-import { queueSessionStatuses } from '../../db/schema.js';
-import { eq, and } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-import type { NewQueueSessionStatus } from '../../db/schema.js';
-import type { CreateStatusInput, UpdateStatusInput } from './status.validator.js';
-import { getDatabaseErrorMessage } from '../../middleware/error.middleware.js';
-import { sseBroadcaster } from '../../sse/broadcaster.js';
+import { eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { db } from "../../db/index.js";
+import type { NewQueueSessionStatus } from "../../db/schema.js";
+import { queueSessionStatuses } from "../../db/schema.js";
+import { getDatabaseErrorMessage } from "../../middleware/error.middleware.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
+import type { CreateStatusInput, UpdateStatusInput } from "./status.validator.js";
 
 export class StatusService {
   /**
    * Get all statuses for a session
    */
-  async getAllStatuses(sessionId: string): Promise<typeof queueSessionStatuses.$inferSelect[] | null> {
+  async getAllStatuses(
+    sessionId: string
+  ): Promise<(typeof queueSessionStatuses.$inferSelect)[] | null> {
     if (!sessionId) {
       return null;
     }
@@ -32,7 +34,11 @@ export class StatusService {
    * Get a single status by ID
    */
   async getStatusById(id: string): Promise<typeof queueSessionStatuses.$inferSelect | null> {
-    const statuses = await db.select().from(queueSessionStatuses).where(eq(queueSessionStatuses.id, id)).limit(1);
+    const statuses = await db
+      .select()
+      .from(queueSessionStatuses)
+      .where(eq(queueSessionStatuses.id, id))
+      .limit(1);
     return statuses[0] || null;
   }
 
@@ -60,8 +66,10 @@ export class StatusService {
   /**
    * Update a status
    */
-  async updateStatus(id: string, input: UpdateStatusInput): Promise<typeof queueSessionStatuses.$inferSelect | null> {
-
+  async updateStatus(
+    id: string,
+    input: UpdateStatusInput
+  ): Promise<typeof queueSessionStatuses.$inferSelect | null> {
     // Check if status exists
     const existing = await this.getStatusById(id);
     if (!existing) {
@@ -94,11 +102,10 @@ export class StatusService {
    * @throws Error if foreign key constraint violation
    */
   async deleteStatus(id: string): Promise<{ success: boolean; error?: string }> {
-
     // Check if status exists
     const existing = await this.getStatusById(id);
     if (!existing) {
-      return { success: false, error: 'Status not found' };
+      return { success: false, error: "Status not found" };
     }
 
     const sessionId = existing.sessionId;
@@ -112,10 +119,13 @@ export class StatusService {
       return { success: true };
     } catch (error) {
       // Check if it's a foreign key constraint error
-      if (getDatabaseErrorMessage(error) === 'This record is referenced by other records and cannot be deleted') {
+      if (
+        getDatabaseErrorMessage(error) ===
+        "This record is referenced by other records and cannot be deleted"
+      ) {
         return {
           success: false,
-          error: `Cannot delete status with id ${id} because it is referenced by one or more sessions`
+          error: `Cannot delete status with id ${id} because it is referenced by one or more sessions`,
         };
       }
       throw error;
@@ -127,7 +137,7 @@ export class StatusService {
    */
   broadcastSessionStatusCreated(status: typeof queueSessionStatuses.$inferSelect): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_created',
+      type: "session_status_created",
       data: {
         id: status.id,
         session_id: status.sessionId,
@@ -144,7 +154,7 @@ export class StatusService {
    */
   broadcastSessionStatusUpdated(status: typeof queueSessionStatuses.$inferSelect): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_updated',
+      type: "session_status_updated",
       data: {
         id: status.id,
         session_id: status.sessionId,
@@ -161,7 +171,7 @@ export class StatusService {
    */
   broadcastSessionStatusDeleted(statusId: string, sessionId: string): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_deleted',
+      type: "session_status_deleted",
       data: {
         id: statusId,
         session_id: sessionId,

@@ -83,6 +83,7 @@ export function Topbar({
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
+                  <title>last read</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -109,6 +110,7 @@ export function Topbar({
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
+                  <title>toggle sound</title>
                   {soundEnabled ? (
                     <path
                       strokeLinecap="round"

@@ -77,9 +77,7 @@ export function useSessions() {
     try {
       const response = await sessionService.updateSessionLifecycle(id, status);
       if (response.success && response.data) {
-        setSessions((prev) =>
-          prev.map((session) => (session.id === id ? response.data! : session))
-        );
+        setSessions((prev) => prev.map((session) => (session.id === id ? response.data : session)));
         return response.data;
       } else {
         setError(response.error || "Failed to update session lifecycle");

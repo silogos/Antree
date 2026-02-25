@@ -5,6 +5,7 @@ import "./index.css";
 
 import { Toaster } from "./components/ui/sonner.component.tsx";
 
+// biome-ignore lint/style/noNonNullAssertion: <element>
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

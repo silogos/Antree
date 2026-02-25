@@ -3,29 +3,22 @@
  * Business logic for session operations
  */
 
-import { db } from '../../db/index.js';
+import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { db } from "../../db/index.js";
+import type { NewQueueSession, QueueSession, QueueSessionStatus } from "../../db/schema.js";
 import {
+  queueSessionStatuses,
   queueSessions,
   queues,
-  queueTemplates,
   queueTemplateStatuses,
-  queueSessionStatuses,
-} from '../../db/schema.js';
-import { eq, and, desc, isNull, ne, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-import type {
-  NewQueueSession,
-  QueueSession,
-  QueueSessionStatus,
-} from '../../db/schema.js';
-import type {
-  CreateSessionInput,
-  UpdateSessionInput,
-} from './session.validator.js';
-import type { SessionLifecycleDTO } from '../../types/session.dto.js';
-import { sseBroadcaster } from '../../sse/broadcaster.js';
-import type { PaginatedResponse, PaginationParams } from '../../lib/pagination.js';
-import { calculatePaginationMetadata, getPaginationOffset } from '../../lib/pagination.js';
+  queueTemplates,
+} from "../../db/schema.js";
+import type { PaginatedResponse, PaginationParams } from "../../lib/pagination.js";
+import { calculatePaginationMetadata, getPaginationOffset } from "../../lib/pagination.js";
+import { sseBroadcaster } from "../../sse/broadcaster.js";
+
+import type { CreateSessionInput, UpdateSessionInput } from "./session.validator.js";
 
 export class SessionService {
   /**
@@ -34,11 +27,13 @@ export class SessionService {
   async getAllSessions(
     filters?: {
       queueId?: string;
-      status?: 'active' | 'paused' | 'completed' | 'archived';
+      status?: "active" | "paused" | "completed" | "archived";
       isDeleted?: boolean;
     },
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<typeof queueSessions.$inferSelect> | typeof queueSessions.$inferSelect[]> {
+  ): Promise<
+    PaginatedResponse<typeof queueSessions.$inferSelect> | (typeof queueSessions.$inferSelect)[]
+  > {
     // Default: exclude soft-deleted sessions
     const deletedCondition = isNull(queueSessions.deletedAt);
 
@@ -97,17 +92,20 @@ export class SessionService {
   async getSessionStatuses(
     sessionId: string,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<{
-    id: string;
-    label: string;
-    color: string;
-    order: number;
-  }> | Array<{
-    id: string;
-    label: string;
-    color: string;
-    order: number;
-  }>> {
+  ): Promise<
+    | PaginatedResponse<{
+        id: string;
+        label: string;
+        color: string;
+        order: number;
+      }>
+    | Array<{
+        id: string;
+        label: string;
+        color: string;
+        order: number;
+      }>
+  > {
     const whereClause = eq(queueSessionStatuses.sessionId, sessionId);
 
     // If pagination is requested, return paginated response
@@ -161,11 +159,7 @@ export class SessionService {
    * Get a single session by ID
    */
   async getSessionById(id: string): Promise<typeof queueSessions.$inferSelect | null> {
-    const sessions = await db
-      .select()
-      .from(queueSessions)
-      .where(eq(queueSessions.id, id))
-      .limit(1);
+    const sessions = await db.select().from(queueSessions).where(eq(queueSessions.id, id)).limit(1);
     return sessions[0] || null;
   }
 
@@ -173,8 +167,8 @@ export class SessionService {
    * Validate lifecycle status transition
    */
   private validateStatusTransition(
-    currentStatus: 'active' | 'paused' | 'completed' | 'archived',
-    newStatus: 'active' | 'paused' | 'completed' | 'archived',
+    currentStatus: "active" | "paused" | "completed" | "archived",
+    newStatus: "active" | "paused" | "completed" | "archived"
   ): boolean {
     // Valid transitions:
     // active <-> paused (can toggle)
@@ -182,19 +176,19 @@ export class SessionService {
     // completed/paused -> archived
     // Cannot go backwards once completed or archived
 
-    if (currentStatus === 'active') {
-      return newStatus === 'paused' || newStatus === 'completed' || newStatus === 'archived';
+    if (currentStatus === "active") {
+      return newStatus === "paused" || newStatus === "completed" || newStatus === "archived";
     }
 
-    if (currentStatus === 'paused') {
-      return newStatus === 'active' || newStatus === 'completed' || newStatus === 'archived';
+    if (currentStatus === "paused") {
+      return newStatus === "active" || newStatus === "completed" || newStatus === "archived";
     }
 
-    if (currentStatus === 'completed') {
-      return newStatus === 'archived';
+    if (currentStatus === "completed") {
+      return newStatus === "archived";
     }
 
-    if (currentStatus === 'archived') {
+    if (currentStatus === "archived") {
       // Archived is final state
       return false;
     }
@@ -205,30 +199,20 @@ export class SessionService {
   /**
    * Check if queue already has an active session (excluding a specific session)
    */
-  private async hasActiveSession(
-    queueId: string,
-    excludeSessionId?: string,
-  ): Promise<boolean> {
+  private async hasActiveSession(queueId: string, excludeSessionId?: string): Promise<boolean> {
     const conditions = and(
       eq(queueSessions.queueId, queueId),
-      eq(queueSessions.status, 'active'),
-      isNull(queueSessions.deletedAt),
+      eq(queueSessions.status, "active"),
+      isNull(queueSessions.deletedAt)
     );
 
     // If excluding a session, add the condition
     let whereClause = conditions;
     if (excludeSessionId) {
-      whereClause = and(
-        conditions,
-        ne(queueSessions.id, excludeSessionId),
-      );
+      whereClause = and(conditions, ne(queueSessions.id, excludeSessionId));
     }
 
-    const activeSessions = await db
-      .select()
-      .from(queueSessions)
-      .where(whereClause)
-      .limit(1);
+    const activeSessions = await db.select().from(queueSessions).where(whereClause).limit(1);
 
     return activeSessions.length > 0;
   }
@@ -237,21 +221,17 @@ export class SessionService {
    * Create a new session (copies statuses from template)
    */
   async createSession(
-    input: CreateSessionInput,
+    input: CreateSessionInput
   ): Promise<typeof queueSessions.$inferSelect | null> {
     // Verify queue exists
-    const queue = await db
-      .select()
-      .from(queues)
-      .where(eq(queues.id, input.queueId))
-      .limit(1);
+    const queue = await db.select().from(queues).where(eq(queues.id, input.queueId)).limit(1);
 
     if (!queue || queue.length === 0) {
       return null;
     }
 
     // If status is 'active', check if queue already has an active session
-    if (input.status === 'active') {
+    if (input.status === "active") {
       const hasActive = await this.hasActiveSession(input.queueId);
       if (hasActive) {
         return null;
@@ -283,14 +263,11 @@ export class SessionService {
       templateId: queue[0].templateId,
       queueId: input.queueId,
       name: input.name || `Session ${nextSessionNumber}`,
-      status: input.status || 'active',
+      status: input.status || "active",
       sessionNumber: nextSessionNumber,
     };
 
-    const sessionResult = await db
-      .insert(queueSessions)
-      .values(newSession)
-      .returning();
+    const sessionResult = await db.insert(queueSessions).values(newSession).returning();
     const sessionId = sessionResult[0].id;
 
     // Copy statuses from template
@@ -324,14 +301,10 @@ export class SessionService {
    */
   async updateSession(
     id: string,
-    input: UpdateSessionInput,
+    input: UpdateSessionInput
   ): Promise<typeof queueSessions.$inferSelect | null> {
     // Check if session exists
-    const existing = await db
-      .select()
-      .from(queueSessions)
-      .where(eq(queueSessions.id, id))
-      .limit(1);
+    const existing = await db.select().from(queueSessions).where(eq(queueSessions.id, id)).limit(1);
 
     if (!existing || existing.length === 0) {
       return null;
@@ -342,8 +315,8 @@ export class SessionService {
     // If status is being updated, validate the transition
     if (input.status !== undefined && input.status !== session.status) {
       const isValidTransition = this.validateStatusTransition(
-        session.status as 'active' | 'paused' | 'completed' | 'archived',
-        input.status,
+        session.status as "active" | "paused" | "completed" | "archived",
+        input.status
       );
 
       if (!isValidTransition) {
@@ -352,7 +325,7 @@ export class SessionService {
 
       // If transitioning to 'active', check for existing active session
       // Only block if this is a NEW activation (from draft/completed), not a resume from paused
-      if (input.status === 'active' && session.status !== 'paused') {
+      if (input.status === "active" && session.status !== "paused") {
         if (!session.queueId) {
           return null;
         }
@@ -370,17 +343,17 @@ export class SessionService {
     if (input.status !== undefined) updateData.status = input.status;
 
     // Set timestamps based on lifecycle
-    if (input.status === 'active' && !session.startedAt) {
+    if (input.status === "active" && !session.startedAt) {
       // Starting session
       updateData.startedAt = new Date();
     }
 
-    if (input.status === 'completed' && !session.endedAt) {
+    if (input.status === "completed" && !session.endedAt) {
       // Completing session
       updateData.endedAt = new Date();
     }
 
-    if (input.status === 'archived' && !session.endedAt) {
+    if (input.status === "archived" && !session.endedAt) {
       // Archiving the session
       updateData.endedAt = new Date();
     }
@@ -399,11 +372,7 @@ export class SessionService {
    */
   async deleteSession(id: string): Promise<boolean> {
     // Check if session exists
-    const existing = await db
-      .select()
-      .from(queueSessions)
-      .where(eq(queueSessions.id, id))
-      .limit(1);
+    const existing = await db.select().from(queueSessions).where(eq(queueSessions.id, id)).limit(1);
 
     if (!existing || existing.length === 0) {
       return false;
@@ -412,14 +381,11 @@ export class SessionService {
     const session = existing[0];
 
     // Soft delete: set deleted_at
-    await db
-      .update(queueSessions)
-      .set({ deletedAt: new Date() })
-      .where(eq(queueSessions.id, id));
+    await db.update(queueSessions).set({ deletedAt: new Date() }).where(eq(queueSessions.id, id));
 
     // Broadcast session_deleted event
     sseBroadcaster.broadcast({
-      type: 'session_deleted',
+      type: "session_deleted",
       data: {
         id: session.id,
         queue_id: session.queueId ?? undefined,
@@ -436,13 +402,13 @@ export class SessionService {
    */
   broadcastSessionCreated(session: QueueSession): void {
     sseBroadcaster.broadcast({
-      type: 'session_created',
+      type: "session_created",
       data: {
         id: session.id,
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: session.status as 'draft' | 'active' | 'paused' | 'completed' | 'archived',
+        status: session.status as "draft" | "active" | "paused" | "completed" | "archived",
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
@@ -458,13 +424,13 @@ export class SessionService {
    */
   broadcastSessionUpdated(session: QueueSession): void {
     sseBroadcaster.broadcast({
-      type: 'session_updated',
+      type: "session_updated",
       data: {
         id: session.id,
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: session.status as 'draft' | 'active' | 'paused' | 'completed' | 'archived',
+        status: session.status as "draft" | "active" | "paused" | "completed" | "archived",
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
@@ -480,13 +446,13 @@ export class SessionService {
    */
   broadcastSessionCompleted(session: QueueSession): void {
     sseBroadcaster.broadcast({
-      type: 'session_completed',
+      type: "session_completed",
       data: {
         id: session.id,
         queue_id: session.queueId ?? undefined,
         template_id: session.templateId,
         name: session.name,
-        status: 'completed' as const,
+        status: "completed" as const,
         session_number: session.sessionNumber,
         started_at: session.startedAt ? session.startedAt.toISOString() : undefined,
         ended_at: session.endedAt ? session.endedAt.toISOString() : undefined,
@@ -502,7 +468,7 @@ export class SessionService {
    */
   broadcastSessionStatusCreated(status: QueueSessionStatus): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_created',
+      type: "session_status_created",
       data: {
         id: status.id,
         session_id: status.sessionId,
@@ -519,7 +485,7 @@ export class SessionService {
    */
   broadcastSessionStatusUpdated(status: QueueSessionStatus): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_updated',
+      type: "session_status_updated",
       data: {
         id: status.id,
         session_id: status.sessionId,
@@ -536,7 +502,7 @@ export class SessionService {
    */
   broadcastSessionStatusDeleted(statusId: string, sessionId: string): void {
     sseBroadcaster.broadcast({
-      type: 'session_status_deleted',
+      type: "session_status_deleted",
       data: {
         id: statusId,
         session_id: sessionId,

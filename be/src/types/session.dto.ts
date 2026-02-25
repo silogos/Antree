@@ -25,7 +25,7 @@ export interface SessionDTO {
   queueId: string;
   templateId: string;
   name: string;
-  status: 'active' | 'paused' | 'completed' | 'archived';
+  status: "active" | "paused" | "completed" | "archived";
   sessionNumber: number;
   startedAt: Date | string | null;
   endedAt: Date | string | null;
@@ -55,7 +55,7 @@ export interface QueueItemDTO {
   statusId: string;
   queueNumber: string;
   displayName: string;
-  metadata: any;
+  metadata: unknown;
   createdAt: Date | string;
 }
 
@@ -90,5 +90,5 @@ export interface TemplateStatusDTO {
  * Used for PATCH /sessions/:id/lifecycle endpoint
  */
 export interface SessionLifecycleDTO {
-  status: 'active' | 'paused' | 'completed' | 'archived';
+  status: "active" | "paused" | "completed" | "archived";
 }
