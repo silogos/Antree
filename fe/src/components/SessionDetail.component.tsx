@@ -1,17 +1,13 @@
 import { Activity, Archive, ArrowLeft, CheckCircle2, Pause, Play, Plus, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useToast } from "../hooks/use-toast.hook";
 import { useSessionSSE } from "../hooks/useSessionSSE.hook";
 import { useSound } from "../hooks/useSound.hook";
 import { queueItemService } from "../services/queue.service";
 import { sessionService } from "../services/session.service";
-import type {
-  QueueItem,
-  QueueSession,
-  QueueSessionStatus,
-  SessionStatus,
-} from "../types/queue.types";
+import type { QueueItem, QueueSession, QueueSessionStatus } from "../types/queue.types";
+import { SessionStatus } from "../types/queue.types";
 import { AddQueueModal } from "./AddQueueModal.component";
 import { Footer } from "./Footer.component";
 import { QueueItemStatusModal } from "./QueueItemStatusModal.component";
@@ -46,7 +42,13 @@ export function SessionDetail() {
   // SSE integration for real-time updates
   const { isConnected: sseConnected } = useSessionSSE(sessionId || null, {
     onQueueItemCreated: (item) => {
-      setQueueItems((prev) => [...prev, item]);
+      setQueueItems((prev) => {
+        // Prevent duplicates by checking if item already exists
+        if (prev.some((q) => q.id === item.id)) {
+          return prev.map((q) => (q.id === item.id ? item : q));
+        }
+        return [...prev, item];
+      });
       playNotificationSound();
     },
     onQueueItemUpdated: (item) => {
@@ -266,6 +268,19 @@ export function SessionDetail() {
     statuses: statuses.length,
     active: session?.status === "active" ? 1 : 0,
   };
+
+  // Deduplicate queue items by ID to prevent React key warnings
+  const uniqueQueueItems = useMemo(() => {
+    const seen = new Set<string>();
+    return queueItems.filter((item) => {
+      if (seen.has(item.id)) {
+        console.warn(`[SessionDetail] Duplicate item ID detected: ${item.id}`);
+        return false;
+      }
+      seen.add(item.id);
+      return true;
+    });
+  }, [queueItems]);
 
   // Invalid sessionId
   if (!sessionId) {
@@ -558,7 +573,7 @@ export function SessionDetail() {
                       <SessionStatusSection
                         key={status.id}
                         status={status}
-                        queueItems={queueItems.filter((item) => item.statusId === status.id)}
+                        queueItems={uniqueQueueItems.filter((item) => item.statusId === status.id)}
                         onQueueItemClick={handleQueueItemClick}
                       />
                     ))}
